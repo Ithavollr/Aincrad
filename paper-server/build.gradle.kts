@@ -6,6 +6,7 @@ plugins {
     `java-library`
     `maven-publish`
     id("io.papermc.paperweight.core")
+    kotlin("jvm")
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
@@ -14,6 +15,7 @@ dependencies {
     mache("io.papermc:mache:1.21.4+build.7")
     paperclip("io.papermc:paperclip:3.0.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 paperweight {
@@ -125,7 +127,8 @@ dependencies {
     implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
     implementation("net.minecrell:terminalconsoleappender:1.3.0")
     implementation("net.kyori:adventure-text-serializer-ansi:4.18.0") // Keep in sync with adventureVersion from Paper-API build file
-
+    // Add thread affinity support
+    implementation("net.openhft:affinity:3.23.3")
     /*
       Required to add the missing Log4j2Plugins.dat file from log4j-core
       which has been removed by Mojang. Without it, log4j has to classload
@@ -325,4 +328,10 @@ tasks.registerRunTask("runReobfPaperclip") {
     description = "Spin up a test server from the reobf Paperclip jar"
     classpath(tasks.createReobfPaperclipJar.flatMap { it.outputZip })
     mainClass.set(null as String?)
+}
+repositories {
+    mavenCentral()
+}
+kotlin {
+    jvmToolchain(21)
 }

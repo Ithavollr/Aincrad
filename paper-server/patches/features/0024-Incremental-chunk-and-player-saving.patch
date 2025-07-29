@@ -5,10 +5,10 @@ Subject: [PATCH] Incremental chunk and player saving
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 409c1134327bfcc338c3ac5e658a83cc396645d1..cc2d442682496197d29ace79b22e6cf6fb7edf5e 100644
+index 8923f02eb676996e8a93bd48f5914705bd7328cf..0236eafae0363fc333a82edddd5e5733820728f1 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -960,7 +960,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -962,7 +962,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          boolean var4;
          try {
              this.isSaving = true;
@@ -17,7 +17,7 @@ index 409c1134327bfcc338c3ac5e658a83cc396645d1..cc2d442682496197d29ace79b22e6cf6
              var4 = this.saveAllChunks(suppressLog, flush, forced);
          } finally {
              this.isSaving = false;
-@@ -1533,9 +1533,29 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1535,9 +1535,29 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          }
  
          this.ticksUntilAutosave--;
@@ -50,7 +50,7 @@ index 409c1134327bfcc338c3ac5e658a83cc396645d1..cc2d442682496197d29ace79b22e6cf6
          ProfilerFiller profilerFiller = Profiler.get();
          this.runAllTasks(); // Paper - move runAllTasks() into full server tick (previously for timings)
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 42995dac38248032b6abecc27124adfe12ec4cab..28a67294c3e678e01d5dfd68b950234213d8e55c 100644
+index e450b1ab3ab1479f5a8e1bb070cf7b420e4f078a..e6733c43d582c1c632ad0e6abc99e88e337c8911 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -1318,6 +1318,28 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe

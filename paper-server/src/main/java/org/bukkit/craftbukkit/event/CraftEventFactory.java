@@ -951,7 +951,7 @@ public class CraftEventFactory {
         return CraftEventFactory.handleBlockSpreadEvent(world, source, target, block, 2);
     }
 
-    public static BlockPos sourceBlockOverride = null; // SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPosition up to five methods deep.
+    public static final ThreadLocal<BlockPos> sourceBlockOverrideRT = new ThreadLocal<>(); // SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPosition up to five methods deep. // SparklyPaper - parallel world ticking (this is from Folia, fixes concurrency bugs with sculk catalysts)
 
     public static boolean handleBlockSpreadEvent(LevelAccessor world, BlockPos source, BlockPos target, net.minecraft.world.level.block.state.BlockState block, int flag) {
         // Suppress during worldgen
@@ -963,7 +963,7 @@ public class CraftEventFactory {
         CraftBlockState state = CraftBlockStates.getBlockState(world, target, flag);
         state.setData(block);
 
-        BlockSpreadEvent event = new BlockSpreadEvent(state.getBlock(), CraftBlock.at(world, CraftEventFactory.sourceBlockOverride != null ? CraftEventFactory.sourceBlockOverride : source), state);
+        BlockSpreadEvent event = new BlockSpreadEvent(state.getBlock(), CraftBlock.at(world, CraftEventFactory.sourceBlockOverrideRT.get() != null ? CraftEventFactory.sourceBlockOverrideRT.get() : source), state); // SparklyPaper - parallel world ticking
         Bukkit.getPluginManager().callEvent(event);
 
         if (!event.isCancelled()) {
@@ -2232,7 +2232,7 @@ public class CraftEventFactory {
         CraftItemStack craftItem = CraftItemStack.asCraftMirror(itemStack.copyWithCount(1));
 
         org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(bukkitBlock, craftItem.clone(), CraftVector.toBukkit(to));
-        if (!net.minecraft.world.level.block.DispenserBlock.eventFired) {
+        if (!net.minecraft.world.level.block.DispenserBlock.eventFired.get()) { // SparklyPaper - parallel world ticking
             if (!event.callEvent()) {
                 return itemStack;
             }

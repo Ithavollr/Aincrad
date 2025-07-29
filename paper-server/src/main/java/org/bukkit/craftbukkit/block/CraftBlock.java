@@ -554,8 +554,8 @@ public class CraftBlock implements Block {
         world.captureTreeGeneration = false;
 
         if (world.capturedBlockStates.size() > 0) {
-            TreeType treeType = SaplingBlock.treeType;
-            SaplingBlock.treeType = null;
+            TreeType treeType = SaplingBlock.treeTypeRT.get();
+            SaplingBlock.treeTypeRT.set(null); // SparklyPaper - parallel world ticking
             List<BlockState> blocks = new ArrayList<>(world.capturedBlockStates.values());
             world.capturedBlockStates.clear();
             StructureGrowEvent structureEvent = null;

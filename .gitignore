@@ -31,6 +31,7 @@ manifest.mf
 *.iws
 .idea/
 out/
+.kotlin/
 
 # JetBrains Fleet
 .fleet/

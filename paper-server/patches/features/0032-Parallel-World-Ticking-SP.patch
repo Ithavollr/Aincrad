@@ -621,7 +621,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..136954302d974d7360c15651b0c8a46d
          // Paper start - extra debug info
          if (entity.valid) {
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 57d432dc9e8d8e9a3e088e7c40b35178c30fe786..d117d4987ec387e7b5a2cfc3910baf40ae9bbcb5 100644
+index 57d432dc9e8d8e9a3e088e7c40b35178c30fe786..87bd9dbb7eb5b9bf7407aa49e155e56c9a63d3d7 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -423,6 +423,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -632,7 +632,15 @@ index 57d432dc9e8d8e9a3e088e7c40b35178c30fe786..d117d4987ec387e7b5a2cfc3910baf40
  
      public ServerPlayer(MinecraftServer server, ServerLevel level, GameProfile gameProfile, ClientInformation clientInformation) {
          super(level, level.getSharedSpawnPos(), level.getSharedSpawnAngle(), gameProfile);
-@@ -1415,6 +1416,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -792,6 +793,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+ 
+     @Override
+     public void tick() {
++        hasTickedAtLeastOnceInNewWorld = true; // SparklyPaper - parallel world ticking (see: PARALLEL_NOTES.md - Opening an inventory after a world switch)
+         // CraftBukkit start
+         if (this.joining) {
+             this.joining = false;
+@@ -1415,6 +1417,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
                  return this;
              } else {
                  // CraftBukkit start
@@ -640,7 +648,7 @@ index 57d432dc9e8d8e9a3e088e7c40b35178c30fe786..d117d4987ec387e7b5a2cfc3910baf40
                  /*
                  this.isChangingDimension = true;
                  LevelData levelData = level.getLevelData();
-@@ -1768,6 +1770,12 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1768,6 +1771,12 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
                  return OptionalInt.empty();
              } else {
                  // CraftBukkit start

@@ -358,10 +358,10 @@ index 5ab2c8333178335515e619b87ae420f948c83bd1..c98e3748ff467f75f0a0e5a429563fea
              }
  
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index e8a0d231b7743a86af1b1f24fef310b69040f573..4e8bd33fa7a45f39217d2014ee0a50526b690716 100644
+index e8a0d231b7743a86af1b1f24fef310b69040f573..e03d6720b8ff7183763f3dc2f264604ebfe46001 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -305,11 +305,12 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -305,15 +305,16 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
      // SparklyPaper - skip EntityScheduler's executeTick checks if there isn't any tasks to be run (concurrent because plugins may schedule tasks async)
      public final Set<net.minecraft.world.entity.Entity> entitiesWithScheduledTasks = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -371,10 +371,15 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..4e8bd33fa7a45f39217d2014ee0a5052
          ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry.init(); // Paper - rewrite data converter system
          AtomicReference<S> atomicReference = new AtomicReference<>();
 -        Thread thread = new ca.spottedleaf.moonrise.common.util.TickThread(() -> atomicReference.get().runServer(), "Server thread");
-+        Thread thread = new ca.spottedleaf.moonrise.common.util.TickThread(() -> atomicReference.get().runServer(), "Server thread"); // TO-DO: set thread affinity
++        Thread thread = new ca.spottedleaf.moonrise.common.util.TickThread(() -> atomicReference.get().runServer(), "Server thread"); // TO-DO: set thread affinity?
          thread.setUncaughtExceptionHandler((thread1, exception) -> LOGGER.error("Uncaught exception in server thread", exception));
          thread.setPriority(Thread.NORM_PRIORITY+2); // Paper - Perf: Boost priority
          if (Runtime.getRuntime().availableProcessors() > 4) {
+-            thread.setPriority(8);
++            thread.setPriority(9);
+         }
+ 
+         S minecraftServer = (S)threadFunction.apply(thread);
 @@ -421,7 +422,6 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
              if (services.profileCache() != null) {
                  services.profileCache().setExecutor(this);
@@ -399,18 +404,7 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..4e8bd33fa7a45f39217d2014ee0a5052
          // Paper start - Improved watchdog support - move final shutdown items here
          Util.shutdownExecutors();
          try {
-@@ -1161,6 +1163,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
-     // Paper end
- 
-     protected void runServer() {
-+        if(((net.minecraft.server.dedicated.DedicatedServer) this).getProperties().lockServerThread) {
-+            net.openhft.affinity.Affinity.setAffinity(0); // Aincrad - lock server thread to CPU 0
-+        }
-+
-         try {
-             if (!this.initServer()) {
-                 throw new IllegalStateException("Failed to initialize server");
-@@ -1720,34 +1726,69 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1720,34 +1722,68 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          }
  
          this.isIteratingOverLevels = true; // Paper - Throw exception on world create while being ticked
@@ -454,7 +448,6 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..4e8bd33fa7a45f39217d2014ee0a5052
 +                                ca.spottedleaf.moonrise.common.util.TickThread.ServerLevelTickThread currentThread =
 +                                    (ca.spottedleaf.moonrise.common.util.TickThread.ServerLevelTickThread) Thread.currentThread();
 +                                currentThread.currentlyTickingServerLevel = serverLevel;
-+
 +                                long i = Util.getNanos(); // SparklyPaper - track world's MSPT
 +                                serverLevel.tick(hasTimeLeft);
 +                                // SparklyPaper start - track world's MSPT
@@ -503,7 +496,7 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..4e8bd33fa7a45f39217d2014ee0a5052
          this.isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
  
          profilerFiller.popPush("connection");
-@@ -1838,6 +1879,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1838,6 +1874,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          Map<ResourceKey<Level>, ServerLevel> oldLevels = this.levels;
          Map<ResourceKey<Level>, ServerLevel> newLevels = Maps.newLinkedHashMap(oldLevels);
          newLevels.remove(level.dimension());
@@ -527,15 +520,14 @@ index 97a294d2f5c1ddf0af7ffec3e1425eb329c5751b..7854bb2d300600eeea1c172828b5c174
  
          this.setPvpAllowed(properties.pvp);
 diff --git a/net/minecraft/server/dedicated/DedicatedServerProperties.java b/net/minecraft/server/dedicated/DedicatedServerProperties.java
-index f6518e29f805018c72222f5aaa7b662071665b65..b32c4c01d6c5111a630c2517bfe1d75f37b4e1a5 100644
+index f6518e29f805018c72222f5aaa7b662071665b65..df69cd598d0cf9dbba739326e2f1aed13fdd4cb2 100644
 --- a/net/minecraft/server/dedicated/DedicatedServerProperties.java
 +++ b/net/minecraft/server/dedicated/DedicatedServerProperties.java
-@@ -77,6 +77,8 @@ public class DedicatedServerProperties extends Settings<DedicatedServerPropertie
+@@ -77,6 +77,7 @@ public class DedicatedServerProperties extends Settings<DedicatedServerPropertie
      public final int opPermissionLevel = this.get("op-permission-level", 4);
      public final int functionPermissionLevel = this.get("function-permission-level", 2);
      public final long maxTickTime = this.get("max-tick-time", TimeUnit.MINUTES.toMillis(1L));
 +    public final int worldTickThreads = this.get("world-tick-threads", 1); // Aincrad - parallel world ticking
-+    public final boolean lockServerThread = this.get("lock-server-thread", false); // Aincrad - set cpu affinity for main thread
      public final int maxChainedNeighborUpdates = this.get("max-chained-neighbor-updates", 1000000);
      public final int rateLimitPacketsPerSecond = this.get("rate-limit", 0);
      public final int viewDistance = this.get("view-distance", 10);

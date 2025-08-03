@@ -127,8 +127,6 @@ dependencies {
     implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
     implementation("net.minecrell:terminalconsoleappender:1.3.0")
     implementation("net.kyori:adventure-text-serializer-ansi:4.18.0") // Keep in sync with adventureVersion from Paper-API build file
-    // Add thread affinity support
-    implementation("net.openhft:affinity:3.23.3")
     /*
       Required to add the missing Log4j2Plugins.dat file from log4j-core
       which has been removed by Mojang. Without it, log4j has to classload

@@ -22,6 +22,7 @@ paperweight {
     minecraftVersion = providers.gradleProperty("mcVersion")
     // macheOldPath = file("F:\\Projects\\PaperTooling\\mache\\versions\\1.21.4\\src\\main\\java")
     // gitFilePatches = true
+    bundlerJarName.set("aincrad")
 
     spigot {
         buildDataRef = "3edaf46ec1eed4115ce1b18d2846cded42577e42"
@@ -189,14 +190,14 @@ tasks.jar {
         val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
         attributes(
             "Main-Class" to "org.bukkit.craftbukkit.Main",
-            "Implementation-Title" to "Paper",
+            "Implementation-Title" to "Aincrad",
             "Implementation-Version" to implementationVersion,
             "Implementation-Vendor" to date,
-            "Specification-Title" to "Paper",
+            "Specification-Title" to "Aincrad",
             "Specification-Version" to project.version,
-            "Specification-Vendor" to "Paper Team",
+            "Specification-Vendor" to "Aincrad Team",
             "Brand-Id" to "papermc:paper",
-            "Brand-Name" to "Paper",
+            "Brand-Name" to "Aincrad",
             "Build-Number" to (build ?: ""),
             "Build-Time" to buildTime.toString(),
             "Git-Branch" to gitBranch,

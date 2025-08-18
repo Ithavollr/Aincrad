@@ -10,8 +10,8 @@ paperweight {
 }
 
 dependencies {
-    minecraftJar(project(":paper-server", "mappedJarOutgoing"))
-    implementation(project(":paper-server", "macheMinecraftLibraries"))
+    minecraftJar(project(":aincrad-server", "mappedJarOutgoing"))
+    implementation(project(":aincrad-server", "macheMinecraftLibraries"))
 
     implementation("com.squareup:javapoet:1.13.0")
     implementation(project(":paper-api"))

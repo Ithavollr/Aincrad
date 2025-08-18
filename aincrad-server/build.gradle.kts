@@ -182,7 +182,8 @@ tasks.jar {
     manifest {
         val git = Git(rootProject.layout.projectDirectory.path)
         val mcVersion = rootProject.providers.gradleProperty("mcVersion").get()
-        val build = System.getenv("BUILD_NUMBER") ?: null
+        val acVersion = rootProject.providers.gradleProperty("acVersion").get()
+        val build = acVersion
         val buildTime = if (build != null) Instant.now() else Instant.EPOCH
         val gitHash = git.exec(providers, "rev-parse", "--short=7", "HEAD").get().trim()
         val implementationVersion = "$mcVersion-${build ?: "DEV"}-$gitHash"

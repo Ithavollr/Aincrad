@@ -75,7 +75,7 @@ public interface ServerBuildInfo {
      *
      * @return the build number
      */
-    OptionalInt buildNumber();
+    String buildNumber();
 
     /**
      * Gets the build time.

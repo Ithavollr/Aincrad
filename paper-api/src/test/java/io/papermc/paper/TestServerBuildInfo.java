@@ -33,7 +33,7 @@ public class TestServerBuildInfo implements ServerBuildInfo {
     }
 
     @Override
-    public @NotNull OptionalInt buildNumber() {
+    public @NotNull String buildNumber() {
         throw new UnsupportedOperationException();
     }
 

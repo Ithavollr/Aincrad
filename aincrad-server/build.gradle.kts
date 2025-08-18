@@ -189,6 +189,7 @@ tasks.jar {
         val implementationVersion = "$mcVersion-${build ?: "DEV"}-$gitHash"
         val date = git.exec(providers, "show", "-s", "--format=%ci", gitHash).get().trim()
         val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
+        archiveVersion = "$mcVersion-$acVersion"
         attributes(
             "Main-Class" to "org.bukkit.craftbukkit.Main",
             "Implementation-Title" to "Aincrad",

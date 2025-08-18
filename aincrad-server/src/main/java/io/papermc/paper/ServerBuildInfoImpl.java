@@ -18,7 +18,7 @@ public record ServerBuildInfoImpl(
     String brandName,
     String minecraftVersionId,
     String minecraftVersionName,
-    OptionalInt buildNumber,
+    String buildNumber,
     Instant buildTime,
     Optional<String> gitBranch,
     Optional<String> gitCommit
@@ -30,7 +30,7 @@ public record ServerBuildInfoImpl(
     private static final String ATTRIBUTE_GIT_BRANCH = "Git-Branch";
     private static final String ATTRIBUTE_GIT_COMMIT = "Git-Commit";
 
-    private static final String BRAND_PAPER_NAME = "Paper";
+    private static final String BRAND_PAPER_NAME = "Aincrad";
 
     private static final String BUILD_DEV = "DEV";
 
@@ -48,9 +48,7 @@ public record ServerBuildInfoImpl(
             SharedConstants.getCurrentVersion().getId(),
             SharedConstants.getCurrentVersion().getName(),
             getManifestAttribute(manifest, ATTRIBUTE_BUILD_NUMBER)
-                .map(Integer::parseInt)
-                .map(OptionalInt::of)
-                .orElse(OptionalInt.empty()),
+                .orElse(""),
             getManifestAttribute(manifest, ATTRIBUTE_BUILD_TIME)
                 .map(Instant::parse)
                 .orElse(Main.BOOT_TIME),
@@ -69,8 +67,8 @@ public record ServerBuildInfoImpl(
         final StringBuilder sb = new StringBuilder();
         sb.append(this.minecraftVersionId);
         sb.append('-');
-        if (this.buildNumber.isPresent()) {
-            sb.append(this.buildNumber.getAsInt());
+        if (!this.buildNumber.isEmpty()) {
+            sb.append(this.buildNumber);
         } else {
             sb.append(BUILD_DEV);
         }

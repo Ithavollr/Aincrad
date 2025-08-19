@@ -211,6 +211,12 @@ tasks.jar {
     }
 }
 
+tasks.createMojmapBundlerJar {
+    val mcVersion = rootProject.providers.gradleProperty("mcVersion").get()
+    val acVersion = rootProject.providers.gradleProperty("acVersion").get()
+    version = "$mcVersion-$acVersion"
+}
+
 // Compile tests with -parameters for better junit parameterized test names
 tasks.compileTestJava {
     options.compilerArgs.add("-parameters")

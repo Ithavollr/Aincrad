@@ -427,6 +427,15 @@
          SkullBlockEntity.clear();
      }
  
+@@ -585,7 +_,7 @@
+ 
+     @Override
+     public boolean isTickTimeLoggingEnabled() {
+-        return this.debugSampleSubscriptionTracker.shouldLogSamples(RemoteDebugSampleType.TICK_TIME);
++        return false; // Aincrad - remove default tick logging
+     }
+ 
+     @Override
 @@ -626,4 +_,15 @@
              }
          }

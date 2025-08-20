@@ -57,7 +57,7 @@ public final class MoonriseCommon {
         WORKER_POOL.adjustThreadCount(workerThreads);
         IO_POOL.adjustThreadCount(ioThreads);
 
-        LOGGER.info(PlatformHooks.get().getBrand() + " is using " + workerThreads + " worker threads, " + ioThreads + " I/O threads");
+        LOGGER.info(PlatformHooks.get().getBrand() + " is using " + workerThreads + " worker threads, " + ioThreads + " I/O threads for chunk processing.");
     }
 
     public static final PrioritisedThreadPool IO_POOL = new PrioritisedThreadPool(

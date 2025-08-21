@@ -358,7 +358,7 @@ index 5ab2c8333178335515e619b87ae420f948c83bd1..c98e3748ff467f75f0a0e5a429563fea
              }
  
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index e8a0d231b7743a86af1b1f24fef310b69040f573..4cf8b5ea1eeef2fdc182d0d88983df8d440f26ab 100644
+index e8a0d231b7743a86af1b1f24fef310b69040f573..cab3cd12a9f4d955517fad5a906a10798bbd52c6 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -173,58 +173,58 @@ import net.minecraft.world.phys.Vec2;
@@ -1705,10 +1705,10 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..4cf8b5ea1eeef2fdc182d0d88983df8d
  
 -            profilerFiller.push("tick");
 +                if (!serverLevel.tickExecutor.isShutdown()) { // Aincrad - ensure executor is active
-+                    serverLevelTickingSemaphore.acquire();
 +                    tasks.add(
 +                        serverLevel.tickExecutor.submit(() -> {
 +                            try {
++                                serverLevelTickingSemaphore.acquire(); // Aincrad - move inside job submission to prevent deadlock
 +                                ca.spottedleaf.moonrise.common.util.TickThread.ServerLevelTickThread currentThread = (ca.spottedleaf.moonrise.common.util.TickThread.ServerLevelTickThread) Thread.currentThread();
 +                                currentThread.currentlyTickingServerLevel = serverLevel;
 +
@@ -2841,7 +2841,7 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..4cf8b5ea1eeef2fdc182d0d88983df8d
  
                  @Override
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 97a294d2f5c1ddf0af7ffec3e1425eb329c5751b..82271032b0ab3e6d634763b9011eca7a93b0cc87 100644
+index c02bea700c89874ded77d5a6d1663a43cad97626..23afcd93cc766ccad7bfebbf04fff379697429b0 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -224,6 +224,9 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface

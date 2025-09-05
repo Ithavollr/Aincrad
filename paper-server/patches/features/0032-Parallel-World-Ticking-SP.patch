@@ -358,7 +358,7 @@ index 5ab2c8333178335515e619b87ae420f948c83bd1..c98e3748ff467f75f0a0e5a429563fea
              }
  
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index e8a0d231b7743a86af1b1f24fef310b69040f573..d7744f34e53d093c809383cb8ffbf72c935efa7a 100644
+index e8a0d231b7743a86af1b1f24fef310b69040f573..fcf6b560cf8c283ba3cfc0162a48a4d9393fca79 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -173,58 +173,58 @@ import net.minecraft.world.phys.Vec2;
@@ -969,7 +969,7 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..d7744f34e53d093c809383cb8ffbf72c
          this.server.getPluginManager().callEvent(new org.bukkit.event.world.WorldInitEvent(serverLevel.getWorld())); // CraftBukkit - SPIGOT-5569: Call WorldInitEvent before any chunks are generated
  
          if (!serverLevelData.isInitialized()) {
-+            this.playerList.broadcastSystemMessage(Component.literal("§eNEW WORLD CREATION HAS BEGUN, PAUSING TICKS..."), true);
++            this.playerList.broadcastSystemMessage(Component.literal("NEW WORLD CREATION HAS BEGUN, PAUSING TICKS..."), true);
 +            this.tickRateManager.setFrozen(true);
              try {
                  setInitialSpawn(serverLevel, serverLevelData, worldOptions.generateBonusChest(), isDebugWorld);
@@ -991,7 +991,7 @@ index e8a0d231b7743a86af1b1f24fef310b69040f573..d7744f34e53d093c809383cb8ffbf72c
              }
 -
              serverLevelData.setInitialized(true);
-+            this.playerList.broadcastSystemMessage(Component.literal("§eWORLD CREATION COMPLETE, RESUMING..."), true);
++            this.playerList.broadcastSystemMessage(Component.literal("WORLD CREATION COMPLETE, RESUMING..."), true);
 +            this.tickRateManager.setFrozen(false);
          }
 +        isInitializingNewWorld = false; // Aincrad - resume normal watchdog

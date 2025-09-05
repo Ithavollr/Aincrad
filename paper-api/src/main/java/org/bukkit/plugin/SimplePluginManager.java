@@ -44,8 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Handles all plugin management from the Server
  */
-@Deprecated(forRemoval = true) // Paper - This implementation may be replaced in a future version of Paper.
-// Plugins may still reflect into this class to modify permission logic for the time being.
+// Paper - This implementation may be replaced in a future version of Paper.
 public final class SimplePluginManager implements PluginManager {
     private final Server server;
     private final Map<Pattern, PluginLoader> fileAssociations = new HashMap<Pattern, PluginLoader>();

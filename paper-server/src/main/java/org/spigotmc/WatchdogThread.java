@@ -104,6 +104,9 @@ public class WatchdogThread extends ca.spottedleaf.moonrise.common.util.TickThre
                     }
                     // Paper end
                 } else {
+                    if (server.isInitializingNewWorld && !(currentTime > this.lastTick + (this.timeoutTime * 2))) {
+                        continue; // Double the timeout time when world initialization is occurring
+                    }
                     logger.log(Level.SEVERE, "--- DO NOT REPORT THIS TO PAPER - THIS IS NOT A BUG OR A CRASH  - " + Bukkit.getServer().getVersion() + " ---");
                     logger.log(Level.SEVERE, "The server has not responded for " + (currentTime - lastTick) / 1000 + " seconds! Creating thread dump");
                 }

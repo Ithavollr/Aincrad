@@ -977,7 +977,7 @@ public final class SimplePluginManager implements PluginManager {
     }
 
     @Override
-    public boolean isTransitiveDependency(io.papermc.paper.plugin.configuration.PluginMeta pluginMeta, io.papermc.paper.plugin.configuration.PluginMeta dependencyConfig) {
+    public boolean isTransitiveDependency(@NotNull io.papermc.paper.plugin.configuration.PluginMeta pluginMeta, @NotNull io.papermc.paper.plugin.configuration.PluginMeta dependencyConfig) {
         return this.paperPluginManager.isTransitiveDependency(pluginMeta, dependencyConfig);
     }
 

@@ -15,7 +15,10 @@
 - Fix EntityBreedEvent cancellation [1a04e96](https://github.com/Ifiht/Aincrad/commit/1a04e96ab7095f9c0ea45d39b7448401c5ae5ee2)
 - Do not queue player info packets [edacfdf](https://github.com/Ifiht/Aincrad/commit/edacfdf4624735d093413e64b4efd192f72d844e)
 - Move EntityUtil to correct directory [cafef9c](https://github.com/Ifiht/Aincrad/commit/cafef9ce9bb73cbcb9bc9c59eb982ae2516f5ee6)
-- **SCREENING**: `fa5824e4c86f59c0740796f045fb2c8514cfac9f`
+- Fix vanilla map decorations sending when not dirty [1be2e5f](https://github.com/Ithavollr/Aincrad/commit/1be2e5f311f3acb526261dca31cdde43259e8608)
+- Add missing nullability annotation to sendEquipmentChange method [6cfa2f7](https://github.com/Ithavollr/Aincrad/commit/6cfa2f7f315cbad23d7b12984b751f2721b496b6)
+- Add lore content guard [c62252e](https://github.com/Ithavollr/Aincrad/commit/c62252e19fc6a5f135b69ee94cd4fa8ea81f4b01)
+- **SCREENING**: `404167841dcf3ac78792ffbd45c683a2173b4b08` _Feb 15 2025_
 
 ## Patches from [SparklyPaper](https://github.com/SparklyPower/SparklyPaper)
 - [Parallel World Ticking](https://github.com/SparklyPower/SparklyPaper/blob/ver/1.21.4/sparklypaper-server/paper-patches/features/0009-Parallel-world-ticking.patch)

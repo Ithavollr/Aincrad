@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.Optionull;
+import io.papermc.paper.world.damagesource.CombatTracker;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.protocol.game.ClientboundHurtAnimationPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -22,6 +24,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.LargeFireball;
@@ -79,7 +82,6 @@ import org.bukkit.entity.Trident;
 import org.bukkit.entity.WitherSkull;
 import org.bukkit.entity.memory.MemoryKey;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -88,16 +90,23 @@ import org.bukkit.potion.PotionType;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.jspecify.annotations.NonNull;
 
 public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+
     private CraftEntityEquipment equipment;
 
     public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
         super(server, entity);
 
-        if (entity instanceof Mob || entity instanceof ArmorStand) {
+        if (entity instanceof Mob || entity instanceof ArmorStand || entity instanceof Mannequin) {
             this.equipment = new CraftEntityEquipment(this);
         }
+    }
+
+    @Override
+    public net.minecraft.world.entity.LivingEntity getHandle() {
+        return (net.minecraft.world.entity.LivingEntity) this.entity;
     }
 
     @Override
@@ -280,19 +289,9 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     @Override
-    public Block getTargetBlockExact(int maxDistance) {
-        return this.getTargetBlockExact(maxDistance, FluidCollisionMode.NEVER);
-    }
-
-    @Override
     public Block getTargetBlockExact(int maxDistance, FluidCollisionMode fluidCollisionMode) {
         RayTraceResult hitResult = this.rayTraceBlocks(maxDistance, fluidCollisionMode);
         return (hitResult != null ? hitResult.getHitBlock() : null);
-    }
-
-    @Override
-    public RayTraceResult rayTraceBlocks(double maxDistance) {
-        return this.rayTraceBlocks(maxDistance, FluidCollisionMode.NEVER);
     }
 
     @Override
@@ -347,6 +346,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
 
     @Override
     public void setArrowCooldown(int ticks) {
+        Preconditions.checkArgument(ticks >= 0, "Amount of ticks before next arrow removal must be non-negative");
         this.getHandle().removeArrowTime = ticks;
     }
 
@@ -357,7 +357,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
 
     @Override
     public void setArrowsInBody(final int count, final boolean fireEvent) { // Paper
-        Preconditions.checkArgument(count >= 0, "New arrow amount must be >= 0");
+        Preconditions.checkArgument(count >= 0, "New arrow amount must be non-negative");
         if (!fireEvent) {
             this.getHandle().getEntityData().set(net.minecraft.world.entity.LivingEntity.DATA_ARROW_COUNT_ID, count);
         } else {
@@ -365,56 +365,32 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
         }
     }
 
-    // Paper start - Add methods for working with arrows stuck in living entities
-    @Override
-    public void setNextArrowRemoval(final int ticks) {
-        Preconditions.checkArgument(ticks >= 0, "New amount of ticks before next arrow removal must be >= 0");
-        this.getHandle().removeArrowTime = ticks;
-    }
-
-    @Override
-    public int getNextArrowRemoval() {
-        return this.getHandle().removeArrowTime;
-    }
-    // Paper end - Add methods for working with arrows stuck in living entities
-
     @Override
     public boolean isInvulnerable() {
         return this.getHandle().isInvulnerableTo((ServerLevel) this.getHandle().level(), this.getHandle().damageSources().generic());
     }
-    // Paper start - Bee Stinger API
+
     @Override
     public int getBeeStingerCooldown() {
-        return getHandle().removeStingerTime;
+        return this.getHandle().removeStingerTime;
     }
 
     @Override
     public void setBeeStingerCooldown(int ticks) {
-        getHandle().removeStingerTime = ticks;
+        Preconditions.checkArgument(ticks >= 0, "New amount of ticks before next bee stinger removal must be non-negative");
+        this.getHandle().removeStingerTime = ticks;
     }
 
     @Override
     public int getBeeStingersInBody() {
-        return getHandle().getStingerCount();
+        return this.getHandle().getStingerCount();
     }
 
     @Override
     public void setBeeStingersInBody(int count) {
         Preconditions.checkArgument(count >= 0, "New bee stinger amount must be >= 0");
-        getHandle().setStingerCount(count);
+        this.getHandle().setStingerCount(count);
     }
-
-    @Override
-    public void setNextBeeStingerRemoval(final int ticks) {
-        Preconditions.checkArgument(ticks >= 0, "New amount of ticks before next bee stinger removal must be >= 0");
-        this.getHandle().removeStingerTime = ticks;
-    }
-
-    @Override
-    public int getNextBeeStingerRemoval() {
-        return this.getHandle().removeStingerTime;
-    }
-    // Paper end - Bee Stinger API
 
     @Override
     public void damage(double amount) {
@@ -497,20 +473,6 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     @Override
-    public net.minecraft.world.entity.LivingEntity getHandle() {
-        return (net.minecraft.world.entity.LivingEntity) this.entity;
-    }
-
-    public void setHandle(final net.minecraft.world.entity.LivingEntity entity) {
-        super.setHandle(entity);
-    }
-
-    @Override
-    public String toString() {
-        return "CraftLivingEntity{" + "id=" + this.getEntityId() + '}';
-    }
-
-    @Override
     public Player getKiller() {
         return Optionull.map(this.getHandle().getLastHurtByPlayer(), player -> (Player) player.getBukkitEntity());
     }
@@ -525,11 +487,6 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
             this.getHandle().lastHurtByPlayer = null;
             this.getHandle().lastHurtByPlayerMemoryTime = 0;
         }
-    }
-
-    @Override
-    public boolean addPotionEffect(PotionEffect effect) {
-        return this.addPotionEffect(effect, false);
     }
 
     @Override
@@ -579,20 +536,8 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     @Override
-    public <T extends Projectile> T launchProjectile(Class<? extends T> projectile) {
-        return this.launchProjectile(projectile, null);
-    }
-
-    @Override
-    public <T extends Projectile> T launchProjectile(Class<? extends T> projectile, Vector velocity) {
-        // Paper start - launchProjectile consumer
-        return this.launchProjectile(projectile, velocity, null);
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public <T extends Projectile> T launchProjectile(Class<? extends T> projectile, Vector velocity, java.util.function.Consumer<? super T> function) {
-        // Paper end - launchProjectile consumer
         Preconditions.checkState(!this.getHandle().generation, "Cannot launch projectile during world generation");
 
         net.minecraft.world.level.Level world = ((CraftWorld) this.getWorld()).getHandle();
@@ -656,7 +601,6 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
             }
 
             launch.projectileSource = this;
-            launch.preserveMotion = true; // Paper - Fix Entity Teleportation and cancel velocity if teleported
             launch.snapTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         } else if (LlamaSpit.class.isAssignableFrom(projectile)) {
             Location location = this.getEyeLocation();
@@ -700,7 +644,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
         Preconditions.checkArgument(launch != null, "Projectile (%s) not supported", projectile.getName());
 
         if (velocity != null) {
-            ((T) launch.getBukkitEntity()).setVelocity(velocity);
+            launch.getBukkitEntity().setVelocity(velocity);
         }
         if (function != null) {
             function.accept((T) launch.getBukkitEntity());
@@ -745,7 +689,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     @Override
-    public EntityEquipment getEquipment() {
+    public @NonNull EntityEquipment getEquipment() {
         return this.equipment;
     }
 
@@ -768,15 +712,6 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     @Override
-    public boolean teleport(Location location, PlayerTeleportEvent.TeleportCause cause) {
-        if (this.getHealth() == 0) {
-            return false;
-        }
-
-        return super.teleport(location, cause);
-    }
-
-    @Override
     public boolean isLeashed() {
         return false; // Paper - implement in CraftMob & PaperLeashable
     }
@@ -793,7 +728,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
 
     @Override
     public boolean isGliding() {
-        return this.getHandle().getSharedFlag(7);
+        return this.getHandle().isFallFlying();
     }
 
     @Override
@@ -891,7 +826,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
             float actualYaw = yaw + 90;
             ClientboundHurtAnimationPacket packet = new ClientboundHurtAnimationPacket(this.getEntityId(), actualYaw);
 
-            world.getChunkSource().broadcastAndSend(this.getHandle(), packet);
+            world.getChunkSource().sendToTrackingPlayersAndSelf(this.getHandle(), packet);
         }
     }
 
@@ -912,7 +847,8 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
 
     @Override
     public <T> T getMemory(MemoryKey<T> memoryKey) {
-        return (T) this.getHandle().getBrain().getMemory(CraftMemoryKey.bukkitToMinecraft(memoryKey)).map(CraftMemoryMapper::fromNms).orElse(null);
+        final Optional<?> memory = this.getHandle().getBrain().getMemoryInternal(CraftMemoryKey.bukkitToMinecraft(memoryKey));
+        return memory != null ? (T) memory.map(CraftMemoryMapper::fromNms).orElse(null) : null;
     }
 
     @Override
@@ -994,26 +930,6 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     @Override
     public float getUpwardsMovement() {
         return this.getHandle().yya;
-    }
-
-    @Override
-    public int getArrowsStuck() {
-        return this.getHandle().getArrowCount();
-    }
-
-    @Override
-    public void setArrowsStuck(final int arrows) {
-        this.getHandle().setArrowCount(arrows);
-    }
-
-    @Override
-    public int getShieldBlockingDelay() {
-        return this.getHandle().shieldBlockingDelay;
-    }
-
-    @Override
-    public void setShieldBlockingDelay(int delay) {
-        this.getHandle().shieldBlockingDelay = delay;
     }
 
     @Override
@@ -1166,5 +1082,10 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     @Override
     public boolean canUseEquipmentSlot(org.bukkit.inventory.EquipmentSlot slot) {
         return this.getHandle().canUseSlot(org.bukkit.craftbukkit.CraftEquipmentSlot.getNMS(slot));
+    }
+
+    @Override
+    public CombatTracker getCombatTracker() {
+        return this.getHandle().getCombatTracker().paperCombatTracker;
     }
 }

@@ -26,6 +26,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
+import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.craftbukkit.util.CraftNamespacedKey;
 import org.bukkit.craftbukkit.util.Waitable;
 
@@ -103,6 +104,18 @@ public final class MCUtil {
         run.run();
     }
 
+    public static double sanitizeNanInf(final double value, final double defaultValue) {
+        return Double.isNaN(value) || Double.isInfinite(value) ? defaultValue : value;
+    }
+
+    public static Vec3 sanitizeNanInf(final Vec3 vec3, final double defaultValue) {
+        return new Vec3(
+            sanitizeNanInf(vec3.x, defaultValue),
+            sanitizeNanInf(vec3.y, defaultValue),
+            sanitizeNanInf(vec3.z, defaultValue)
+        );
+    }
+
     public static <T> T ensureMain(Supplier<T> run) {
         return ensureMain(null, run);
     }
@@ -138,6 +151,26 @@ public final class MCUtil {
 
     public static double distanceSq(double x1, double y1, double z1, double x2, double y2, double z2) {
         return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2);
+    }
+
+    /**
+     * Converts a NMS World/Vector to Bukkit Location
+     *
+     * @deprecated use CraftLocation methods instead
+     */
+    @Deprecated
+    public static Location toLocation(Level world, Vec3 pos) {
+        return CraftLocation.toBukkit(pos, world);
+    }
+
+    /**
+     * Converts a NMS World/Vector to Bukkit Location
+     *
+     * @deprecated use CraftLocation methods instead
+     */
+    @Deprecated
+    public static Location toLocation(Level world, Vec3 pos, float yaw, float pitch) {
+        return CraftLocation.toBukkit(pos, world, yaw, pitch);
     }
 
     public static BlockPos toBlockPos(Position pos) {

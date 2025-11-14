@@ -100,7 +100,7 @@ public abstract class CraftAbstractHorse extends CraftAnimals implements Abstrac
     }
 
     public void setOwnerUUID(UUID uuid) {
-        this.getHandle().owner = uuid == null ? null : new EntityReference<>(uuid);
+        this.getHandle().owner = uuid == null ? null : EntityReference.of(uuid);
     }
 
     @Override
@@ -139,7 +139,11 @@ public abstract class CraftAbstractHorse extends CraftAnimals implements Abstrac
 
     @Override
     public void setRearing(boolean rearing) {
-        this.getHandle().setForceStanding(rearing);
+        if (rearing) {
+            this.getHandle().setStanding(Integer.MAX_VALUE);
+        } else {
+            this.getHandle().clearStanding();
+        }
     }
 
     @Override

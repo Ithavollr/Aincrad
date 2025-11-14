@@ -44,6 +44,7 @@ public class EntityTypeRewriter extends EnumRegistryRewriter<EntityType<?>> {
         .put("LeashKnot", "LeashHitch")
         .put("LightningBolt", "LightningStrike")
         .put("Tnt", "TNTPrimed")
+        .put("Minecart", "RideableMinecart")
         .put("ChestMinecart", "StorageMinecart")
         .put("CommandBlockMinecart", "CommandMinecart")
         .put("TntMinecart", "ExplosiveMinecart")
@@ -164,11 +165,13 @@ public class EntityTypeRewriter extends EnumRegistryRewriter<EntityType<?>> {
     private String toBukkitClass(Holder.Reference<EntityType<?>> reference) {
         Class<? extends Entity> internalClass = ENTITY_GENERIC_TYPES.get(reference.key());
         if (Mob.class.isAssignableFrom(internalClass)) {
-            return this.importCollector.getShortName(MobGoalNames.bukkitMap.get((Class<? extends Mob>) internalClass));
+            return this.importCollector.getShortName(MobGoalNames.BUKKIT_BRIDGE.get((Class<? extends Mob>) internalClass));
         }
 
         String className = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, reference.key().location().getPath()); // use the key instead of the internal class name since name match a bit more
-        ClassNamed resolvedClass = this.classNamedView.findFirst(CLASS_RENAMES.getOrDefault(className, className)).resolve(runtime);
+        ClassNamed resolvedClass = this.classNamedView.tryFindFirst(CLASS_RENAMES.getOrDefault(className, className))
+            .orElseThrow(() -> new IllegalStateException("Could not find entity class for " + reference.key().location()))
+            .resolve(runtime);
         Preconditions.checkArgument(org.bukkit.entity.Entity.class.isAssignableFrom(resolvedClass.knownClass()), "Generic type must be an entity");
         return this.importCollector.getShortName(this.classNamedView.findFirst(CLASS_RENAMES.getOrDefault(className, className)).resolve(runtime));
     }

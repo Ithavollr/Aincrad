@@ -39,7 +39,7 @@
          } else {
              this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(8.0);
          }
-@@ -459,7 +_,7 @@
+@@ -464,7 +_,7 @@
                  this.usePlayerItem(player, hand, itemInHand);
                  FoodProperties foodProperties = itemInHand.get(DataComponents.FOOD);
                  float f = foodProperties != null ? foodProperties.nutrition() : 1.0F;
@@ -48,26 +48,16 @@
                  return InteractionResult.SUCCESS;
              }
  
-@@ -492,7 +_,7 @@
-                         this.setOrderedToSit(!this.isOrderedToSit());
-                         this.jumping = false;
-                         this.navigation.stop();
--                        this.setTarget(null);
-+                        this.setTarget(null, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET); // CraftBukkit - reason
-                         return InteractionResult.SUCCESS.withoutItem();
-                     }
- 
-@@ -504,7 +_,9 @@
-                 ItemStack bodyArmorItem = this.getBodyArmorItem();
-                 this.setBodyArmorItem(ItemStack.EMPTY);
-                 if (this.level() instanceof ServerLevel serverLevel) {
-+                    this.forceDrops = true; // CraftBukkit
-                     this.spawnAtLocation(serverLevel, bodyArmorItem);
-+                    this.forceDrops = false; // CraftBukkit
+@@ -493,7 +_,7 @@
+                     this.setOrderedToSit(!this.isOrderedToSit());
+                     this.jumping = false;
+                     this.navigation.stop();
+-                    this.setTarget(null);
++                    this.setTarget(null, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET); // CraftBukkit - reason
+                     return InteractionResult.SUCCESS.withoutItem();
                  }
  
-                 return InteractionResult.SUCCESS;
-@@ -512,6 +_,13 @@
+@@ -502,6 +_,13 @@
  
              DyeColor dyeColor = dyeItem.getDyeColor();
              if (dyeColor != this.getCollarColor()) {
@@ -81,7 +71,7 @@
                  this.setCollarColor(dyeColor);
                  itemInHand.consume(1, player);
                  return InteractionResult.SUCCESS;
-@@ -526,7 +_,7 @@
+@@ -516,7 +_,7 @@
      }
  
      private void tryToTame(Player player) {

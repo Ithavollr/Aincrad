@@ -1,12 +1,16 @@
 package org.bukkit.entity;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Consumer;
+import io.papermc.paper.datacomponent.item.UseCooldown;
+import net.kyori.adventure.key.Key;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -29,7 +33,7 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
 
     // Paper start
     @Override
-    org.bukkit.inventory.EntityEquipment getEquipment();
+    EntityEquipment getEquipment();
     // Paper end
 
     /**
@@ -174,7 +178,9 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      */
     @Deprecated(since = "1.21.4")
     @Nullable
-    public InventoryView openMerchant(Villager trader, boolean force);
+    default InventoryView openMerchant(Villager trader, boolean force) {
+        return this.openMerchant((Merchant) trader, force);
+    }
 
     /**
      * Starts a trade between the player and the merchant.
@@ -368,7 +374,7 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
 
     /**
      * Set a cooldown on the specified material for a certain amount of ticks.
-     * ticks. 0 ticks will result in the removal of the cooldown.
+     * 0 ticks will result in the removal of the cooldown.
      * <p>
      * Cooldowns are used by the server for items such as ender pearls and
      * shields to prevent them from being used repeatedly.
@@ -380,7 +386,9 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      * @param ticks the amount of ticks to set or 0 to remove
      * @throws IllegalArgumentException if the material is not an item
      */
-    public void setCooldown(Material material, int ticks);
+    default void setCooldown(Material material, int ticks) {
+        this.setCooldown(ItemStack.of(material), ticks);
+    }
 
     /**
      * Sets player hurt direction
@@ -415,7 +423,7 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
 
     /**
      * Set a cooldown on the specified item for a certain amount of ticks.
-     * ticks. 0 ticks will result in the removal of the cooldown.
+     * 0 ticks will result in the removal of the cooldown.
      * <p>
      * Cooldowns are used by the server for items such as ender pearls and
      * shields to prevent them from being used repeatedly.
@@ -427,6 +435,31 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      * @param ticks the amount of ticks to set or 0 to remove
      */
     public void setCooldown(ItemStack item, int ticks);
+
+    /**
+     * Get the cooldown time in ticks remaining for the specified cooldown group.
+     *
+     * @param key the cooldown group to check
+     * @return the remaining cooldown time in ticks
+     * @see UseCooldown#cooldownGroup()
+     */
+    public int getCooldown(Key key);
+
+    /**
+     * Set a cooldown on items with the specified cooldown group for a certain amount of ticks.
+     * 0 ticks will result in the removal of the cooldown.
+     * <p>
+     * Cooldowns are used by the server for items such as ender pearls and
+     * shields to prevent them from being used repeatedly.
+     * <p>
+     * Note that cooldowns will not by themselves stop an item from being used
+     * for attacking.
+     *
+     * @param key cooldown group to set the cooldown for
+     * @param ticks the amount of ticks to set or 0 to remove
+     * @see UseCooldown#cooldownGroup()
+     */
+    public void setCooldown(Key key, int ticks);
 
     /**
      * Get the sleep ticks of the player. This value may be capped.
@@ -442,9 +475,9 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      * is still valid.
      *
      * @return Bed Location if has slept in one, otherwise null.
-     * @see #getPotentialRespawnLocation()
      * @deprecated Misleading name. This method also returns the location of
-     * respawn anchors.
+     * respawn anchors, use {@link Player#getRespawnLocation(boolean)} with
+     * loadLocationAndValidate = false instead
      */
     @Nullable
     @Deprecated(since = "1.21.4")
@@ -458,9 +491,11 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      * to validate if the current respawn location is still valid.
      *
      * @return respawn location if exists, otherwise null.
+     * @deprecated this method doesn't take the respawn angle into account, use
+     * {@link Player#getRespawnLocation(boolean)} with loadLocationAndValidate = false instead
      */
-    @Nullable
-    Location getPotentialRespawnLocation();
+    @Deprecated(since = "1.21.5")
+    @Nullable Location getPotentialRespawnLocation();
 
     /**
      * @return the player's fishing hook if they are fishing
@@ -585,7 +620,9 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      *
      * @return whether or not the recipe was newly discovered
      */
-    public boolean discoverRecipe(NamespacedKey recipe);
+    default boolean discoverRecipe(NamespacedKey recipe) {
+        return this.discoverRecipes(Arrays.asList(recipe)) != 0;
+    }
 
     /**
      * Discover a collection of recipes for this player such that they have not
@@ -611,7 +648,9 @@ public interface HumanEntity extends LivingEntity, AnimalTamer, InventoryHolder 
      * @return whether or not the recipe was successfully undiscovered (i.e. it
      * was previously discovered)
      */
-    public boolean undiscoverRecipe(NamespacedKey recipe);
+    default boolean undiscoverRecipe(NamespacedKey recipe) {
+        return this.undiscoverRecipes(Arrays.asList(recipe)) != 0;
+    }
 
     /**
      * Undiscover a collection of recipes for this player such that they have

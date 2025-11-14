@@ -3,13 +3,13 @@ package org.bukkit.craftbukkit.entity;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import io.papermc.paper.adventure.PaperAdventure;
+import net.kyori.adventure.key.Key;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundHorseScreenOpenPacket;
 import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
@@ -17,9 +17,6 @@ import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -59,7 +56,6 @@ import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Villager;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
@@ -78,6 +74,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
+
     private CraftInventoryPlayer inventory;
     private final CraftInventory enderChest;
     protected final PermissibleBase perm = new PermissibleBase(this);
@@ -89,6 +86,21 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         this.mode = server.getDefaultGameMode();
         this.inventory = new CraftInventoryPlayer(entity.getInventory());
         this.enderChest = new CraftInventory(entity.getEnderChestInventory());
+    }
+
+    @Override
+    public Player getHandle() {
+        return (Player) this.entity;
+    }
+
+    public void setHandle(final Player entity) {
+        super.setHandle(entity);
+        this.inventory = new CraftInventoryPlayer(entity.getInventory());
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "{name=" + this.getName() + ", uuid=" + this.getUniqueId() + '}';
     }
 
     @Override
@@ -157,12 +169,12 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
             return null;
         }
 
-        net.minecraft.server.level.ServerLevel level = ((ServerPlayer) this.getHandle()).server.getLevel(respawnConfig.dimension());
+        net.minecraft.server.level.ServerLevel level = this.server.getServer().getLevel(respawnConfig.respawnData().dimension());
         if (level == null) {
             return null;
         }
 
-        return CraftLocation.toBukkit(respawnConfig.pos(), level.getWorld());
+        return CraftLocation.toBukkit(respawnConfig.respawnData().pos(), level, respawnConfig.respawnData().yaw(), respawnConfig.respawnData().pitch());
     }
 
     @Override
@@ -300,21 +312,6 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         Preconditions.checkArgument(mode != null, "GameMode cannot be null");
 
         this.mode = mode;
-    }
-
-    @Override
-    public Player getHandle() {
-        return (Player) this.entity;
-    }
-
-    public void setHandle(final Player entity) {
-        super.setHandle(entity);
-        this.inventory = new CraftInventoryPlayer(entity.getInventory());
-    }
-
-    @Override
-    public String toString() {
-        return "CraftHumanEntity{" + "id=" + this.getEntityId() + "name=" + this.getName() + '}';
     }
 
     @Override
@@ -487,13 +484,6 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     }
 
     @Override
-    public InventoryView openMerchant(Villager villager, boolean force) {
-        Preconditions.checkNotNull(villager, "villager cannot be null");
-
-        return this.openMerchant((Merchant) villager, force);
-    }
-
-    @Override
     public InventoryView openMerchant(Merchant merchant, boolean force) {
         Preconditions.checkNotNull(merchant, "merchant cannot be null");
 
@@ -645,20 +635,15 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     }
 
     @Override
-    public void setCooldown(Material material, int ticks) {
-        this.setCooldown(new ItemStack(material), ticks);
-    }
-
-    @Override
     public boolean hasCooldown(ItemStack item) {
-        Preconditions.checkArgument(item != null, "Material cannot be null");
+        Preconditions.checkArgument(item != null, "Item cannot be null");
 
         return this.getHandle().getCooldowns().isOnCooldown(CraftItemStack.asNMSCopy(item));
     }
 
     @Override
     public int getCooldown(ItemStack item) {
-        Preconditions.checkArgument(item != null, "Material cannot be null");
+        Preconditions.checkArgument(item != null, "Item cannot be null");
 
         ResourceLocation group = this.getHandle().getCooldowns().getCooldownGroup(CraftItemStack.asNMSCopy(item));
         if (group == null) {
@@ -671,49 +656,41 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
 
     @Override
     public void setCooldown(ItemStack item, int ticks) {
-        Preconditions.checkArgument(item != null, "Material cannot be null");
+        Preconditions.checkArgument(item != null, "Item cannot be null");
         Preconditions.checkArgument(ticks >= 0, "Cannot have negative cooldown");
 
         this.getHandle().getCooldowns().addCooldown(CraftItemStack.asNMSCopy(item), ticks);
     }
 
     @Override
-    public org.bukkit.entity.Entity releaseLeftShoulderEntity() {
-        if (!getHandle().getShoulderEntityLeft().isEmpty()) {
-            Entity entity = getHandle().releaseLeftShoulderEntity();
-            if (entity != null) {
-                return entity.getBukkitEntity();
-            }
-        }
+    public int getCooldown(Key key) {
+        Preconditions.checkArgument(key != null, "Key cannot be null");
 
+        ItemCooldowns.CooldownInstance cooldown = this.getHandle().getCooldowns().cooldowns.get(PaperAdventure.asVanilla(key));
+        return (cooldown == null) ? 0 : Math.max(0, cooldown.endTime() - this.getHandle().getCooldowns().tickCount);
+    }
+
+    @Override
+    public void setCooldown(Key key, int ticks) {
+        Preconditions.checkArgument(key != null, "Key cannot be null");
+        Preconditions.checkArgument(ticks >= 0, "Cannot have negative cooldown");
+
+        this.getHandle().getCooldowns().addCooldown(PaperAdventure.asVanilla(key), ticks);
+    }
+
+    @Override
+    public org.bukkit.entity.Entity releaseLeftShoulderEntity() {
         return null;
     }
 
     @Override
     public org.bukkit.entity.Entity releaseRightShoulderEntity() {
-        if (!getHandle().getShoulderEntityRight().isEmpty()) {
-            Entity entity = getHandle().releaseRightShoulderEntity();
-            if (entity != null) {
-                return entity.getBukkitEntity();
-            }
-        }
-
         return null;
-    }
-
-    @Override
-    public boolean discoverRecipe(NamespacedKey recipe) {
-        return this.discoverRecipes(Arrays.asList(recipe)) != 0;
     }
 
     @Override
     public int discoverRecipes(Collection<NamespacedKey> recipes) {
         return this.getHandle().awardRecipes(this.bukkitKeysToMinecraftRecipes(recipes));
-    }
-
-    @Override
-    public boolean undiscoverRecipe(NamespacedKey recipe) {
-        return this.undiscoverRecipes(Arrays.asList(recipe)) != 0;
     }
 
     @Override
@@ -749,38 +726,28 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
 
     @Override
     public org.bukkit.entity.Entity getShoulderEntityLeft() {
-        if (!this.getHandle().getShoulderEntityLeft().isEmpty()) {
-            Optional<Entity> shoulder = EntityType.create(this.getHandle().getShoulderEntityLeft(), this.getHandle().level(), EntitySpawnReason.LOAD);
-            return shoulder.map(Entity::getBukkitEntity).orElse(null);
-        }
-
         return null;
     }
 
     @Override
     public void setShoulderEntityLeft(org.bukkit.entity.Entity entity) {
-        this.getHandle().setShoulderEntityLeft(entity == null ? new CompoundTag() : ((CraftEntity) entity).save());
         if (entity != null) {
-            entity.remove();
+            Preconditions.checkArgument(((CraftEntity) entity).getHandle().getType().canSerialize(), "Cannot set entity of type %s as a shoulder entity", entity.getType().getKey());
         }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public org.bukkit.entity.Entity getShoulderEntityRight() {
-        if (!this.getHandle().getShoulderEntityRight().isEmpty()) {
-            Optional<Entity> shoulder = EntityType.create(this.getHandle().getShoulderEntityRight(), this.getHandle().level(), EntitySpawnReason.LOAD);
-            return shoulder.map(Entity::getBukkitEntity).orElse(null);
-        }
-
         return null;
     }
 
     @Override
     public void setShoulderEntityRight(org.bukkit.entity.Entity entity) {
-        this.getHandle().setShoulderEntityRight(entity == null ? new CompoundTag() : ((CraftEntity) entity).save());
         if (entity != null) {
-            entity.remove();
+            Preconditions.checkArgument(((CraftEntity) entity).getHandle().getType().canSerialize(), "Cannot set entity of type %s as a shoulder entity", entity.getType().getKey());
         }
+        throw new UnsupportedOperationException();
     }
 
     @Override

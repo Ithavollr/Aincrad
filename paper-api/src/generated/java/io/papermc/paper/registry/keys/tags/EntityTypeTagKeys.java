@@ -2,12 +2,11 @@ package io.papermc.paper.registry.keys.tags;
 
 import static net.kyori.adventure.key.Key.key;
 
-import io.papermc.paper.generated.GeneratedFrom;
+import io.papermc.paper.annotation.GeneratedClass;
 import io.papermc.paper.registry.RegistryKey;
 import io.papermc.paper.registry.tag.TagKey;
 import net.kyori.adventure.key.Key;
 import org.bukkit.entity.EntityType;
-import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -24,9 +23,15 @@ import org.jspecify.annotations.NullMarked;
         "SpellCheckingInspection"
 })
 @NullMarked
-@GeneratedFrom("1.21.5")
-@ApiStatus.Experimental
+@GeneratedClass
 public final class EntityTypeTagKeys {
+    /**
+     * {@code #minecraft:accepts_iron_golem_gift}
+     *
+     * @apiNote This field is version-dependant and may be removed in future Minecraft versions
+     */
+    public static final TagKey<EntityType> ACCEPTS_IRON_GOLEM_GIFT = create(key("accepts_iron_golem_gift"));
+
     /**
      * {@code #minecraft:aquatic}
      *
@@ -84,6 +89,13 @@ public final class EntityTypeTagKeys {
     public static final TagKey<EntityType> CAN_BREATHE_UNDER_WATER = create(key("can_breathe_under_water"));
 
     /**
+     * {@code #minecraft:can_equip_harness}
+     *
+     * @apiNote This field is version-dependant and may be removed in future Minecraft versions
+     */
+    public static final TagKey<EntityType> CAN_EQUIP_HARNESS = create(key("can_equip_harness"));
+
+    /**
      * {@code #minecraft:can_equip_saddle}
      *
      * @apiNote This field is version-dependant and may be removed in future Minecraft versions
@@ -105,6 +117,20 @@ public final class EntityTypeTagKeys {
     public static final TagKey<EntityType> CAN_WEAR_HORSE_ARMOR = create(key("can_wear_horse_armor"));
 
     /**
+     * {@code #minecraft:candidate_for_iron_golem_gift}
+     *
+     * @apiNote This field is version-dependant and may be removed in future Minecraft versions
+     */
+    public static final TagKey<EntityType> CANDIDATE_FOR_IRON_GOLEM_GIFT = create(key("candidate_for_iron_golem_gift"));
+
+    /**
+     * {@code #minecraft:cannot_be_pushed_onto_boats}
+     *
+     * @apiNote This field is version-dependant and may be removed in future Minecraft versions
+     */
+    public static final TagKey<EntityType> CANNOT_BE_PUSHED_ONTO_BOATS = create(key("cannot_be_pushed_onto_boats"));
+
+    /**
      * {@code #minecraft:deflects_projectiles}
      *
      * @apiNote This field is version-dependant and may be removed in future Minecraft versions
@@ -124,6 +150,13 @@ public final class EntityTypeTagKeys {
      * @apiNote This field is version-dependant and may be removed in future Minecraft versions
      */
     public static final TagKey<EntityType> FALL_DAMAGE_IMMUNE = create(key("fall_damage_immune"));
+
+    /**
+     * {@code #minecraft:followable_friendly_mobs}
+     *
+     * @apiNote This field is version-dependant and may be removed in future Minecraft versions
+     */
+    public static final TagKey<EntityType> FOLLOWABLE_FRIENDLY_MOBS = create(key("followable_friendly_mobs"));
 
     /**
      * {@code #minecraft:freeze_hurts_extra_types}
@@ -295,7 +328,6 @@ public final class EntityTypeTagKeys {
      * @param key the tag key's key
      * @return a new tag key
      */
-    @ApiStatus.Experimental
     public static TagKey<EntityType> create(final Key key) {
         return TagKey.create(RegistryKey.ENTITY_TYPE, key);
     }

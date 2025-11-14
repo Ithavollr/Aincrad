@@ -9,10 +9,8 @@ import net.minecraft.world.entity.animal.PigVariant;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.CraftRegistry;
 import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.util.Handleable;
 import org.bukkit.entity.Pig;
 import org.jspecify.annotations.NullMarked;
 
@@ -21,6 +19,11 @@ public class CraftPig extends CraftAnimals implements Pig {
 
     public CraftPig(CraftServer server, net.minecraft.world.entity.animal.Pig entity) {
         super(server, entity);
+    }
+
+    @Override
+    public net.minecraft.world.entity.animal.Pig getHandle() {
+        return (net.minecraft.world.entity.animal.Pig) this.entity;
     }
 
     @Override
@@ -94,21 +97,11 @@ public class CraftPig extends CraftAnimals implements Pig {
         }
 
         public static Holder<PigVariant> bukkitToMinecraftHolder(Variant bukkit) {
-            return CraftRegistry.bukkitToMinecraftHolder(bukkit, Registries.PIG_VARIANT);
+            return CraftRegistry.bukkitToMinecraftHolder(bukkit);
         }
 
         public CraftVariant(final Holder<PigVariant> holder) {
             super(holder);
         }
-    }
-
-    @Override
-    public net.minecraft.world.entity.animal.Pig getHandle() {
-        return (net.minecraft.world.entity.animal.Pig) this.entity;
-    }
-
-    @Override
-    public String toString() {
-        return "CraftPig";
     }
 }

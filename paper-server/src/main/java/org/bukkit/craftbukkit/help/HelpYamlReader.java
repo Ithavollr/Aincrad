@@ -32,11 +32,10 @@ public class HelpYamlReader {
             this.helpYaml = YamlConfiguration.loadConfiguration(helpYamlFile);
             this.helpYaml.options().copyDefaults(true);
             this.helpYaml.setDefaults(defaultConfig);
+            this.helpYaml.options().setHeader(defaultConfig.options().getHeader());
 
             try {
-                if (!helpYamlFile.exists()) {
-                    this.helpYaml.save(helpYamlFile);
-                }
+                this.helpYaml.save(helpYamlFile);
             } catch (IOException ex) {
                 server.getLogger().log(Level.SEVERE, "Could not save " + helpYamlFile, ex);
             }
@@ -79,7 +78,7 @@ public class HelpYamlReader {
                 ConfigurationSection section = indexTopics.getConfigurationSection(topicName);
                 String shortText = ChatColor.translateAlternateColorCodes(this.ALT_COLOR_CODE, section.getString("shortText", ""));
                 String preamble = ChatColor.translateAlternateColorCodes(this.ALT_COLOR_CODE, section.getString("preamble", ""));
-                String permission = ChatColor.translateAlternateColorCodes(this.ALT_COLOR_CODE, section.getString("permission", ""));
+                String permission = section.getString("permission", "");
                 List<String> commands = section.getStringList("commands");
                 topics.add(new CustomIndexHelpTopic(this.server.getHelpMap(), topicName, shortText, permission, commands, preamble));
             }

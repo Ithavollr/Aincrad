@@ -1,8 +1,8 @@
 --- a/net/minecraft/world/entity/NeutralMob.java
 +++ b/net/minecraft/world/entity/NeutralMob.java
-@@ -35,9 +_,11 @@
+@@ -36,9 +_,11 @@
          if (level instanceof ServerLevel serverLevel) {
-             UUID uuid = tag.read("AngryAt", UUIDUtil.CODEC).orElse(null);
+             UUID uuid = input.read("AngryAt", UUIDUtil.CODEC).orElse(null);
              this.setPersistentAngerTarget(uuid);
 -            if ((uuid != null ? serverLevel.getEntity(uuid) : null) instanceof LivingEntity livingEntity) {
 -                this.setTarget(livingEntity);
@@ -15,7 +15,7 @@
          }
      }
  
-@@ -90,7 +_,7 @@
+@@ -91,7 +_,7 @@
      default void stopBeingAngry() {
          this.setLastHurtByMob(null);
          this.setPersistentAngerTarget(null);
@@ -24,11 +24,11 @@
          this.setRemainingPersistentAngerTime(0);
      }
  
-@@ -101,8 +_,24 @@
+@@ -102,8 +_,24 @@
  
-     void setTarget(@Nullable LivingEntity livingEntity);
+     void setTarget(@Nullable LivingEntity target);
  
-+    boolean setTarget(@Nullable LivingEntity livingEntity, @Nullable org.bukkit.event.entity.EntityTargetEvent.TargetReason reason); // CraftBukkit
++    boolean setTarget(@Nullable LivingEntity target, @Nullable org.bukkit.event.entity.EntityTargetEvent.TargetReason reason); // CraftBukkit
 +
      boolean canAttack(LivingEntity entity);
  
@@ -43,8 +43,8 @@
 +            return;
 +        }
 +
-+        if (level.getEntity(uuid) instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
-+            this.setTarget(livingEntity, null);
++        if (level.getEntity(uuid) instanceof LivingEntity target) {
++            this.setTarget(target, null);
 +        }
 +    }
 +    // Paper end - Prevent entity loading causing async lookups

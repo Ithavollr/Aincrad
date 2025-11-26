@@ -50,6 +50,13 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 3. `git commit -m` with the patch message (it will become the patch filename)
 4. `./gradlew rebuildPatches` from root
 
+### Add Changes (feature)
+1. Make changes (in paper-server/src/minecraft/java)
+2. `git log` in the same directory, find the commit hash of the target feature 
+2. `git commit -a --fixup <target_hash>` in the java subfolder
+3. `git rebase -i --autosquash base`
+4. `./gradlew rebuildPatches` from root
+
 #### Add files for patching
 find the file needed using "view source" or manually in the gradle cache, add the full classpath to `./build-data/dev-imports.txt`, run the Gradle task "applyPatches", and you should be able to find your new NMS file in the `./Paper-Server` dir.
 

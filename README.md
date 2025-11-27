@@ -6,13 +6,14 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 - [ ] Implement Giants AI
 - [ ] Add new source of Levitation Effect
 - [x] Strongly suggest Villagers do not swim
-- [x] Make Shulkers aquatic
+- [x] Make Shulkers aquatic, fix shulker bullet water pathing
 - [x] Make Chorus fruit aquatic (TODO: add client mixin for ChorusNNBlock.getFluidState)
 - [ ] Implement [Purpur](https://github.com/PurpurMC/Purpur) rideables
 - [ ] Implement Villager Tasks (Armorer heals golems, Priest heals villagers)
 - [ ] Implement [Smallships](https://github.com/talhanation/smallships/tree/main)
 - [ ] Implement [Accessories](https://github.com/wisp-forest/accessories/)
 - [X] Implement [Sparkly](https://github.com/SparklyPower/SparklyPaper) per-world ticking
+- [ ] Integrate [Denizen](https://github.com/DenizenScript/Denizen) for _all_ entity goals & behaviours
 
 ## SETUP
 ### Getting Started (new machines)

@@ -4,6 +4,9 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 **Changes from PaperMC**
 - [X] Edit max speeds so minecart > horse > ice boat (paddles only, sails should still be fast)
 - [ ] Implement Giants AI
+- [ ] Add new source of Levitation Effect
+- [x] Strongly suggest Villagers do not swim
+- [x] Make Shulkers aquatic
 - [ ] Implement [Purpur](https://github.com/PurpurMC/Purpur) rideables
 - [ ] Implement Villager Tasks (Armorer heals golems, Priest heals villagers)
 - [ ] Implement [Smallships](https://github.com/talhanation/smallships/tree/main)

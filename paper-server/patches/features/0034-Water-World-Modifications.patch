@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Wed, 26 Nov 2025 21:48:45 -0500
+Subject: [PATCH] Water World Modifications
+
+
+diff --git a/net/minecraft/data/tags/EntityTypeTagsProvider.java b/net/minecraft/data/tags/EntityTypeTagsProvider.java
+index 38e1d2e113ead0524eb93ba89fa9a3b9900440c0..9d891e6bb63627708f7b7698e29c024ec9d405cd 100644
+--- a/net/minecraft/data/tags/EntityTypeTagsProvider.java
++++ b/net/minecraft/data/tags/EntityTypeTagsProvider.java
+@@ -64,6 +64,7 @@ public class EntityTypeTagsProvider extends IntrinsicHolderTagsProvider<EntityTy
+                 EntityType.COD,
+                 EntityType.PUFFERFISH,
+                 EntityType.SALMON,
++                EntityType.SHULKER,
+                 EntityType.SQUID,
+                 EntityType.TROPICAL_FISH,
+                 EntityType.TADPOLE,
+diff --git a/net/minecraft/world/entity/monster/Shulker.java b/net/minecraft/world/entity/monster/Shulker.java
+index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253b32d4c88 100644
+--- a/net/minecraft/world/entity/monster/Shulker.java
++++ b/net/minecraft/world/entity/monster/Shulker.java
+@@ -165,10 +165,29 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+         compound.putByte("Peek", this.entityData.get(DATA_PEEK_ID));
+         compound.putByte("Color", this.entityData.get(DATA_COLOR_ID));
+     }
++    // Aincrad start - shulkers are now aquatic
++    protected void handleAirSupply(int airSupply) {
++        if (this.isAlive() && !this.isInWaterRainOrBubble()) {
++            this.setAirSupply(airSupply - 1);
++            if (this.getAirSupply() == -20) {
++                this.setAirSupply(0);
++                this.hurt(this.damageSources().dryOut(), 2.0F);
++            }
++        } else {
++            this.setAirSupply(this.getMaxAirSupply());
++        }
++    }
+ 
++    @Override
++    public int getMaxAirSupply() {
++        return 550; // CraftBukkit - SPIGOT-6907: re-implement LivingEntity#setMaximumAir()
++    }
++    // Aincrad end
+     @Override
+     public void tick() {
++        int air = this.getAirSupply(); // Aincrad - aquatic shulkers
+         super.tick();
++        this.handleAirSupply(air); // Aincrad - aquatic shulkers
+         if (!this.level().isClientSide && !this.isPassenger() && !this.canStayAt(this.blockPosition(), this.getAttachFace())) {
+             this.findNewAttachment();
+         }
+@@ -370,7 +389,7 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+ 
+     private boolean isPositionBlocked(BlockPos pos) {
+         BlockState blockState = this.level().getBlockState(pos);
+-        if (blockState.isAir()) {
++        if (blockState.is(Blocks.WATER)) {
+             return false;
+         } else {
+             boolean flag = blockState.is(Blocks.MOVING_PISTON) && pos.equals(this.blockPosition());
+@@ -389,7 +408,7 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+                     Mth.randomBetweenInclusive(this.random, -8, 8)
+                 );
+                 if (blockPos1.getY() > this.level().getMinY()
+-                    && this.level().isEmptyBlock(blockPos1)
++                    && this.level().isWaterAt(blockPos1) // Aincrad - search for water blocks
+                     && this.level().getWorldBorder().isWithinBounds(blockPos1)
+                     && this.level().noCollision(this, new AABB(blockPos1).deflate(1.0E-6))) {
+                     Direction direction = this.findAttachableSurface(blockPos1);
+diff --git a/net/minecraft/world/entity/npc/Villager.java b/net/minecraft/world/entity/npc/Villager.java
+index 2b83262e4a13eae86df82913ce4f3121e3631a43..7b7c1aaec71b67d556822d2998e27ff22360ce72 100644
+--- a/net/minecraft/world/entity/npc/Villager.java
++++ b/net/minecraft/world/entity/npc/Villager.java
+@@ -86,6 +86,9 @@ import net.minecraft.world.item.Items;
+ import net.minecraft.world.item.trading.MerchantOffer;
+ import net.minecraft.world.item.trading.MerchantOffers;
+ import net.minecraft.world.level.Level;
++import net.minecraft.tags.FluidTags;
++import net.minecraft.world.level.material.FluidState;
++import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.ServerLevelAccessor;
+ import net.minecraft.world.phys.AABB;
+ import org.slf4j.Logger;
+@@ -283,6 +286,22 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+         super.inactiveTick();
+     }
+     // Paper end - EAR 2
++    // Aincrad start - avoid water and TODO: avoid cliffs
++    @Override
++    public float getWalkTargetValue(BlockPos pos, net.minecraft.world.level.LevelReader level) {
++        BlockState state = level.getBlockState(pos);
++        FluidState fluid = state.getFluidState();
++        if (fluid.is(FluidTags.WATER) || fluid.is(FluidTags.LAVA)) {
++            return -20.0F; // Avoid if it's water or lava
++        }
++        BlockPos above = pos.above();
++        FluidState upperFluid = level.getFluidState(above);
++        if (upperFluid.is(FluidTags.WATER)) {
++            return -15.0F; // Avoid if it's below water or lava
++        }
++        return super.getWalkTargetValue(pos);
++    }
++    // Aincrad end
+ 
+     @Override
+     protected void customServerAiStep(ServerLevel level) {
+diff --git a/net/minecraft/world/entity/projectile/ShulkerBullet.java b/net/minecraft/world/entity/projectile/ShulkerBullet.java
+index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69395b50f5 100644
+--- a/net/minecraft/world/entity/projectile/ShulkerBullet.java
++++ b/net/minecraft/world/entity/projectile/ShulkerBullet.java
+@@ -142,32 +142,32 @@ public class ShulkerBullet extends Projectile {
+             BlockPos blockPos1 = this.blockPosition();
+             List<Direction> list = Lists.newArrayList();
+             if (axis != Direction.Axis.X) {
+-                if (blockPos1.getX() < blockPos.getX() && this.level().isEmptyBlock(blockPos1.east())) {
++                if (blockPos1.getX() < blockPos.getX() && this.level().isEmptyOrWaterBlock(blockPos1.east())) {
+                     list.add(Direction.EAST);
+-                } else if (blockPos1.getX() > blockPos.getX() && this.level().isEmptyBlock(blockPos1.west())) {
++                } else if (blockPos1.getX() > blockPos.getX() && this.level().isEmptyOrWaterBlock(blockPos1.west())) {
+                     list.add(Direction.WEST);
+                 }
+             }
+ 
+             if (axis != Direction.Axis.Y) {
+-                if (blockPos1.getY() < blockPos.getY() && this.level().isEmptyBlock(blockPos1.above())) {
++                if (blockPos1.getY() < blockPos.getY() && this.level().isEmptyOrWaterBlock(blockPos1.above())) {
+                     list.add(Direction.UP);
+-                } else if (blockPos1.getY() > blockPos.getY() && this.level().isEmptyBlock(blockPos1.below())) {
++                } else if (blockPos1.getY() > blockPos.getY() && this.level().isEmptyOrWaterBlock(blockPos1.below())) {
+                     list.add(Direction.DOWN);
+                 }
+             }
+ 
+             if (axis != Direction.Axis.Z) {
+-                if (blockPos1.getZ() < blockPos.getZ() && this.level().isEmptyBlock(blockPos1.south())) {
++                if (blockPos1.getZ() < blockPos.getZ() && this.level().isEmptyOrWaterBlock(blockPos1.south())) {
+                     list.add(Direction.SOUTH);
+-                } else if (blockPos1.getZ() > blockPos.getZ() && this.level().isEmptyBlock(blockPos1.north())) {
++                } else if (blockPos1.getZ() > blockPos.getZ() && this.level().isEmptyOrWaterBlock(blockPos1.north())) {
+                     list.add(Direction.NORTH);
+                 }
+             }
+ 
+             direction = Direction.getRandom(this.random);
+             if (list.isEmpty()) {
+-                for (int i = 5; !this.level().isEmptyBlock(blockPos1.relative(direction)) && i > 0; i--) {
++                for (int i = 5; !this.level().isEmptyOrWaterBlock(blockPos1.relative(direction)) && i > 0; i--) {
+                     direction = Direction.getRandom(this.random);
+                 }
+             } else {
+@@ -315,7 +315,7 @@ public class ShulkerBullet extends Projectile {
+             }
+ 
+             if (entity instanceof LivingEntity livingEntity1) {
+-                livingEntity1.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(owner, this), org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK); // CraftBukkit
++                livingEntity1.addEffect(new MobEffectInstance(MobEffects.POISON, 170), MoreObjects.firstNonNull(owner, this), org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK); // CraftBukkit
+             }
+         }
+     }
+diff --git a/net/minecraft/world/level/LevelReader.java b/net/minecraft/world/level/LevelReader.java
+index 26c8c1e5598daf3550aef05b12218c47bda6618b..0eb0f8bcf3c1dbb3703cdd74d9cef6fbf4a0f006 100644
+--- a/net/minecraft/world/level/LevelReader.java
++++ b/net/minecraft/world/level/LevelReader.java
+@@ -100,6 +100,10 @@ public interface LevelReader extends ca.spottedleaf.moonrise.patches.chunk_syste
+         return this.getBlockState(pos).isAir();
+     }
+ 
++    default boolean isEmptyOrWaterBlock(BlockPos pos) {
++        return this.getBlockState(pos).isAir() || this.getFluidState(pos).is(FluidTags.WATER);
++    }
++
+     default boolean canSeeSkyFromBelowWater(BlockPos pos) {
+         if (pos.getY() >= this.getSeaLevel()) {
+             return this.canSeeSky(pos);

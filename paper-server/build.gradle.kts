@@ -303,6 +303,7 @@ tasks.registerRunTask("runServer") {
     description = "Spin up a test server from the Mojang mapped server jar"
     classpath(tasks.includeMappings.flatMap { it.outputJar })
     classpath(configurations.runtimeClasspath)
+    systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", false) // disable adventure legacy code warnings
 }
 
 tasks.registerRunTask("runReobfServer") {

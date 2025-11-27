@@ -7,7 +7,7 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 - [ ] Add new source of Levitation Effect
 - [x] Strongly suggest Villagers do not swim
 - [x] Make Shulkers aquatic
-- [x] Make Chorus fruit aquation (TODO: add client mixin for ChorusNNBlock.getFluidState)
+- [x] Make Chorus fruit aquatic (TODO: add client mixin for ChorusNNBlock.getFluidState)
 - [ ] Implement [Purpur](https://github.com/PurpurMC/Purpur) rideables
 - [ ] Implement Villager Tasks (Armorer heals golems, Priest heals villagers)
 - [ ] Implement [Smallships](https://github.com/talhanation/smallships/tree/main)

@@ -14,6 +14,9 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 - [ ] Implement [Accessories](https://github.com/wisp-forest/accessories/)
 - [X] Implement [Sparkly](https://github.com/SparklyPower/SparklyPaper) per-world ticking
 - [ ] Integrate [Denizen](https://github.com/DenizenScript/Denizen) for _all_ entity goals & behaviours
+  - [ ] Merge NMS/world/entity/ai/behavior
+  - [ ] Merge NMS/world/entity/ai/goal
+- [ ] Find out how Brain.java is leaking default-world POI's to serverLevelTickExecutors (so far detected in `SetWalkTargetFromBlockMemory` & `AssignProfessionFromJobSite`)
 
 ## SETUP
 ### Getting Started (new machines)

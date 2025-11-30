@@ -68,43 +68,57 @@ index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253
                      && this.level().getWorldBorder().isWithinBounds(blockPos1)
                      && this.level().noCollision(this, new AABB(blockPos1).deflate(1.0E-6))) {
                      Direction direction = this.findAttachableSurface(blockPos1);
+diff --git a/net/minecraft/world/entity/npc/AbstractVillager.java b/net/minecraft/world/entity/npc/AbstractVillager.java
+index a71d16d968bb90fd7aca6f01a3dd56df4f9a7ce6..21c87d0a13240ee33c266c875d1711ee90f3e57e 100644
+--- a/net/minecraft/world/entity/npc/AbstractVillager.java
++++ b/net/minecraft/world/entity/npc/AbstractVillager.java
+@@ -64,6 +64,8 @@ public abstract class AbstractVillager extends AgeableMob implements InventoryCa
+     public AbstractVillager(EntityType<? extends AbstractVillager> entityType, Level level) {
+         super(entityType, level);
+         this.setPathfindingMalus(PathType.DANGER_FIRE, 16.0F);
++        this.setPathfindingMalus(PathType.WATER_BORDER, 4.0F);
++        this.setPathfindingMalus(PathType.WATER, -1.0F);
+         this.setPathfindingMalus(PathType.DAMAGE_FIRE, -1.0F);
+     }
+ 
 diff --git a/net/minecraft/world/entity/npc/Villager.java b/net/minecraft/world/entity/npc/Villager.java
-index 2b83262e4a13eae86df82913ce4f3121e3631a43..7b7c1aaec71b67d556822d2998e27ff22360ce72 100644
+index 2b83262e4a13eae86df82913ce4f3121e3631a43..30125b83b2af193d33e45ae307a0f25a6d426bb9 100644
 --- a/net/minecraft/world/entity/npc/Villager.java
 +++ b/net/minecraft/world/entity/npc/Villager.java
-@@ -86,6 +86,9 @@ import net.minecraft.world.item.Items;
- import net.minecraft.world.item.trading.MerchantOffer;
- import net.minecraft.world.item.trading.MerchantOffers;
- import net.minecraft.world.level.Level;
-+import net.minecraft.tags.FluidTags;
-+import net.minecraft.world.level.material.FluidState;
-+import net.minecraft.world.level.block.state.BlockState;
- import net.minecraft.world.level.ServerLevelAccessor;
- import net.minecraft.world.phys.AABB;
- import org.slf4j.Logger;
-@@ -283,6 +286,22 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+@@ -13,6 +13,9 @@ import java.util.Map;
+ import java.util.Optional;
+ import java.util.function.BiPredicate;
+ import javax.annotation.Nullable;
++import net.minecraft.world.phys.Vec3;
++import net.minecraft.world.entity.ai.util.LandRandomPos;
++import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.GlobalPos;
+ import net.minecraft.core.Holder;
+@@ -283,6 +286,15 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
          super.inactiveTick();
      }
      // Paper end - EAR 2
-+    // Aincrad start - avoid water and TODO: avoid cliffs
++    // Aincrad start - avoid water
 +    @Override
 +    public float getWalkTargetValue(BlockPos pos, net.minecraft.world.level.LevelReader level) {
-+        BlockState state = level.getBlockState(pos);
-+        FluidState fluid = state.getFluidState();
-+        if (fluid.is(FluidTags.WATER) || fluid.is(FluidTags.LAVA)) {
-+            return -20.0F; // Avoid if it's water or lava
-+        }
-+        BlockPos above = pos.above();
-+        FluidState upperFluid = level.getFluidState(above);
-+        if (upperFluid.is(FluidTags.WATER)) {
-+            return -15.0F; // Avoid if it's below water or lava
-+        }
-+        return super.getWalkTargetValue(pos);
++        float val = 0.0F;
++        if (level.getBlockState(pos).is(Blocks.DIRT_PATH)) {val = 7.0F;}
++        if (level.getBlockState(pos).is(Blocks.CAMPFIRE)) {val = 5.0F;} // this is needed for the floating villages
++        return val;
 +    }
 +    // Aincrad end
  
      @Override
      protected void customServerAiStep(ServerLevel level) {
+@@ -338,7 +350,6 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+         if (this.getUnhappyCounter() > 0) {
+             this.setUnhappyCounter(this.getUnhappyCounter() - 1);
+         }
+-
+         this.maybeDecayGossip();
+     }
+ 
 diff --git a/net/minecraft/world/entity/projectile/ShulkerBullet.java b/net/minecraft/world/entity/projectile/ShulkerBullet.java
 index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69395b50f5 100644
 --- a/net/minecraft/world/entity/projectile/ShulkerBullet.java

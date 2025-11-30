@@ -3690,6 +3690,23 @@ index 90eeb026605b5f82b0d9f3be17de7c9e3cd45b13..d0a58198b5092d8318949b5418360664
                              return false;
                          } else {
                              potentialJobSite.erase();
+diff --git a/net/minecraft/world/entity/ai/behavior/SetWalkTargetFromBlockMemory.java b/net/minecraft/world/entity/ai/behavior/SetWalkTargetFromBlockMemory.java
+index 02f5c0f988b3dec249a4a88e23d4859ff0798599..f38d1cb96e67dbfd8a4f3c37c42f23dcc44f923c 100644
+--- a/net/minecraft/world/entity/ai/behavior/SetWalkTargetFromBlockMemory.java
++++ b/net/minecraft/world/entity/ai/behavior/SetWalkTargetFromBlockMemory.java
+@@ -23,7 +23,11 @@ public class SetWalkTargetFromBlockMemory {
+                 .apply(instance, (cantReachWalkTargetSince, walkTarget, blockTarget) -> (level, villager, gameTime) -> {
+                     GlobalPos globalPos = instance.get(blockTarget);
+                     Optional<Long> optional = instance.tryGet(cantReachWalkTargetSince);
+-                    if (globalPos.dimension() == level.dimension()
++                    if (!globalPos.dimension().equals(level.dimension())) { // Aincrad - safeguard against cross-world poi access
++                        villager.releasePoi(blockTargetMemory);
++                        blockTarget.erase();
++                        return false;
++                    } else if (globalPos.dimension() == level.dimension()
+                         && (!optional.isPresent() || level.getGameTime() - optional.get() <= tooLongUnreachableDuration)) {
+                         if (globalPos.pos().distManhattan(villager.blockPosition()) > tooFarDistance) {
+                             Vec3 vec3 = null;
 diff --git a/net/minecraft/world/inventory/AbstractContainerMenu.java b/net/minecraft/world/inventory/AbstractContainerMenu.java
 index 50af953a4698a3c6e16b840fab764dd733b3fbc9..ebc60d94dfb9a48086ceea83b9776941aec06b0f 100644
 --- a/net/minecraft/world/inventory/AbstractContainerMenu.java

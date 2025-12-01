@@ -7,9 +7,9 @@
 name: Gradle Build
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "seed" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "seed" ]
 
 jobs:
   build:

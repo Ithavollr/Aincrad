@@ -2953,7 +2953,7 @@ index f6518e29f805018c72222f5aaa7b662071665b65..df69cd598d0cf9dbba739326e2f1aed1
      public final int rateLimitPacketsPerSecond = this.get("rate-limit", 0);
      public final int viewDistance = this.get("view-distance", 10);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c56769263 100644
+index e6733c43d582c1c632ad0e6abc99e88e337c8911..1c1eb9fb68387a333c7fb56d2155306b2991256c 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -3038,7 +3038,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
          this.chunkSource.getGeneratorState().ensureStructuresGenerated();
          this.portalForcer = new PortalForcer(this);
          this.updateSkyBrightness();
-@@ -681,6 +697,37 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -681,6 +697,39 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          this.chunkDataController = new ca.spottedleaf.moonrise.patches.chunk_system.io.datacontroller.ChunkDataController((ServerLevel)(Object)this, this.chunkTaskScheduler);
          // Paper end - rewrite chunk system
          this.getCraftServer().addWorld(this.getWorld()); // CraftBukkit
@@ -3046,6 +3046,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
 +    }
 +
 +    private void prepareLevel() {
++        server.forceTicks = true;
 +        LOGGER.info("Preparing start region for dimension {}", this.dimension().location());
 +        BlockPos sharedSpawnPos = this.getSharedSpawnPos();
 +        this.progressListener.updateSpawnPos(new ChunkPos(sharedSpawnPos));
@@ -3073,10 +3074,11 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
 +        // Phase 3: Finalize
 +        this.progressListener.stop();
 +        this.setSpawnSettings(this.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && ((DedicatedServer) server).settings.getProperties().spawnMonsters);
++        server.forceTicks = false;
      }
  
      // Paper start
-@@ -713,7 +760,153 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -713,7 +762,150 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.structureManager;
      }
  
@@ -3199,8 +3201,6 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
 +                        }
 +                        throw new net.minecraft.ReportedException(crashReport);
 +                    }
-+                    // setup for prepareLevel()
-+                    server.forceTicks = true;
 +                    break;
 +                case 8:
 +                    this.prepareLevel();
@@ -3215,7 +3215,6 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
 +                    break;
 +                case 9: // declare the world initialized
 +                    // teardown prepareLevel()
-+                    server.forceTicks = false;
 +                    serverLevelData.setInitialized(true);
 +                    this.isInitializingLevel = false;
 +                    break;
@@ -3230,7 +3229,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
          ProfilerFiller profilerFiller = Profiler.get();
          this.handlingTick = true;
          TickRateManager tickRateManager = this.tickRateManager();
-@@ -1219,8 +1412,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1219,8 +1411,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fluidState.tick(this, pos, blockState);
          }
          // Paper start - rewrite chunk system
@@ -3241,7 +3240,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
          }
          // Paper end - rewrite chunk system
  
-@@ -1232,8 +1425,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1232,8 +1424,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              blockState.tick(this, pos, this.random);
          }
          // Paper start - rewrite chunk system
@@ -3252,7 +3251,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
          }
          // Paper end - rewrite chunk system
  
-@@ -1493,6 +1686,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1493,6 +1685,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void addPlayer(ServerPlayer player) {
@@ -3260,7 +3259,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..2682268f8c1510de7b02f14ce234760c
          Entity entity = this.getEntities().get(player.getUUID());
          if (entity != null) {
              LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
-@@ -1505,7 +1699,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1505,7 +1698,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
      // CraftBukkit start
      private boolean addEntity(Entity entity, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason spawnReason) {

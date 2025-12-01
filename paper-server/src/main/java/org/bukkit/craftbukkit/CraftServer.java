@@ -1467,7 +1467,7 @@ public final class CraftServer implements Server {
         serverLevel.setSpawnSettings(true);
         // Paper - Put world into worldlist before initing the world; move up
 
-        this.getServer().prepareLevels(serverLevel.getChunkSource().chunkMap.progressListener, serverLevel);
+        //this.getServer().prepareLevels(serverLevel.getChunkSource().chunkMap.progressListener, serverLevel);
         io.papermc.paper.FeatureHooks.tickEntityManager(serverLevel); // SPIGOT-6526: Load pending entities so they are available to the API // Paper - chunk system
 
         this.pluginManager.callEvent(new WorldLoadEvent(serverLevel.getWorld()));

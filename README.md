@@ -17,7 +17,7 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
   - [ ] Merge NMS/world/entity/ai/behavior
   - [ ] Merge NMS/world/entity/ai/goal
 - [ ] Find out how Brain.java is leaking default-world POI's to serverLevelTickExecutors (so far detected in `SetWalkTargetFromBlockMemory` & `AssignProfessionFromJobSite`)
-  - [ ] Lobotomize Brains??
+  - [ ] Re-implement (SmartBrainLib)[https://github.com/Tslat/SmartBrainLib]
 
 ## SETUP
 ### Getting Started (new machines)

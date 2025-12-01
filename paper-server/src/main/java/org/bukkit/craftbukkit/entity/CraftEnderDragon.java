@@ -6,9 +6,7 @@ import java.util.Set;
 import net.minecraft.world.entity.boss.EnderDragonPart;
 import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
 import org.bukkit.boss.BossBar;
-import org.bukkit.boss.DragonBattle;
 import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.boss.CraftDragonBattle;
 import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.EnderDragon.Phase;
@@ -60,13 +58,7 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
 
     @Override
     public BossBar getBossBar() {
-        DragonBattle battle = this.getDragonBattle();
-        return battle != null ? battle.getBossBar() : null;
-    }
-
-    @Override
-    public DragonBattle getDragonBattle() {
-        return this.getHandle().getDragonFight() != null ? new CraftDragonBattle(this.getHandle().getDragonFight()) : null;
+        return null;
     }
 
     @Override

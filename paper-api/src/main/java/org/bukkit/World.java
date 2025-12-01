@@ -15,7 +15,6 @@ import java.util.function.Predicate;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.boss.DragonBattle;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -4257,21 +4256,6 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
      */
     @NotNull
     public List<Raid> getRaids();
-
-    /**
-     * Get the {@link DragonBattle} associated with this world.
-     *
-     * If this world's environment is not {@link Environment#THE_END}, null will
-     * be returned.
-     * <p>
-     * If an end world, a dragon battle instance will be returned regardless of
-     * whether or not a dragon is present in the world or a fight sequence has
-     * been activated. The dragon battle instance acts as a state holder.
-     *
-     * @return the dragon battle instance
-     */
-    @Nullable
-    public DragonBattle getEnderDragonBattle();
 
     /**
      * Get all {@link FeatureFlag} enabled in this world.

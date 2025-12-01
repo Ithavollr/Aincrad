@@ -96,13 +96,11 @@ import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.boss.DragonBattle;
 import org.bukkit.craftbukkit.block.CraftBiome;
 import org.bukkit.craftbukkit.block.CraftBlock;
 import org.bukkit.craftbukkit.block.CraftBlockState;
 import org.bukkit.craftbukkit.block.CraftBlockType;
 import org.bukkit.craftbukkit.block.data.CraftBlockData;
-import org.bukkit.craftbukkit.boss.CraftDragonBattle;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.generator.structure.CraftGeneratedStructure;
@@ -2366,11 +2364,6 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     public List<Raid> getRaids() {
         Raids persistentRaid = this.world.getRaids();
         return persistentRaid.raidMap.values().stream().map(CraftRaid::new).collect(Collectors.toList());
-    }
-
-    @Override
-    public DragonBattle getEnderDragonBattle() {
-        return (this.getHandle().getDragonFight() == null) ? null : new CraftDragonBattle(this.getHandle().getDragonFight());
     }
 
     @Override

@@ -59,7 +59,7 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 3. `git commit -m` with the patch message (it will become the patch filename)
 4. `./gradlew rebuildPatches` from root
 
-### Add Changes (feature)
+### Fixup Changes (feature)
 1. Make changes (in paper-server/src/minecraft/java)
 2. `git log` in the same directory, find the commit hash of the target feature 
 2. `git commit -a --fixup <target_hash>` in the java subfolder

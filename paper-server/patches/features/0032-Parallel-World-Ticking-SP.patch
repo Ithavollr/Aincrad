@@ -2921,7 +2921,7 @@ index f6518e29f805018c72222f5aaa7b662071665b65..df69cd598d0cf9dbba739326e2f1aed1
      public final int rateLimitPacketsPerSecond = this.get("rate-limit", 0);
      public final int viewDistance = this.get("view-distance", 10);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d0a1909e2 100644
+index e6733c43d582c1c632ad0e6abc99e88e337c8911..8e42f16bcf112f4bc539dd305b59ea8c64145e6f 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -3006,7 +3006,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
          this.chunkSource.getGeneratorState().ensureStructuresGenerated();
          this.portalForcer = new PortalForcer(this);
          this.updateSkyBrightness();
-@@ -681,6 +697,37 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -681,6 +697,27 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          this.chunkDataController = new ca.spottedleaf.moonrise.patches.chunk_system.io.datacontroller.ChunkDataController((ServerLevel)(Object)this, this.chunkTaskScheduler);
          // Paper end - rewrite chunk system
          this.getCraftServer().addWorld(this.getWorld()); // CraftBukkit
@@ -3018,16 +3018,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
 +        BlockPos sharedSpawnPos = this.getSharedSpawnPos();
 +        this.progressListener.updateSpawnPos(new ChunkPos(sharedSpawnPos));
 +        this.setDefaultSpawnPos(sharedSpawnPos, this.getSharedSpawnAngle());
-+        int spawnChunkRadius = this.getGameRules().getInt(GameRules.RULE_SPAWN_CHUNK_RADIUS);
-+        int requiredChunks = spawnChunkRadius > 0 ? Mth.square(ChunkProgressListener.calculateDiameter(spawnChunkRadius)) : 0;
-+        ServerChunkCache chunkSource = this.getChunkSource();
-+
-+        // Phase 1: Generate spawn chunks
-+        if (chunkSource.getTickingGenerated() < requiredChunks) {
-+            return; //continue in next tick
-+        }
-+
-+        // Phase 2: Process forced chunks
++        // Process forced chunks
 +        ForcedChunksSavedData forcedChunksSavedData = this.getDataStorage().get(ForcedChunksSavedData.factory(), "chunks");
 +        if (forcedChunksSavedData != null) {
 +            LongIterator longIterator = forcedChunksSavedData.getChunks().iterator();
@@ -3037,14 +3028,13 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
 +                this.getChunkSource().updateChunkForced(chunkPos, true);
 +            }
 +        }
-+
-+        // Phase 3: Finalize
++        // Finalize
 +        this.progressListener.stop();
 +        this.setSpawnSettings(this.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && ((DedicatedServer) server).settings.getProperties().spawnMonsters);
      }
  
      // Paper start
-@@ -713,7 +760,150 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -713,7 +750,150 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.structureManager;
      }
  
@@ -3195,7 +3185,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
          ProfilerFiller profilerFiller = Profiler.get();
          this.handlingTick = true;
          TickRateManager tickRateManager = this.tickRateManager();
-@@ -1219,8 +1409,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1219,8 +1399,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fluidState.tick(this, pos, blockState);
          }
          // Paper start - rewrite chunk system
@@ -3206,7 +3196,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
          }
          // Paper end - rewrite chunk system
  
-@@ -1232,8 +1422,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1232,8 +1412,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              blockState.tick(this, pos, this.random);
          }
          // Paper start - rewrite chunk system
@@ -3217,7 +3207,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
          }
          // Paper end - rewrite chunk system
  
-@@ -1493,6 +1683,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1493,6 +1673,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void addPlayer(ServerPlayer player) {
@@ -3225,7 +3215,7 @@ index e6733c43d582c1c632ad0e6abc99e88e337c8911..be806260bd694816d7018843cf99f81d
          Entity entity = this.getEntities().get(player.getUUID());
          if (entity != null) {
              LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
-@@ -1505,7 +1696,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1505,7 +1686,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
      // CraftBukkit start
      private boolean addEntity(Entity entity, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason spawnReason) {
@@ -4216,6 +4206,20 @@ index 761fdcd4a4e18f45547afd8edff44f61c6eeacb4..17fb7161171cbe44d145cf0065826f49
          // CraftBukkit end
          int y = pos.getY();
          LevelChunkSection section = this.getSection(this.getSectionIndex(y));
+diff --git a/net/minecraft/world/level/chunk/status/ChunkStatus.java b/net/minecraft/world/level/chunk/status/ChunkStatus.java
+index c9d8a1c0a75c34ccd9f5cead02cccd776276f3cb..babcb84a0916df3e2d147c228abdc7a69aea9d30 100644
+--- a/net/minecraft/world/level/chunk/status/ChunkStatus.java
++++ b/net/minecraft/world/level/chunk/status/ChunkStatus.java
+@@ -17,6 +17,9 @@ public class ChunkStatus implements ca.spottedleaf.moonrise.patches.chunk_system
+     public static final EnumSet<Heightmap.Types> FINAL_HEIGHTMAPS = EnumSet.of(
+         Heightmap.Types.OCEAN_FLOOR, Heightmap.Types.WORLD_SURFACE, Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES
+     );
++    // Aincrad - TO-DO: Prevent chasm/cliff villages
++    // Current Chain:
++    // EMPTY -> STRUCTURE_STARTS -> structure_references -> biomes -> noise -> surface -> carvers -> features -> initialize_light -> light -> spawn -> full
+     public static final ChunkStatus EMPTY = register("empty", null, WORLDGEN_HEIGHTMAPS, ChunkType.PROTOCHUNK);
+     public static final ChunkStatus STRUCTURE_STARTS = register("structure_starts", EMPTY, WORLDGEN_HEIGHTMAPS, ChunkType.PROTOCHUNK);
+     public static final ChunkStatus STRUCTURE_REFERENCES = register("structure_references", STRUCTURE_STARTS, WORLDGEN_HEIGHTMAPS, ChunkType.PROTOCHUNK);
 diff --git a/net/minecraft/world/level/entity/EntityTickList.java b/net/minecraft/world/level/entity/EntityTickList.java
 index 423779a2b690f387a4f0bd07b97b50e0baefda76..24f9632e73d73c2ad68ebf30eb0e4cca7befae2d 100644
 --- a/net/minecraft/world/level/entity/EntityTickList.java

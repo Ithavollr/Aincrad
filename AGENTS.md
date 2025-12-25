@@ -1,26 +1,20 @@
 # AGENT INSTRUCTIONS
 
 ## Purpose
-This repository is a multithreaded fork of the Paper high-performance Minecraft server implementation.
-Changes that break vanilla behavior, plugin compatibility, or upstream mergeability are unacceptable unless explicitly requested.
+This repository is a multithreaded fork of the Paper high-performance Minecraft server implementation focused on stability and new custom content.
 
-## High-Level Constraints
-- **Do not change behavior unless explicitly instructed**
-- **Do not introduce new dependencies without approval**
-If requirements are ambiguous, stop and ask.
+## High-Level Directives
+- **Maintain an updated list of files you have read in your context**
+- **After reading a file, IMMEDIATELY summarize your findings and next actions**
+- **STAY FOCUSED! After each action you should ask yourself "how does this relate to the initial request?"**
 
-## Memory Bank Protocol
-I am an agent with a limited context window. To maintain continuity:
-
-1. **Start of Task** I MUST read `docs/memory.md` to understand the current state.
-2. **End of Task** Before finishing, I MUST update, or ask the user to update `memory.md` with:
-    - What was accomplished.
-    - What is left to do.
-    - Any architectural decisions made.
-
-## Summary Directive
-
-Be conservative.
-Be explicit.
-Minimize diff.
-Preserve intent.
+## Key Files and Project Structure
+- Original Minecraft code is located at paper-server/src/minecraft/java/net/minecraft
+  - This code already has all the patches applied from the paper-server/patches dir.
+  - Entrypoint of the Java application is the runServer() method in paper-server/src/minecraft/java/net/minecraft/server/MinecraftServer.java
+  - Most main loop logic for the game gets called from either tickServer() or tickChildren() in paper-server/src/minecraft/java/net/minecraft/server/MinecraftServer.java
+  - **Multi-threading**
+    - The Vanilla chunk system has been replaced with a multi-threaded version, "ca.spottedleaf.moonrise".
+    - World ticking has been parallelized by assigning each ServerLevel instance its own tickExecutor from org.evlis.ServerLevelTickExecutorThreadFactory, limited by a global serverLevelTickingSemaphore that is initialized in paper-server/src/minecraft/java/net/minecraft/server/dedicated/DedicatedServer.java
+    - World creation/initialization has been moved out of MinecraftServer.java and into ServerLevel.java to allow creation and execution to happen off the main thread.
+- The PaperAPI code is under paper-api/src/main/java

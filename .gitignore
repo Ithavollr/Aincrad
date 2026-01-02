@@ -50,3 +50,6 @@ paper-api-generator.settings.gradle.kts
 
 # Don't track patched vanilla submodules
 paper-server/src/minecraft/
+
+# Other server implementations:
+purpur-server/

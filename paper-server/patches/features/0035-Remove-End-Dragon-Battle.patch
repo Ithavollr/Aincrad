@@ -5,7 +5,7 @@ Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 8e42f16bcf112f4bc539dd305b59ea8c64145e6f..4a0d2de612fdef96b701d358c804ccd4f25a064b 100644
+index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a526181f2 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -138,7 +138,6 @@ import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
@@ -36,7 +36,7 @@ index 8e42f16bcf112f4bc539dd305b59ea8c64145e6f..4a0d2de612fdef96b701d358c804ccd4
  
          this.sleepStatus = new SleepStatus();
          this.gameEventDispatcher = new GameEventDispatcher(this);
-@@ -727,12 +720,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -737,12 +730,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
      // Paper end
  
@@ -49,7 +49,7 @@ index 8e42f16bcf112f4bc539dd305b59ea8c64145e6f..4a0d2de612fdef96b701d358c804ccd4
      public void setWeatherParameters(int clearTime, int weatherTime, boolean isRaining, boolean isThundering) {
          this.serverLevelData.setClearWeatherTime(clearTime);
          this.serverLevelData.setRainTime(weatherTime);
-@@ -968,11 +955,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -978,11 +965,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
          if (flag || this.emptyTime++ < 300) {
              profilerFiller.push("entities");
@@ -61,7 +61,7 @@ index 8e42f16bcf112f4bc539dd305b59ea8c64145e6f..4a0d2de612fdef96b701d358c804ccd4
  
              io.papermc.paper.entity.activation.ActivationRange.activateEntities(this); // Paper - EAR
              this.entityTickList
-@@ -1561,10 +1543,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1571,10 +1553,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void saveLevelData(boolean join) {
@@ -72,7 +72,7 @@ index 8e42f16bcf112f4bc539dd305b59ea8c64145e6f..4a0d2de612fdef96b701d358c804ccd4
          DimensionDataStorage dataStorage = this.getChunkSource().getDataStorage();
          if (join) {
              dataStorage.saveAndJoin();
-@@ -2575,11 +2553,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2585,11 +2563,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.serverLevelData.worldGenOptions().seed(); // CraftBukkit
      }
  

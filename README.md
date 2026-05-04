@@ -2,17 +2,25 @@
 This is the custom server code used in the Minecraft world of Iðavöllr.
 
 **Changes from PaperMC**
-- [X] Edit max speeds so minecart > horse > ice boat (paddles only, sails should still be fast)
-- [ ] Implement Giants AI
+- [ ] Re-implement ALL old Aincrad patches.....  
+
+| # | Filename | Original |
+|---|----------|----------|
+| 0001 | Parallel-World-Ticking-SP | 0032 |
+| 0002 | Network-Modifications | 0033 |
+| 0003 | Water-World-Modifications | 0034 |
+| 0004 | Remove-End-Dragon-Battle | 0035 |
+| 0005 | Giants-AI | 0036 |
+| 0006 | Per-world-Monster-Limits | 0037 |
+- [x] Edit max speeds so minecart > horse > ice boat (paddles only, sails should still be fast)
+- [x] Implement Giants AI
 - [ ] Add new source of Levitation Effect
 - [x] Strongly suggest Villagers do not swim
 - [x] Make Shulkers aquatic, fix shulker bullet water pathing
-- [x] Make Chorus fruit aquatic (TODO: add client mixin for ChorusNNBlock.getFluidState)
+- [x] Make Chorus fruit aquatic
 - [ ] Implement [Purpur](https://github.com/PurpurMC/Purpur) rideables
 - [ ] Implement Villager Tasks (Armorer heals golems, Priest heals villagers)
-- [ ] Implement [Smallships](https://github.com/talhanation/smallships/tree/main)
-- [ ] Implement [Accessories](https://github.com/wisp-forest/accessories/)
-- [X] Implement [Sparkly](https://github.com/SparklyPower/SparklyPaper) per-world ticking
+- [x] Implement [Sparkly](https://github.com/SparklyPower/SparklyPaper) per-world ticking
 - [ ] Integrate [Denizen](https://github.com/DenizenScript/Denizen) for _all_ entity goals & behaviours
   - [ ] Merge NMS/world/entity/ai/behavior
   - [ ] Merge NMS/world/entity/ai/goal

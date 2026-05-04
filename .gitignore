@@ -52,4 +52,4 @@ paper-api-generator.settings.gradle.kts
 paper-server/src/minecraft/
 
 # Other server implementations:
-purpur-server/
+/Purpur

@@ -48,23 +48,51 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 2. `createMojmapBundlerJar`
 
 ## CHANGES
-### Apply Changes (per-file)
-1. Make changes (in paper-server/src/minecraft/java)
-2. `./gradlew fixupSourcePatches`
-3. `./gradlew rebuildPatches`
 
-### Apply Changes (feature)
-1. Make changes (in paper-server/src/minecraft/java)
-2. `git add .` in the java subfolder
-3. `git commit -m` with the patch message (it will become the patch filename)
-4. `./gradlew rebuildPatches` from root
+There are two working trees, each with its own patch set:
 
-### Fixup Changes (feature)
-1. Make changes (in paper-server/src/minecraft/java)
-2. `git log` in the same directory, find the commit hash of the target feature 
-2. `git commit -a --fixup <target_hash>` in the java subfolder
-3. `git rebase -i --autosquash base`
-4. `./gradlew rebuildPatches` from root
+| Working tree | Patch dir | Gradle prefix | Contains |
+|---|---|---|---|
+| `aincrad-server/src/minecraft/java` | `aincrad-server/minecraft-patches/` | `rebuildMinecraft` / `fixupMinecraft` | Decompiled Minecraft classes (`net/minecraft/...`) |
+| `paper-server/` | `aincrad-server/paper-patches/` | `rebuildPaperServer` / `fixupPaperServer` | Paper + moonrise + craftbukkit classes |
+
+### Per-file changes (single-file patch, no commit needed)
+
+**Minecraft classes:**
+1. Edit file in `aincrad-server/src/minecraft/java/`
+2. `./gradlew fixupMinecraftFilePatches` from root
+
+**Paper/moonrise classes:**
+1. Edit file in `paper-server/src/main/java/`
+2. `./gradlew fixupPaperServerFilePatches` from root
+
+### Feature changes (multi-file patch via git commit)
+
+**Minecraft classes:**
+1. Edit files in `aincrad-server/src/minecraft/java/`
+2. `git add . && git commit -m "Your feature name"` inside `aincrad-server/src/minecraft/java/`
+3. `./gradlew rebuildMinecraftFeaturePatches` from root
+
+**Paper/moonrise classes:**
+1. Edit files in `paper-server/src/main/java/`
+2. `git add . && git commit -m "Your feature name"` inside `paper-server/`
+3. `./gradlew rebuildPaperServerFeaturePatches` from root
+
+### Fixup an existing feature patch
+
+**Minecraft classes:**
+1. Edit files in `aincrad-server/src/minecraft/java/`
+2. `git log` inside that directory — find the target commit hash
+3. `git commit -a --fixup <target_hash>` inside that directory
+4. `git rebase -i --autosquash base` inside that directory
+5. `./gradlew rebuildMinecraftFeaturePatches` from root
+
+**Paper/moonrise classes:**
+1. Edit files in `paper-server/src/main/java/`
+2. `git log` inside `paper-server/` — find the target commit hash
+3. `git commit -a --fixup <target_hash>` inside `paper-server/`
+4. `git rebase -i --autosquash base` inside `paper-server/`
+5. `./gradlew rebuildPaperServerFeaturePatches` from root
 
 #### Add files for patching
 find the file needed using "view source" or manually in the gradle cache, add the full classpath to `./build-data/dev-imports.txt`, run the Gradle task "applyPatches", and you should be able to find your new NMS file in the `./Paper-Server` dir.

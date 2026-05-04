@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Fri, 5 Sep 2025 11:30:04 -0400
+Subject: [PATCH] Network Modifications
+
+
+diff --git a/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java b/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+index 2e9eb04c7c4342393c05339906c267bca9ff29b1..b79e5edaaad94685cecb729581228a7fde826258 100644
+--- a/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
++++ b/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+@@ -64,9 +64,9 @@ public class ServerConfigurationPacketListenerImpl extends ServerCommonPacketLis
+     @Override
+     public void onDisconnect(DisconnectionDetails details) {
+         // Paper start - Debugging
+-        if (this.server.isDebugging()) {
+-            ServerConfigurationPacketListenerImpl.LOGGER.info("{} lost connection: {}, while in configuration phase {}", this.gameProfile, details.reason().getString(), this.currentTask != null ? this.currentTask.type().id() : "null");
+-        } else
++        //if (this.server.isDebugging()) {
++        ServerConfigurationPacketListenerImpl.LOGGER.info("{} lost connection: {}, while in configuration phase {}", this.gameProfile, details.reason().getString(), this.currentTask != null ? this.currentTask.type().id() : "null");
++        //} else
+         // Paper end
+         LOGGER.info("{} lost connection: {}", this.gameProfile, details.reason().getString());
+         super.onDisconnect(details);

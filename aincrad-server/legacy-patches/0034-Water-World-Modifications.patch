@@ -1,0 +1,390 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Wed, 26 Nov 2025 21:48:45 -0500
+Subject: [PATCH] Water World Modifications
+
+
+diff --git a/net/minecraft/data/tags/EntityTypeTagsProvider.java b/net/minecraft/data/tags/EntityTypeTagsProvider.java
+index 38e1d2e113ead0524eb93ba89fa9a3b9900440c0..9d891e6bb63627708f7b7698e29c024ec9d405cd 100644
+--- a/net/minecraft/data/tags/EntityTypeTagsProvider.java
++++ b/net/minecraft/data/tags/EntityTypeTagsProvider.java
+@@ -64,6 +64,7 @@ public class EntityTypeTagsProvider extends IntrinsicHolderTagsProvider<EntityTy
+                 EntityType.COD,
+                 EntityType.PUFFERFISH,
+                 EntityType.SALMON,
++                EntityType.SHULKER,
+                 EntityType.SQUID,
+                 EntityType.TROPICAL_FISH,
+                 EntityType.TADPOLE,
+diff --git a/net/minecraft/world/entity/monster/Shulker.java b/net/minecraft/world/entity/monster/Shulker.java
+index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253b32d4c88 100644
+--- a/net/minecraft/world/entity/monster/Shulker.java
++++ b/net/minecraft/world/entity/monster/Shulker.java
+@@ -165,10 +165,29 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+         compound.putByte("Peek", this.entityData.get(DATA_PEEK_ID));
+         compound.putByte("Color", this.entityData.get(DATA_COLOR_ID));
+     }
++    // Aincrad start - shulkers are now aquatic
++    protected void handleAirSupply(int airSupply) {
++        if (this.isAlive() && !this.isInWaterRainOrBubble()) {
++            this.setAirSupply(airSupply - 1);
++            if (this.getAirSupply() == -20) {
++                this.setAirSupply(0);
++                this.hurt(this.damageSources().dryOut(), 2.0F);
++            }
++        } else {
++            this.setAirSupply(this.getMaxAirSupply());
++        }
++    }
+ 
++    @Override
++    public int getMaxAirSupply() {
++        return 550; // CraftBukkit - SPIGOT-6907: re-implement LivingEntity#setMaximumAir()
++    }
++    // Aincrad end
+     @Override
+     public void tick() {
++        int air = this.getAirSupply(); // Aincrad - aquatic shulkers
+         super.tick();
++        this.handleAirSupply(air); // Aincrad - aquatic shulkers
+         if (!this.level().isClientSide && !this.isPassenger() && !this.canStayAt(this.blockPosition(), this.getAttachFace())) {
+             this.findNewAttachment();
+         }
+@@ -370,7 +389,7 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+ 
+     private boolean isPositionBlocked(BlockPos pos) {
+         BlockState blockState = this.level().getBlockState(pos);
+-        if (blockState.isAir()) {
++        if (blockState.is(Blocks.WATER)) {
+             return false;
+         } else {
+             boolean flag = blockState.is(Blocks.MOVING_PISTON) && pos.equals(this.blockPosition());
+@@ -389,7 +408,7 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+                     Mth.randomBetweenInclusive(this.random, -8, 8)
+                 );
+                 if (blockPos1.getY() > this.level().getMinY()
+-                    && this.level().isEmptyBlock(blockPos1)
++                    && this.level().isWaterAt(blockPos1) // Aincrad - search for water blocks
+                     && this.level().getWorldBorder().isWithinBounds(blockPos1)
+                     && this.level().noCollision(this, new AABB(blockPos1).deflate(1.0E-6))) {
+                     Direction direction = this.findAttachableSurface(blockPos1);
+diff --git a/net/minecraft/world/entity/npc/AbstractVillager.java b/net/minecraft/world/entity/npc/AbstractVillager.java
+index a71d16d968bb90fd7aca6f01a3dd56df4f9a7ce6..21c87d0a13240ee33c266c875d1711ee90f3e57e 100644
+--- a/net/minecraft/world/entity/npc/AbstractVillager.java
++++ b/net/minecraft/world/entity/npc/AbstractVillager.java
+@@ -64,6 +64,8 @@ public abstract class AbstractVillager extends AgeableMob implements InventoryCa
+     public AbstractVillager(EntityType<? extends AbstractVillager> entityType, Level level) {
+         super(entityType, level);
+         this.setPathfindingMalus(PathType.DANGER_FIRE, 16.0F);
++        this.setPathfindingMalus(PathType.WATER_BORDER, 4.0F);
++        this.setPathfindingMalus(PathType.WATER, -1.0F);
+         this.setPathfindingMalus(PathType.DAMAGE_FIRE, -1.0F);
+     }
+ 
+diff --git a/net/minecraft/world/entity/npc/Villager.java b/net/minecraft/world/entity/npc/Villager.java
+index 2b83262e4a13eae86df82913ce4f3121e3631a43..30125b83b2af193d33e45ae307a0f25a6d426bb9 100644
+--- a/net/minecraft/world/entity/npc/Villager.java
++++ b/net/minecraft/world/entity/npc/Villager.java
+@@ -13,6 +13,9 @@ import java.util.Map;
+ import java.util.Optional;
+ import java.util.function.BiPredicate;
+ import javax.annotation.Nullable;
++import net.minecraft.world.phys.Vec3;
++import net.minecraft.world.entity.ai.util.LandRandomPos;
++import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.GlobalPos;
+ import net.minecraft.core.Holder;
+@@ -283,6 +286,15 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+         super.inactiveTick();
+     }
+     // Paper end - EAR 2
++    // Aincrad start - avoid water
++    @Override
++    public float getWalkTargetValue(BlockPos pos, net.minecraft.world.level.LevelReader level) {
++        float val = 0.0F;
++        if (level.getBlockState(pos).is(Blocks.DIRT_PATH)) {val = 7.0F;}
++        if (level.getBlockState(pos).is(Blocks.CAMPFIRE)) {val = 5.0F;} // this is needed for the floating villages
++        return val;
++    }
++    // Aincrad end
+ 
+     @Override
+     protected void customServerAiStep(ServerLevel level) {
+@@ -338,7 +350,6 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+         if (this.getUnhappyCounter() > 0) {
+             this.setUnhappyCounter(this.getUnhappyCounter() - 1);
+         }
+-
+         this.maybeDecayGossip();
+     }
+ 
+diff --git a/net/minecraft/world/entity/projectile/ShulkerBullet.java b/net/minecraft/world/entity/projectile/ShulkerBullet.java
+index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69395b50f5 100644
+--- a/net/minecraft/world/entity/projectile/ShulkerBullet.java
++++ b/net/minecraft/world/entity/projectile/ShulkerBullet.java
+@@ -142,32 +142,32 @@ public class ShulkerBullet extends Projectile {
+             BlockPos blockPos1 = this.blockPosition();
+             List<Direction> list = Lists.newArrayList();
+             if (axis != Direction.Axis.X) {
+-                if (blockPos1.getX() < blockPos.getX() && this.level().isEmptyBlock(blockPos1.east())) {
++                if (blockPos1.getX() < blockPos.getX() && this.level().isEmptyOrWaterBlock(blockPos1.east())) {
+                     list.add(Direction.EAST);
+-                } else if (blockPos1.getX() > blockPos.getX() && this.level().isEmptyBlock(blockPos1.west())) {
++                } else if (blockPos1.getX() > blockPos.getX() && this.level().isEmptyOrWaterBlock(blockPos1.west())) {
+                     list.add(Direction.WEST);
+                 }
+             }
+ 
+             if (axis != Direction.Axis.Y) {
+-                if (blockPos1.getY() < blockPos.getY() && this.level().isEmptyBlock(blockPos1.above())) {
++                if (blockPos1.getY() < blockPos.getY() && this.level().isEmptyOrWaterBlock(blockPos1.above())) {
+                     list.add(Direction.UP);
+-                } else if (blockPos1.getY() > blockPos.getY() && this.level().isEmptyBlock(blockPos1.below())) {
++                } else if (blockPos1.getY() > blockPos.getY() && this.level().isEmptyOrWaterBlock(blockPos1.below())) {
+                     list.add(Direction.DOWN);
+                 }
+             }
+ 
+             if (axis != Direction.Axis.Z) {
+-                if (blockPos1.getZ() < blockPos.getZ() && this.level().isEmptyBlock(blockPos1.south())) {
++                if (blockPos1.getZ() < blockPos.getZ() && this.level().isEmptyOrWaterBlock(blockPos1.south())) {
+                     list.add(Direction.SOUTH);
+-                } else if (blockPos1.getZ() > blockPos.getZ() && this.level().isEmptyBlock(blockPos1.north())) {
++                } else if (blockPos1.getZ() > blockPos.getZ() && this.level().isEmptyOrWaterBlock(blockPos1.north())) {
+                     list.add(Direction.NORTH);
+                 }
+             }
+ 
+             direction = Direction.getRandom(this.random);
+             if (list.isEmpty()) {
+-                for (int i = 5; !this.level().isEmptyBlock(blockPos1.relative(direction)) && i > 0; i--) {
++                for (int i = 5; !this.level().isEmptyOrWaterBlock(blockPos1.relative(direction)) && i > 0; i--) {
+                     direction = Direction.getRandom(this.random);
+                 }
+             } else {
+@@ -315,7 +315,7 @@ public class ShulkerBullet extends Projectile {
+             }
+ 
+             if (entity instanceof LivingEntity livingEntity1) {
+-                livingEntity1.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(owner, this), org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK); // CraftBukkit
++                livingEntity1.addEffect(new MobEffectInstance(MobEffects.POISON, 170), MoreObjects.firstNonNull(owner, this), org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK); // CraftBukkit
+             }
+         }
+     }
+diff --git a/net/minecraft/world/level/LevelReader.java b/net/minecraft/world/level/LevelReader.java
+index 26c8c1e5598daf3550aef05b12218c47bda6618b..0eb0f8bcf3c1dbb3703cdd74d9cef6fbf4a0f006 100644
+--- a/net/minecraft/world/level/LevelReader.java
++++ b/net/minecraft/world/level/LevelReader.java
+@@ -100,6 +100,10 @@ public interface LevelReader extends ca.spottedleaf.moonrise.patches.chunk_syste
+         return this.getBlockState(pos).isAir();
+     }
+ 
++    default boolean isEmptyOrWaterBlock(BlockPos pos) {
++        return this.getBlockState(pos).isAir() || this.getFluidState(pos).is(FluidTags.WATER);
++    }
++
+     default boolean canSeeSkyFromBelowWater(BlockPos pos) {
+         if (pos.getY() >= this.getSeaLevel()) {
+             return this.canSeeSky(pos);
+diff --git a/net/minecraft/world/level/block/ChorusFlowerBlock.java b/net/minecraft/world/level/block/ChorusFlowerBlock.java
+index 3af8f150474a8a461c5829850172196b7b9e7bfd..3b8e19a0b224782d118e06fd7eae7c259888a8f8 100644
+--- a/net/minecraft/world/level/block/ChorusFlowerBlock.java
++++ b/net/minecraft/world/level/block/ChorusFlowerBlock.java
+@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+ import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.server.level.ServerLevel;
++import net.minecraft.tags.FluidTags;
+ import net.minecraft.util.RandomSource;
+ import net.minecraft.world.entity.projectile.Projectile;
+ import net.minecraft.world.level.BlockGetter;
+@@ -21,8 +22,13 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+ import net.minecraft.world.level.block.state.properties.IntegerProperty;
+ import net.minecraft.world.phys.BlockHitResult;
+ import net.minecraft.world.phys.shapes.VoxelShape;
++import net.minecraft.world.level.material.FluidState;
++import javax.annotation.Nullable;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.level.material.Fluid;
++import net.minecraft.world.level.material.Fluids;
+ 
+-public class ChorusFlowerBlock extends Block {
++public class ChorusFlowerBlock extends Block implements LiquidBlockContainer {
+     public static final MapCodec<ChorusFlowerBlock> CODEC = RecordCodecBuilder.mapCodec(
+         instance -> instance.group(
+                 BuiltInRegistries.BLOCK.byNameCodec().fieldOf("plant").forGetter(chorusFlowerBlock -> chorusFlowerBlock.plant), propertiesCodec()
+@@ -39,6 +45,21 @@ public class ChorusFlowerBlock extends Block {
+         return CODEC;
+     }
+ 
++    @Override
++    protected FluidState getFluidState(BlockState state) {
++        return Fluids.WATER.getSource(false);
++    }
++
++    @Override
++    public boolean canPlaceLiquid(@Nullable Player player, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
++        return false;
++    }
++
++    @Override
++    public boolean placeLiquid(net.minecraft.world.level.LevelAccessor level, BlockPos pos, BlockState state, FluidState fluidState) {
++        return false;
++    }
++
+     protected ChorusFlowerBlock(Block plant, BlockBehaviour.Properties properties) {
+         super(properties);
+         this.plant = plant;
+@@ -65,7 +86,7 @@ public class ChorusFlowerBlock extends Block {
+     @Override
+     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+         BlockPos blockPos = pos.above();
+-        if (level.isEmptyBlock(blockPos) && blockPos.getY() <= level.getMaxY()) {
++        if (level.isWaterAt(blockPos) && blockPos.getY() <= level.getMaxY()) {
+             int ageValue = state.getValue(AGE);
+             if (ageValue < 5) {
+                 boolean flag = false;
+@@ -91,11 +112,11 @@ public class ChorusFlowerBlock extends Block {
+                     if (i < 2 || i <= random.nextInt(flag1 ? 5 : 4)) {
+                         flag = true;
+                     }
+-                } else if (blockState.isAir()) {
++                } else if (level.isWaterAt(pos.below())) {
+                     flag = true;
+                 }
+ 
+-                if (flag && allNeighborsEmpty(level, blockPos, null) && level.isEmptyBlock(pos.above(2))) {
++                if (flag && allNeighborsWater(level, blockPos, null) && level.isWaterAt(pos.above(2))) {
+                     if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos, this.defaultBlockState().setValue(ChorusFlowerBlock.AGE, ageValue), 2)) { // CraftBukkit - add event
+                     level.setBlock(pos, ChorusPlantBlock.getStateWithConnections(level, pos, this.plant.defaultBlockState()), 2);
+                     this.placeGrownFlower(level, blockPos, ageValue);
+@@ -111,9 +132,9 @@ public class ChorusFlowerBlock extends Block {
+                     for (int i2 = 0; i2 < i; i2++) {
+                         Direction randomDirection = Direction.Plane.HORIZONTAL.getRandomDirection(random);
+                         BlockPos blockPos1 = pos.relative(randomDirection);
+-                        if (level.isEmptyBlock(blockPos1)
+-                            && level.isEmptyBlock(blockPos1.below())
+-                            && allNeighborsEmpty(level, blockPos1, randomDirection.getOpposite())) {
++                        if (level.isWaterAt(blockPos1)
++                            && level.isWaterAt(blockPos1.below())
++                            && allNeighborsWater(level, blockPos1, randomDirection.getOpposite())) {
+                             if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos1, this.defaultBlockState().setValue(ChorusFlowerBlock.AGE, ageValue + 1), 2)) { // CraftBukkit - add event
+                             this.placeGrownFlower(level, blockPos1, ageValue + 1);
+                             flag2 = true;
+@@ -151,9 +172,9 @@ public class ChorusFlowerBlock extends Block {
+         level.levelEvent(1034, pos, 0);
+     }
+ 
+-    private static boolean allNeighborsEmpty(LevelReader level, BlockPos pos, @Nullable Direction excludingSide) {
++    private static boolean allNeighborsWater(LevelReader level, BlockPos pos, @Nullable Direction excludingSide) {
+         for (Direction direction : Direction.Plane.HORIZONTAL) {
+-            if (direction != excludingSide && !level.isEmptyBlock(pos.relative(direction))) {
++            if (direction != excludingSide && !level.isWaterAt(pos.relative(direction))) {
+                 return false;
+             }
+         }
+@@ -183,7 +204,7 @@ public class ChorusFlowerBlock extends Block {
+     protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+         BlockState blockState = level.getBlockState(pos.below());
+         if (!blockState.is(this.plant) && !blockState.is(Blocks.END_STONE)) {
+-            if (!blockState.isAir()) {
++            if (!level.isWaterAt(pos)) {
+                 return false;
+             } else {
+                 boolean flag = false;
+@@ -196,7 +217,7 @@ public class ChorusFlowerBlock extends Block {
+                         }
+ 
+                         flag = true;
+-                    } else if (!blockState1.isAir()) {
++                    } else if (!level.isWaterAt(pos.relative(direction))) {
+                         return false;
+                     }
+                 }
+@@ -229,7 +250,7 @@ public class ChorusFlowerBlock extends Block {
+ 
+         for (int i1 = 0; i1 < i; i1++) {
+             BlockPos blockPos = branchPos.above(i1 + 1);
+-            if (!allNeighborsEmpty(level, blockPos, null)) {
++            if (!allNeighborsWater(level, blockPos, null)) {
+                 return;
+             }
+ 
+@@ -249,9 +270,9 @@ public class ChorusFlowerBlock extends Block {
+                 BlockPos blockPos1 = branchPos.above(i).relative(randomDirection);
+                 if (Math.abs(blockPos1.getX() - originalBranchPos.getX()) < maxHorizontalDistance
+                     && Math.abs(blockPos1.getZ() - originalBranchPos.getZ()) < maxHorizontalDistance
+-                    && level.isEmptyBlock(blockPos1)
+-                    && level.isEmptyBlock(blockPos1.below())
+-                    && allNeighborsEmpty(level, blockPos1, randomDirection.getOpposite())) {
++                    && level.isWaterAt(blockPos1)
++                    && level.isWaterAt(blockPos1.below())
++                    && allNeighborsWater(level, blockPos1, randomDirection.getOpposite())) {
+                     flag = true;
+                     level.setBlock(blockPos1, ChorusPlantBlock.getStateWithConnections(level, blockPos1, block.defaultBlockState()), 2);
+                     level.setBlock(
+diff --git a/net/minecraft/world/level/block/ChorusPlantBlock.java b/net/minecraft/world/level/block/ChorusPlantBlock.java
+index c8926fa5a94305b19399fe630a89dd50c455beb9..009ac4541a475bdee1178d6a2a42b0ca00a85500 100644
+--- a/net/minecraft/world/level/block/ChorusPlantBlock.java
++++ b/net/minecraft/world/level/block/ChorusPlantBlock.java
+@@ -13,8 +13,14 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.block.state.StateDefinition;
+ import net.minecraft.world.level.pathfinder.PathComputationType;
++import net.minecraft.world.level.material.FluidState;
++import javax.annotation.Nullable;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.level.material.Fluid;
++import net.minecraft.world.level.material.Fluids;
+ 
+-public class ChorusPlantBlock extends PipeBlock {
++
++public class ChorusPlantBlock extends PipeBlock implements LiquidBlockContainer {
+     public static final MapCodec<ChorusPlantBlock> CODEC = simpleCodec(ChorusPlantBlock::new);
+ 
+     @Override
+@@ -22,6 +28,21 @@ public class ChorusPlantBlock extends PipeBlock {
+         return CODEC;
+     }
+ 
++    @Override
++    protected FluidState getFluidState(BlockState state) {
++        return Fluids.WATER.getSource(false);
++    }
++
++    @Override
++    public boolean canPlaceLiquid(@Nullable Player player, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
++        return false;
++    }
++
++    @Override
++    public boolean placeLiquid(net.minecraft.world.level.LevelAccessor level, BlockPos pos, BlockState state, FluidState fluidState) {
++        return false;
++    }
++
+     protected ChorusPlantBlock(BlockBehaviour.Properties properties) {
+         super(0.3125F, properties);
+         this.registerDefaultState(
+@@ -93,7 +114,7 @@ public class ChorusPlantBlock extends PipeBlock {
+     protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+         if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableChorusPlantUpdates) return true; // Paper - add option to disable block updates
+         BlockState blockState = level.getBlockState(pos.below());
+-        boolean flag = !level.getBlockState(pos.above()).isAir() && !blockState.isAir();
++        boolean flag = !level.isWaterAt(pos.above()) && !level.isWaterAt(pos.below());
+ 
+         for (Direction direction : Direction.Plane.HORIZONTAL) {
+             BlockPos blockPos = pos.relative(direction);
+diff --git a/net/minecraft/world/level/levelgen/feature/ChorusPlantFeature.java b/net/minecraft/world/level/levelgen/feature/ChorusPlantFeature.java
+index 90f85cb4cbe5123f2e6bbf8665c7cdbf37f482e0..30d6f33c8b96b675e37de332163c3cd365a20ea4 100644
+--- a/net/minecraft/world/level/levelgen/feature/ChorusPlantFeature.java
++++ b/net/minecraft/world/level/levelgen/feature/ChorusPlantFeature.java
+@@ -18,7 +18,7 @@ public class ChorusPlantFeature extends Feature<NoneFeatureConfiguration> {
+         WorldGenLevel worldGenLevel = context.level();
+         BlockPos blockPos = context.origin();
+         RandomSource randomSource = context.random();
+-        if (worldGenLevel.isEmptyBlock(blockPos) && worldGenLevel.getBlockState(blockPos.below()).is(Blocks.END_STONE)) {
++        if (worldGenLevel.isWaterAt(blockPos) && worldGenLevel.getBlockState(blockPos.below()).is(Blocks.END_STONE)) {
+             ChorusFlowerBlock.generatePlant(worldGenLevel, blockPos, randomSource, 8);
+             return true;
+         } else {

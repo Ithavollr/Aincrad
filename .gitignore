@@ -51,5 +51,16 @@ paper-api-generator.settings.gradle.kts
 # Don't track patched vanilla submodules
 paper-server/src/minecraft/
 
+# Generated upstream directories (paperweight-patcher)
+/paper-server
+/paper-api
+/aincrad-server/src/minecraft
+
+# Build artifacts
+*/build/
+*.jar
+*.rej
+*.orig
+
 # Other server implementations:
 /Purpur

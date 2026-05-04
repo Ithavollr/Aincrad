@@ -1,4 +1,102 @@
-# Aincrad → Purpur-Style Patch System Migration Plan
+# Migration Plan: Hard Fork → paperweight-patcher (Purpur-style)
+
+**Goal:** Build cleanly from Paper commit `6abf5f0b747db2d9d098d5d35f4859f68f20c867` (ver/1.21.4 branch) with zero custom patches, structured like Purpur.
+
+**Starting point:** `backup/hard-fork-archive` branch.
+
+---
+
+## Steps
+
+### 1. Create working branch
+```bash
+git checkout backup/hard-fork-archive
+git checkout -b seed
+```
+
+### 2. Replace root `build.gradle.kts`
+Replace the `paperweight-core` plugin block with `paperweight-patcher`. Reference: `Purpur/build.gradle.kts`.
+
+Key changes:
+- Plugin: `id("io.papermc.paperweight.patcher") version "2.0.0-beta.14"`
+- Add `repositories { maven("https://jitpack.io") }` inside `subprojects`
+- Add `paperweight { upstreams.paper { ref = providers.gradleProperty("paperCommit"); patchDir("paperApi") { ... } } }` block
+- **No `patchFile` blocks** — `aincrad-server/build.gradle.kts` and `aincrad-api/build.gradle.kts` are committed directly, not generated from patches
+
+### 3. Replace `settings.gradle.kts`
+- Include `aincrad-api` and `aincrad-server` subprojects (not `paper-api`/`paper-server`)
+- Reference: `Purpur/settings.gradle.kts`
+
+### 4. Update `gradle.properties`
+Add:
+```properties
+paperCommit = 6abf5f0b747db2d9d098d5d35f4859f68f20c867
+```
+
+### 5. Update `gradle/wrapper/gradle-wrapper.properties`
+Set Gradle to `8.12` (required by paperweight-patcher 2.0.0-beta.14):
+```
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.12-bin.zip
+```
+
+### 6. Create `aincrad-server/` and `aincrad-api/` module directories
+```bash
+mkdir -p aincrad-server/paper-patches/features
+mkdir -p aincrad-server/paper-patches/files
+mkdir -p aincrad-server/minecraft-patches/features
+mkdir -p aincrad-server/minecraft-patches/sources
+mkdir -p aincrad-server/minecraft-patches/resources
+mkdir -p aincrad-api/paper-patches/features
+mkdir -p aincrad-api/paper-patches/files
+```
+Leave all patch dirs **empty**.
+
+### 7. Create `aincrad-server/build.gradle.kts`
+Copy `paper-server/build.gradle.kts` and make these changes:
+- Add `paperweight { forks.register("aincrad") { ... }; activeFork = aincrad }` block (reference: `Purpur/purpur-server/build.gradle.kts`)
+- Add `sourceSets` block pointing to `../paper-server/src/main/java` etc.
+- Change `implementation(project(":paper-api"))` → `implementation(project(":aincrad-api"))`
+- Update manifest: `Implementation-Title`, `Specification-Title`, `Brand-Id`, `Brand-Name` to Aincrad values
+- Pin any snapshot dependencies to their resolved timestamps (configurate, spark)
+
+### 8. Create `aincrad-api/build.gradle.kts`
+Copy `paper-api/build.gradle.kts` and make these changes:
+- Fix `generatedApiPath` to point to `../paper-api/src/generated`
+- Expand `sourceSets` to include `../paper-api/src/main/java` etc.
+- Fix javadoc `inputs.dir` to `../paper-api/src/main/javadoc`
+
+### 9. Update `.gitignore`
+Add:
+```
+/paper-server
+/paper-api
+/aincrad-server/src/minecraft
+*/build/
+*.jar
+*.rej
+*.orig
+```
+Remove tracking of `paper-server/` and `paper-api/` if previously committed:
+```bash
+git rm -r --cached paper-server/ paper-api/ 2>/dev/null
+```
+
+### 10. Run and verify
+```bash
+./gradlew applyAllPatches --no-daemon
+```
+Expected: `BUILD SUCCESSFUL` with all `Applied 0 patches` lines.
+
+---
+
+## What NOT to do
+- Do **not** create `build.gradle.kts.patch` files — just commit the files directly
+- Do **not** put custom patches in `minecraft-patches/` — all Aincrad patches go in `paper-patches/features/` (applied to the combined working tree)
+- Do **not** strip `index` lines from patches manually — use `--no-3way` when applying
+
+---
+
+# Migration Plan: Hard Fork → paperweight-patcher (Purpur-style) [OLD NOTES BELOW]
 
 ## Executive Summary
 
@@ -93,7 +191,7 @@ Backup branch created and working directory cleaned
     - Keep paper-api and paper-server as generated directories
 
 5. **Update `gradle.properties`**
-    - Add `paperCommit = 73116ac9dd1d55c59db411a55de7e91e025a0c80`
+    - Add `paperCommit = 5395ae37bd372235390d28292ed582d0c4fc23dd`
     - Keep existing mcVersion and version properties
 
 6. **Create new module directories**
@@ -105,244 +203,15 @@ Backup branch created and working directory cleaned
 
 ### Phase 3: Extract Custom Patches
 
-7. **Extract and convert custom feature patches**
+**All 6 custom patches belong in `aincrad-server/paper-patches/features/` in this order:**
 
-   For each custom patch (0032-0037), you need to:
-    - Determine if it patches Minecraft classes or Paper classes
-    - Convert to the appropriate patch location
+| # | Filename | Original |
+|---|----------|----------|
+| 0001 | Parallel-World-Ticking-SP | 0032 |
+| 0002 | Network-Modifications | 0033 |
+| 0003 | Water-World-Modifications | 0034 |
+| 0004 | Remove-End-Dragon-Battle | 0035 |
+| 0005 | Giants-AI | 0036 |
+| 0006 | Per-world-Monster-Limits | 0037 |
 
-   **Example: Patch 0036 (Giant AI)**
-    - This patches `net/minecraft/world/entity/monster/Giant.java`
-    - Belongs in: `aincrad-server/minecraft-patches/sources/net/minecraft/world/entity/monster/Giant.java.patch`
-    - Format change needed: The patch header must reference the file correctly
-
-8. **Reformat patches for paperweight-patcher**
-
-   Current format (paperweight-core):
-   ```patch
-   --- a/net/minecraft/world/entity/monster/Giant.java
-   +++ b/net/minecraft/world/entity/monster/Giant.java
-   ```
-
-   New format (paperweight-patcher):
-   ```patch
-   --- a/src/minecraft/java/net/minecraft/world/entity/monster/Giant.java
-   +++ b/src/minecraft/java/net/minecraft/world/entity/monster/Giant.java
-   ```
-
-### Phase 4: Build Configuration Migration
-
-9. **Create `aincrad-server/build.gradle.kts.patch`**
-    - This is a patch to the generated `paper-server/build.gradle.kts`
-    - Must:
-        - Register `aincrad` fork
-        - Configure source sets to include both `paper-server/src` and `aincrad-server/src`
-        - Change dependency from `paper-api` to `aincrad-api`
-        - Update manifest attributes for branding
-
-10. **Create `aincrad-api/build.gradle.kts.patch`**
-    - Similar structure to server patch
-    - Configure source sets
-    - Update javadoc paths
-
-### Phase 5: Custom Source Code Migration
-
-11. **Move custom source files**
-    - Any custom classes in `paper-server/src/main/java` → `aincrad-server/src/main/java`
-    - Update package declarations from `io.papermc.paper` to your own (e.g., `io.aincrad`)
-
-12. **Configuration classes**
-    - If you have custom config classes (like Purpur's `PurpurConfig`), place in `aincrad-server/src/main/java`
-
-### Phase 6: Testing & Validation
-
-13. **First build attempt**
-    ```bash
-    ./gradlew applyAllPatches
-    ```
-    - This will download Paper at the specified commit
-    - Apply Paper's patches
-    - Then apply your custom patches on top
-
-14. **Fix any patch failures**
-    - If patches fail to apply, enter the paper-server directory
-    - Resolve conflicts manually
-    - Run `./gradlew rebuildMinecraftPatches` or `./gradlew rebuildPaperPatches`
-
-15. **Verify build**
-    ```bash
-    ./gradlew build
-    ```
-
-### Phase 7: Cleanup
-
-16. **Remove old patch directories**
-    - After successful build, remove `paper-server/patches/` (these are now from upstream)
-    - Paper patches now come from the Paper commit, not your repo
-
-17. **Update documentation**
-    - Update `CONTRIBUTING.md` with new patch workflow
-    - Document how to update upstream: just change `paperCommit` in gradle.properties!
-
----
-
-## Key File References
-
-### Purpur's Implementation (for reference)
-
-| File | Purpose |
-|------|---------|
-| `Purpur/build.gradle.kts` | Root build with `paperweight-patcher` plugin |
-| `Purpur/settings.gradle.kts` | Project structure with purpur-api/purpur-server |
-| `Purpur/gradle.properties` | Contains `paperCommit` hash |
-| `Purpur/purpur-server/build.gradle.kts.patch` | Patches to paper-server build |
-| `Purpur/purpur-api/build.gradle.kts.patch` | Patches to paper-api build |
-| `Purpur/purpur-server/paper-patches/` | Patches to Paper server classes |
-| `Purpur/purpur-server/minecraft-patches/` | Patches to Minecraft classes |
-| `Purpur/purpur-api/paper-patches/` | Patches to Paper API classes |
-
-### Aincrad Files to Modify
-
-| File | Action |
-|------|--------|
-| `build.gradle.kts` | Replace plugin, add upstream block |
-| `settings.gradle.kts` | Update project names, add aincrad-api/server |
-| `gradle.properties` | Add `paperCommit` |
-| `paper-server/build.gradle.kts` | Will be generated from upstream |
-| `paper-api/build.gradle.kts` | Will be generated from upstream |
-| `aincrad-server/build.gradle.kts.patch` | NEW - patches to paper-server build |
-| `aincrad-api/build.gradle.kts.patch` | NEW - patches to paper-api build |
-
----
-
-## Patch Conversion Reference
-
-### File Patch Conversion
-
-**From:** `paper-server/patches/sources/net/minecraft/Util.java.patch`
-
-```patch
---- a/net/minecraft/Util.java
-+++ b/net/minecraft/Util.java
-```
-
-**To:** `aincrad-server/minecraft-patches/sources/net/minecraft/Util.java.patch`
-
-```patch
---- a/src/minecraft/java/net/minecraft/Util.java
-+++ b/src/minecraft/java/net/minecraft/Util.java
-```
-
-### Feature Patch Conversion
-
-**From:** `paper-server/patches/features/XXXX-Name.patch`
-(multiple files in one patch)
-
-**To:** `aincrad-server/minecraft-patches/features/XXXX-Name.patch`
-or `aincrad-server/paper-patches/features/XXXX-Name.patch`
-
-Depending on whether the patch touches:
-- Minecraft classes → `minecraft-patches/features/`
-- Paper classes → `paper-patches/features/`
-
----
-
-## Risks & Mitigation
-
-| Risk | Mitigation |
-|------|------------|
-| Custom patches don't apply cleanly | Keep backup branch; resolve conflicts one patch at a time |
-| Missing Paper patches after migration | Ensure `paperCommit` points to a commit that includes all needed Paper features |
-| Build breaks after restructuring | Test `./gradlew applyAllPatches` before committing changes |
-| Lost custom source files | Move (don't delete) src files; verify with `git status` |
-| Patch format confusion | Test one patch conversion thoroughly before doing all |
-
----
-
-## Post-Migration Workflow
-
-### Updating Paper (The Big Win!)
-
-Before (hard fork):
-```bash
-# Cherry-pick individual commits from Paper
-git remote add paper https://github.com/PaperMC/Paper.git
-git fetch paper
-git cherry-pick abc123  # repeat for each commit
-git cherry-pick def456
-# Resolve conflicts for each...
-```
-
-After (paperweight-patcher):
-```bash
-# Edit gradle.properties
-# Change: paperCommit = oldhash
-# To:     paperCommit = newhash
-./gradlew applyAllPatches
-# Done! Paper patches applied automatically.
-# Only need to fix your custom patches if they conflict.
-```
-
-### Adding New Custom Patches
-
-```bash
-# 1. Apply all patches to work on code
-./gradlew applyAllPatches
-
-# 2. Make changes in the generated directories
-cd paper-server/src/minecraft/java
-# Edit files...
-
-# 3. Fixup file patches (per-file changes)
-./gradlew fixupMinecraftFilePatches
-
-# 4. Or rebuild feature patches (multi-file changes)
-git add . && git commit -m "My feature"
-./gradlew rebuildMinecraftFeaturePatches
-```
-
----
-
-## Timeline Estimate
-
-| Phase | Estimated Time |
-|-------|----------------|
-| 1-2: Preparation | 30 minutes |
-| 3: Build config changes | 1-2 hours |
-| 4-5: Patch extraction & conversion | 3-4 hours |
-| 6: Testing & debugging | 2-3 hours |
-| 7: Cleanup & docs | 1 hour |
-| **Total** | **~8-12 hours** |
-
----
-
-## Decision Checklist
-
-Before starting migration, confirm:
-
-- [ ] You have a clean git state (no uncommitted changes)
-- [ ] You've created a backup branch
-- [ ] You've identified the exact Paper commit you currently base on
-- [ ] You've listed all custom patches that need to be preserved
-- [ ] You understand that after migration, Paper patches won't be in your repo
-- [ ] You're prepared to resolve patch conflicts during the transition
-
----
-
-## Questions to Resolve Before Starting
-
-1. **What Paper commit should be the initial upstream?**
-    - Find by looking at `paper-server/patches/features/0001-*.patch` headers
-    - Or check git history for "Upstream update" commits
-
-2. **Should custom patches be combined or kept separate?**
-    - Recommendation: Keep separate initially for easier debugging
-    - Can combine later once system is stable
-
-3. **What namespace for custom classes?**
-    - Currently uses `io.papermc.paper` in patches
-    - Consider: `io.aincrad` or keep Paper namespace
-
-4. **Which patches modify the same files?**
-    - Patch 0035 and 0037 both modify `ServerLevel.java`
-    - May need to combine or carefully sequence these
+THEN YOU FAILED MISERABLY, SO WE ARE RESTARTING.

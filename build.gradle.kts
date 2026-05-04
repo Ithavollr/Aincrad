@@ -1,19 +1,8 @@
-import io.papermc.paperweight.util.*
-import io.papermc.paperweight.util.constants.*
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-import java.io.IOException
-import java.net.URI
-import java.nio.file.FileVisitResult
-import java.nio.file.Files
-import java.nio.file.SimpleFileVisitor
-import kotlin.io.path.*
-import java.nio.file.Path
-import kotlin.random.Random
-
 plugins {
-    id("io.papermc.paperweight.core") version "2.0.0-beta.14" apply false
+    id("io.papermc.paperweight.patcher") version "2.0.0-beta.14"
 }
+
+val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
 
 subprojects {
     apply(plugin = "java-library")
@@ -31,8 +20,6 @@ subprojects {
     }
 }
 
-val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
-
 subprojects {
     tasks.withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.name()
@@ -48,14 +35,15 @@ subprojects {
     tasks.withType<Test> {
         testLogging {
             showStackTraces = true
-            exceptionFormat = TestExceptionFormat.FULL
-            events(TestLogEvent.STANDARD_OUT)
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            events(org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_OUT)
         }
     }
 
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+        maven("https://jitpack.io")
     }
 
     extensions.configure<PublishingExtension> {
@@ -64,6 +52,30 @@ subprojects {
                 name = "paperSnapshots"
                 credentials(PasswordCredentials::class)
             }
+        }
+    }
+}
+
+paperweight {
+    upstreams.paper {
+        ref = providers.gradleProperty("paperCommit")
+
+        patchFile {
+            path = "paper-api/build.gradle.kts"
+            outputFile = file("aincrad-api/build.gradle.kts")
+            patchFile = file("aincrad-api/build.gradle.kts.patch")
+        }
+        patchDir("paperApi") {
+            upstreamPath = "paper-api"
+            excludes = setOf("build.gradle.kts")
+            patchesDir = file("aincrad-api/paper-patches")
+            outputDir = file("paper-api")
+        }
+        patchDir("paperServer") {
+            upstreamPath = "paper-server"
+            excludes = setOf("src/minecraft", "patches", "build.gradle.kts")
+            patchesDir = file("aincrad-server/paper-patches")
+            outputDir = file("paper-server")
         }
     }
 }

@@ -213,8 +213,8 @@ tasks.jar {
         val git = Git(rootProject.layout.projectDirectory.path)
         val mcVersion = rootProject.providers.gradleProperty("mcVersion").get()
         val acVersion = rootProject.providers.gradleProperty("acVersion").get()
-        val build = acVersion
-        val buildTime = if (build != null) Instant.now() else Instant.EPOCH
+        val build = git.exec(providers, "rev-list", "--count", "HEAD").get().trim()
+        val buildTime = if (build.isNotEmpty()) Instant.now() else Instant.EPOCH
         val gitHash = git.exec(providers, "rev-parse", "--short=7", "HEAD").get().trim()
         val implementationVersion = "$mcVersion-${build ?: "DEV"}-$gitHash"
         val date = git.exec(providers, "show", "-s", "--format=%ci", gitHash).get().trim()
@@ -230,6 +230,7 @@ tasks.jar {
             "Specification-Vendor" to "Aincrad Team",
             "Brand-Id" to "aincrad:aincrad",
             "Brand-Name" to "Aincrad",
+            "Aincrad-Version" to (acVersion ?: ""),
             "Build-Number" to (build ?: ""),
             "Build-Time" to buildTime.toString(),
             "Git-Branch" to gitBranch,

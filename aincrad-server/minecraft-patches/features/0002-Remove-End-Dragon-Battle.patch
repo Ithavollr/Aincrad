@@ -1,11 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Peter Pan <peter@never.lan>
-Date: Mon, 1 Dec 2025 18:30:32 -0500
+Date: Sun, 24 May 2026 15:19:37 -0400
 Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a526181f2 100644
+index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4a2cce3a2 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -138,7 +138,6 @@ import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
@@ -22,9 +22,9 @@ index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a
      @Nullable
 -    private EndDragonFight dragonFight;
      final Int2ObjectMap<EnderDragonPart> dragonParts = new Int2ObjectOpenHashMap<>();
+     private final java.util.Map<Class<? extends Entity>, Integer> entityCountsByType = new java.util.HashMap<>();
      private final StructureManager structureManager;
-     private final StructureCheck structureCheck;
-@@ -671,11 +669,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -672,11 +670,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fixerUpper
          );
          this.structureManager = new StructureManager(this, this.serverLevelData.worldGenOptions(), this.structureCheck); // CraftBukkit
@@ -36,7 +36,7 @@ index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a
  
          this.sleepStatus = new SleepStatus();
          this.gameEventDispatcher = new GameEventDispatcher(this);
-@@ -737,12 +730,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -738,12 +731,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
      // Paper end
  
@@ -49,7 +49,7 @@ index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a
      public void setWeatherParameters(int clearTime, int weatherTime, boolean isRaining, boolean isThundering) {
          this.serverLevelData.setClearWeatherTime(clearTime);
          this.serverLevelData.setRainTime(weatherTime);
-@@ -978,11 +965,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -979,11 +966,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
          if (flag || this.emptyTime++ < 300) {
              profilerFiller.push("entities");
@@ -61,18 +61,17 @@ index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a
  
              io.papermc.paper.entity.activation.ActivationRange.activateEntities(this); // Paper - EAR
              this.entityTickList
-@@ -1571,10 +1553,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1572,9 +1554,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void saveLevelData(boolean join) {
 -        if (this.dragonFight != null) {
 -            this.serverLevelData.setEndDragonFightData(this.dragonFight.saveData()); // CraftBukkit
 -        }
--
+ 
          DimensionDataStorage dataStorage = this.getChunkSource().getDataStorage();
          if (join) {
-             dataStorage.saveAndJoin();
-@@ -2585,11 +2563,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2586,11 +2565,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.serverLevelData.worldGenOptions().seed(); // CraftBukkit
      }
  
@@ -85,18 +84,19 @@ index be806260bd694816d7018843cf99f81d0a1909e2..6cc10bd372fc83bf17ae0b888e2c9b3a
      public ServerLevel getLevel() {
          return this;
 diff --git a/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java b/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
-index ff1c84d37db48e1bd0283a900e199647c0e8eba1..5dd77462ea85733b9df6f73755532241172c938a 100644
+index ff1c84d37db48e1bd0283a900e199647c0e8eba1..b17268e0e95284f33a77fb12dcb5e4486e79a89a 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
-@@ -17,7 +17,6 @@ import net.minecraft.world.item.ItemStack;
+@@ -16,8 +16,6 @@ import net.minecraft.world.entity.EntityType;
+ import net.minecraft.world.item.ItemStack;
  import net.minecraft.world.item.Items;
  import net.minecraft.world.level.Level;
- import net.minecraft.world.level.block.BaseFireBlock;
+-import net.minecraft.world.level.block.BaseFireBlock;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
  
  public class EndCrystal extends Entity {
      private static final EntityDataAccessor<Optional<BlockPos>> DATA_BEAM_TARGET = SynchedEntityData.defineId(
-@@ -54,26 +53,6 @@ public class EndCrystal extends Entity {
+@@ -54,26 +52,6 @@ public class EndCrystal extends Entity {
          this.time++;
          this.applyEffectsFromBlocks();
          this.handlePortal();
@@ -123,11 +123,10 @@ index ff1c84d37db48e1bd0283a900e199647c0e8eba1..5dd77462ea85733b9df6f73755532241
      }
  
      @Override
-@@ -132,8 +111,6 @@ public class EndCrystal extends Entity {
-                     this.remove(Entity.RemovalReason.KILLED, org.bukkit.event.entity.EntityRemoveEvent.Cause.DEATH); // Paper - add Bukkit remove cause
+@@ -133,7 +111,6 @@ public class EndCrystal extends Entity {
                      // CraftBukkit end
                  }
--
+ 
 -                this.onDestroyedBy(level, damageSource);
              }
  
@@ -151,18 +150,38 @@ index ff1c84d37db48e1bd0283a900e199647c0e8eba1..5dd77462ea85733b9df6f73755532241
          this.getEntityData().set(DATA_BEAM_TARGET, Optional.ofNullable(beamTarget));
      }
 diff --git a/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java b/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5bc968ebb2 100644
+index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b7787d1b919 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-@@ -40,7 +40,6 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
+@@ -11,13 +11,16 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+ import net.minecraft.network.syncher.EntityDataAccessor;
+ import net.minecraft.network.syncher.EntityDataSerializers;
+ import net.minecraft.network.syncher.SynchedEntityData;
++import net.minecraft.server.level.ServerBossEvent;
+ import net.minecraft.server.level.ServerLevel;
++import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.sounds.SoundEvent;
+ import net.minecraft.sounds.SoundEvents;
+ import net.minecraft.sounds.SoundSource;
+ import net.minecraft.tags.BlockTags;
+ import net.minecraft.tags.DamageTypeTags;
+ import net.minecraft.util.Mth;
++import net.minecraft.world.BossEvent;
+ import net.minecraft.world.damagesource.DamageSource;
+ import net.minecraft.world.effect.MobEffectInstance;
+ import net.minecraft.world.entity.Entity;
+@@ -40,10 +43,8 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
  import net.minecraft.world.level.GameRules;
  import net.minecraft.world.level.Level;
  import net.minecraft.world.level.block.state.BlockState;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
  import net.minecraft.world.level.gameevent.GameEvent;
  import net.minecraft.world.level.levelgen.Heightmap;
- import net.minecraft.world.level.levelgen.feature.EndPodiumFeature;
-@@ -78,7 +77,6 @@ public class EnderDragon extends Mob implements Enemy {
+-import net.minecraft.world.level.levelgen.feature.EndPodiumFeature;
+ import net.minecraft.world.level.pathfinder.BinaryHeap;
+ import net.minecraft.world.level.pathfinder.Node;
+ import net.minecraft.world.level.pathfinder.Path;
+@@ -78,7 +79,6 @@ public class EnderDragon extends Mob implements Enemy {
      @Nullable
      public EndCrystal nearestCrystal;
      @Nullable
@@ -170,7 +189,19 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
      private BlockPos fightOrigin = BlockPos.ZERO;
      private final EnderDragonPhaseManager phaseManager;
      private int growlTime = 100;
-@@ -108,10 +106,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -86,9 +86,11 @@ public class EnderDragon extends Mob implements Enemy {
+     private final Node[] nodes = new Node[24];
+     private final int[] nodeAdjacency = new int[24];
+     private final BinaryHeap openSet = new BinaryHeap();
++    public final ServerBossEvent bossEvent = new ServerBossEvent(this.getDisplayName(), BossEvent.BossBarColor.PINK, BossEvent.BossBarOverlay.PROGRESS); // Aincrad - boss bar
+     // Paper start
+     private final net.minecraft.world.level.Explosion explosionSource; // Paper - reusable source for CraftTNTPrimed.getSource()
+     @Nullable private BlockPos podium;
++    @Nullable private BlockPos spawnPosition; // Aincrad - track spawn position for pathfinding
+     // Paper end
+ 
+     public EnderDragon(EntityType<? extends EnderDragon> entityType, Level level) {
+@@ -108,35 +110,28 @@ public class EnderDragon extends Mob implements Enemy {
          this.explosionSource = new net.minecraft.world.level.ServerExplosion(level.getMinecraftWorld(), this, null, null, new Vec3(Double.NaN, Double.NaN, Double.NaN), Float.NaN, true, net.minecraft.world.level.Explosion.BlockInteraction.DESTROY); // Paper
      }
  
@@ -178,10 +209,48 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
 -        this.dragonFight = dragonFight;
 -    }
 -
-     public void setFightOrigin(BlockPos fightOrigin) {
-         this.fightOrigin = fightOrigin;
+-    public void setFightOrigin(BlockPos fightOrigin) {
+-        this.fightOrigin = fightOrigin;
+-    }
+-
+-    public BlockPos getFightOrigin() {
+-        return this.fightOrigin;
+-    }
+-
+     public static AttributeSupplier.Builder createAttributes() {
+         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 200.0);
      }
-@@ -188,13 +182,6 @@ public class EnderDragon extends Mob implements Enemy {
+ 
+-    // Paper start - Allow changing the EnderDragon podium
+-    public BlockPos getPodium() {
+-        if (this.podium == null) {
+-            return EndPodiumFeature.getLocation(this.getFightOrigin());
+-        }
+-        return this.podium;
+-    }
+-
+     public void setPodium(@Nullable BlockPos blockPos) {
+         this.podium = blockPos;
+     }
+     // Paper end - Allow changing the EnderDragon podium
+ 
++    // Aincrad start - standalone dragon spawn position
++    public BlockPos getSpawn() {
++        if (this.spawnPosition == null) {
++            return this.blockPosition();
++        }
++        return this.spawnPosition;
++    }
++
++    public void setSpawn(@Nullable BlockPos spawnPosition) {
++        this.spawnPosition = spawnPosition;
++    }
++    // Aincrad end
++
+     @Override
+     public boolean isFlapping() {
+         float cos = Mth.cos(this.flapTime * (float) (Math.PI * 2));
+@@ -188,14 +183,13 @@ public class EnderDragon extends Mob implements Enemy {
              }
          }
  
@@ -189,13 +258,19 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
 -            EndDragonFight dragonFight = serverLevel.getDragonFight();
 -            if (dragonFight != null && this.getUUID().equals(dragonFight.getDragonUUID())) {
 -                this.dragonFight = dragonFight;
--            }
--        }
++        this.oFlapTime = this.flapTime;
++        if (!this.level().isClientSide) {
++            this.bossEvent.setProgress(this.getHealth() / this.getMaxHealth());
++            if (this.tickCount % 20 == 0) {
++                this.heal(1.0F);
+             }
+         }
 -
-         this.oFlapTime = this.flapTime;
+-        this.oFlapTime = this.flapTime;
          if (this.isDeadOrDying()) {
              float f = (this.random.nextFloat() - 0.5F) * 8.0F;
-@@ -351,9 +338,6 @@ public class EnderDragon extends Mob implements Enemy {
+             float f1 = (this.random.nextFloat() - 0.5F) * 4.0F;
+@@ -351,9 +345,6 @@ public class EnderDragon extends Mob implements Enemy {
                      this.inWall = this.checkWalls(serverLevel3, this.head.getBoundingBox())
                          | this.checkWalls(serverLevel3, this.neck.getBoundingBox())
                          | this.checkWalls(serverLevel3, this.body.getBoundingBox());
@@ -205,7 +280,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
                  }
  
                  for (int i1 = 0; i1 < this.subEntities.length; i1++) {
-@@ -597,18 +581,10 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -597,17 +588,10 @@ public class EnderDragon extends Mob implements Enemy {
          this.remove(Entity.RemovalReason.KILLED, org.bukkit.event.entity.EntityRemoveEvent.Cause.DEATH); // CraftBukkit - add Bukkit remove cause
          // Paper end - Fire entity death event
          this.gameEvent(GameEvent.ENTITY_DIE);
@@ -220,11 +295,10 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
 -        if (this.dragonFight != null) {
 -            this.dragonFight.updateDragon(this);
 -        }
--
+ 
          this.dragonDeathTime++;
          if (this.dragonDeathTime >= 180 && this.dragonDeathTime <= 200) {
-             float f = (this.random.nextFloat() - 0.5F) * 8.0F;
-@@ -668,10 +644,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -668,10 +652,6 @@ public class EnderDragon extends Mob implements Enemy {
                  ExperienceOrb.award(serverLevel1, this.position(), Mth.floor(i * 0.2F), org.bukkit.entity.ExperienceOrb.SpawnReason.ENTITY_DEATH, this.lastHurtByPlayer, this); // Paper
              }
  
@@ -235,7 +309,32 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
              this.remove(Entity.RemovalReason.KILLED, org.bukkit.event.entity.EntityRemoveEvent.Cause.DEATH); // CraftBukkit - add Bukkit remove cause
              this.gameEvent(GameEvent.ENTITY_DIE);
          }
-@@ -735,9 +707,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -679,6 +659,13 @@ public class EnderDragon extends Mob implements Enemy {
+ 
+     public int findClosestNode() {
+         if (this.nodes[0] == null) {
++            // Aincrad start - build nodes relative to spawn position with fixed Y
++            BlockPos spawnPos = this.getSpawn();
++            int baseX = spawnPos.getX();
++            int baseY = spawnPos.getY();
++            int baseZ = spawnPos.getZ();
++            // Aincrad end
++            
+             for (int i = 0; i < 24; i++) {
+                 int i1 = 5;
+                 int floor;
+@@ -697,8 +684,8 @@ public class EnderDragon extends Mob implements Enemy {
+                     floor1 = Mth.floor(20.0F * Mth.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * var7)));
+                 }
+ 
+-                int max = Math.max(73, this.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(floor, 0, floor1)).getY() + i1);
+-                this.nodes[i] = new Node(floor, max, floor1);
++                // Aincrad - use spawn position Y + offset instead of heightmap query
++                this.nodes[i] = new Node(baseX + floor, baseY + i1, baseZ + floor1);
+             }
+ 
+             this.nodeAdjacency[0] = 6146;
+@@ -735,9 +722,6 @@ public class EnderDragon extends Mob implements Enemy {
          int i = 0;
          Node node = new Node(Mth.floor(x), Mth.floor(y), Mth.floor(z));
          int i1 = 0;
@@ -245,7 +344,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
  
          for (int i2 = i1; i2 < 24; i2++) {
              if (this.nodes[i2] != null) {
-@@ -773,9 +742,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -773,9 +757,6 @@ public class EnderDragon extends Mob implements Enemy {
          this.openSet.insert(node1);
          Node node2 = node1;
          int i1 = 0;
@@ -255,7 +354,68 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
  
          while (!this.openSet.isEmpty()) {
              Node node3 = this.openSet.pop();
-@@ -962,11 +928,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -873,6 +854,27 @@ public class EnderDragon extends Mob implements Enemy {
+             this.expToDrop = compound.getInt("Bukkit.expToDrop");
+         }
+         // CraftBukkit end
++        if (this.hasCustomName()) {
++            this.bossEvent.setName(this.getDisplayName());
++        }
++    }
++
++    @Override
++    public void setCustomName(@Nullable net.minecraft.network.chat.Component name) {
++        super.setCustomName(name);
++        this.bossEvent.setName(this.getDisplayName());
++    }
++
++    @Override
++    public void startSeenByPlayer(ServerPlayer player) {
++        super.startSeenByPlayer(player);
++        this.bossEvent.addPlayer(player);
++    }
++
++    @Override
++    public void stopSeenByPlayer(ServerPlayer player) {
++        super.stopSeenByPlayer(player);
++        this.bossEvent.removePlayer(player);
+     }
+ 
+     @Override
+@@ -913,8 +915,8 @@ public class EnderDragon extends Mob implements Enemy {
+         EnderDragonPhase<? extends DragonPhaseInstance> phase = currentPhase.getPhase();
+         Vec3 viewVector;
+         if (phase == EnderDragonPhase.LANDING || phase == EnderDragonPhase.TAKEOFF) {
+-            BlockPos heightmapPos = this.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.getPodium()); // Paper - Allow changing the EnderDragon podium
+-            float max = Math.max((float)Math.sqrt(heightmapPos.distToCenterSqr(this.position())) / 4.0F, 1.0F);
++            BlockPos spawnPos = this.getSpawn(); // Aincrad - use spawn position directly, no heightmap query
++            float max = Math.max((float)Math.sqrt(spawnPos.distToCenterSqr(this.position())) / 4.0F, 1.0F);
+             float f = 6.0F / max;
+             float xRot = this.getXRot();
+             float f1 = 1.5F;
+@@ -934,21 +936,6 @@ public class EnderDragon extends Mob implements Enemy {
+         return viewVector;
+     }
+ 
+-    public void onCrystalDestroyed(ServerLevel level, EndCrystal crystal, BlockPos pos, DamageSource damageSource) {
+-        Player player;
+-        if (damageSource.getEntity() instanceof Player) {
+-            player = (Player)damageSource.getEntity();
+-        } else {
+-            player = level.getNearestPlayer(CRYSTAL_DESTROY_TARGETING, pos.getX(), pos.getY(), pos.getZ());
+-        }
+-
+-        if (crystal == this.nearestCrystal) {
+-            this.hurt(level, this.head, this.damageSources().explosion(crystal, player), 10.0F);
+-        }
+-
+-        this.phaseManager.getCurrentPhase().onCrystalDestroyed(crystal, pos, damageSource, player);
+-    }
+-
+     @Override
+     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+         if (DATA_PHASE.equals(key) && this.level().isClientSide) {
+@@ -962,11 +949,6 @@ public class EnderDragon extends Mob implements Enemy {
          return this.phaseManager;
      }
  
@@ -267,7 +427,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
      @Override
      public boolean addEffect(MobEffectInstance effectInstance, @Nullable Entity entity) {
          return false;
-@@ -1009,10 +970,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -1009,10 +991,6 @@ public class EnderDragon extends Mob implements Enemy {
          boolean flag = worldserver.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT);
          int i = 500;
  
@@ -278,20 +438,48 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..e1568f010511d5062de42b17a1128b5b
          return flag ? i : 0;
      }
      // CraftBukkit end
+diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java
+index 85e20366beb7c44c938aa1e9bc2a806ddfa173a0..1a5ab8b913fdd75adac7671d0702aeb73a277b82 100644
+--- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java
++++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java
+@@ -34,8 +34,8 @@ public class DragonDeathPhase extends AbstractDragonPhaseInstance {
+     public void doServerTick(ServerLevel level) {
+         this.time++;
+         if (this.targetLocation == null) {
+-            BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, this.dragon.getPodium()); // Paper - Allow changing the EnderDragon podium
+-            this.targetLocation = Vec3.atBottomCenterOf(heightmapPos);
++            // Aincrad - use spawn position directly, no heightmap query
++            this.targetLocation = Vec3.atBottomCenterOf(this.dragon.getSpawn());
+         }
+ 
+         double d = this.targetLocation.distanceToSqr(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ());
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java
-index 1afb9ff6a5546f912238b1b03aacf45033f7c481..105c1c63f7fd48709819f5a13e221d712e90c5a9 100644
+index 1afb9ff6a5546f912238b1b03aacf45033f7c481..146e3efe714a68f1d9950a77832ff206e27f9502 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java
-@@ -54,7 +54,7 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
+@@ -53,17 +53,17 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
+ 
      private void findNewTarget(ServerLevel level) {
          if (this.currentPath != null && this.currentPath.isDone()) {
-             BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getPodium()); // Paper - Allow changing the EnderDragon podium
+-            BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getPodium()); // Paper - Allow changing the EnderDragon podium
 -            int i = this.dragon.getDragonFight() == null ? 0 : this.dragon.getDragonFight().getCrystalsAlive();
++            BlockPos spawnPos = this.dragon.getSpawn(); // Aincrad - use spawn position directly, no heightmap query
 +            int i = 0;
              if (this.dragon.getRandom().nextInt(i + 3) == 0) {
                  this.dragon.getPhaseManager().setPhase(EnderDragonPhase.LANDING_APPROACH);
                  return;
-@@ -88,12 +88,7 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
+             }
+ 
+-            Player nearestPlayer = level.getNearestPlayer(NEW_TARGET_TARGETING, this.dragon, heightmapPos.getX(), heightmapPos.getY(), heightmapPos.getZ());
++            Player nearestPlayer = level.getNearestPlayer(NEW_TARGET_TARGETING, this.dragon, spawnPos.getX(), spawnPos.getY(), spawnPos.getZ());
+             double d;
+             if (nearestPlayer != null) {
+-                d = heightmapPos.distToCenterSqr(nearestPlayer.position()) / 512.0;
++                d = spawnPos.distToCenterSqr(nearestPlayer.position()) / 512.0;
+             } else {
+                 d = 64.0;
+             }
+@@ -88,16 +88,9 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
                  ix--;
              }
  
@@ -301,15 +489,50 @@ index 1afb9ff6a5546f912238b1b03aacf45033f7c481..105c1c63f7fd48709819f5a13e221d71
 -                    ix += 12;
 -                }
 -            } else {
-+            if (this.dragon.isAlive()) {
-                 ix -= 12;
-                 ix &= 7;
-                 ix += 12;
+-                ix -= 12;
+-                ix &= 7;
+-                ix += 12;
+-            }
++            ix -= 12;
++            ix &= 7;
++            ix += 12;
+ 
+             this.currentPath = this.dragon.findPath(i1, ix, null);
+             if (this.currentPath != null) {
+diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java
+index aafa99c3553a1ba35e3d7e1a7c7842ed0468e509..ffe751b5dc03a475e9022bfa39e18b66089c2fd9 100644
+--- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java
++++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java
+@@ -52,7 +52,7 @@ public class DragonLandingApproachPhase extends AbstractDragonPhaseInstance {
+     private void findNewTarget(ServerLevel level) {
+         if (this.currentPath == null || this.currentPath.isDone()) {
+             int i = this.dragon.findClosestNode();
+-            BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getPodium()); // Paper - Allow changing the EnderDragon podium
++            BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getOnPos()); // Paper - Allow changing the EnderDragon podium
+             Player nearestPlayer = level.getNearestPlayer(NEAR_EGG_TARGETING, this.dragon, heightmapPos.getX(), heightmapPos.getY(), heightmapPos.getZ());
+             int i1;
+             if (nearestPlayer != null) {
+diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java
+index 1ab3491a0be33ba9a0c2b4a09b766d94b106fbd5..9323963d0487082af4ed0a1d19f7c78abe659824 100644
+--- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java
++++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java
+@@ -49,9 +49,8 @@ public class DragonLandingPhase extends AbstractDragonPhaseInstance {
+     @Override
+     public void doServerTick(ServerLevel level) {
+         if (this.targetLocation == null) {
+-            this.targetLocation = Vec3.atBottomCenterOf(
+-                level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getPodium()) // Paper - Allow changing the EnderDragon podium
+-            );
++            // Aincrad - use spawn position directly, no heightmap query
++            this.targetLocation = Vec3.atBottomCenterOf(this.dragon.getSpawn());
+         }
+ 
+         if (this.targetLocation.distanceToSqr(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ()) < 1.0) {
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
-index bc5e4266b3f7400c464e10fd299b9ced82bb35b2..422c6ccd93624ee0075efeb97a0cf6b219d07c0e 100644
+index bc5e4266b3f7400c464e10fd299b9ced82bb35b2..88762a72fcbb2c5a128ce0a1741e8824e4122995 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
-@@ -115,12 +115,7 @@ public class DragonStrafePlayerPhase extends AbstractDragonPhaseInstance {
+@@ -115,16 +115,9 @@ public class DragonStrafePlayerPhase extends AbstractDragonPhaseInstance {
                  i1--;
              }
  
@@ -319,15 +542,30 @@ index bc5e4266b3f7400c464e10fd299b9ced82bb35b2..422c6ccd93624ee0075efeb97a0cf6b2
 -                    i1 += 12;
 -                }
 -            } else {
-+            if (this.dragon.isAlive()) {
-                 i1 -= 12;
-                 i1 &= 7;
-                 i1 += 12;
+-                i1 -= 12;
+-                i1 &= 7;
+-                i1 += 12;
+-            }
++            i1 -= 12;
++            i1 &= 7;
++            i1 += 12;
+ 
+             this.currentPath = this.dragon.findPath(i, i1, null);
+             if (this.currentPath != null) {
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java
-index d0142ec67dad3b41ae0a693df614956e8ddabd9c..5e2f8a412a0a3161a13acc8420ec48be58171ddc 100644
+index d0142ec67dad3b41ae0a693df614956e8ddabd9c..898eef290e6bc3ce37300cd8c804d59e37153736 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java
-@@ -45,12 +45,7 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
+@@ -24,7 +24,7 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
+     @Override
+     public void doServerTick(ServerLevel level) {
+         if (!this.firstTick && this.currentPath != null) {
+-            BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getPodium()); // Paper - Allow changing the EnderDragon podium
++            BlockPos heightmapPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, this.dragon.getBlockPosBelowThatAffectsMyMovement()); // Paper - Allow changing the EnderDragon podium
+             if (!heightmapPos.closerToCenterThan(this.dragon.position(), 10.0)) {
+                 this.dragon.getPhaseManager().setPhase(EnderDragonPhase.HOLDING_PATTERN);
+             }
+@@ -45,16 +45,10 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
          int i = this.dragon.findClosestNode();
          Vec3 headLookVector = this.dragon.getHeadLookVector(1.0F);
          int i1 = this.dragon.findClosestNode(-headLookVector.x * 40.0, 105.0, -headLookVector.z * 40.0);
@@ -337,10 +575,17 @@ index d0142ec67dad3b41ae0a693df614956e8ddabd9c..5e2f8a412a0a3161a13acc8420ec48be
 -                i1 += 12;
 -            }
 -        } else {
-+        if (this.dragon.isAlive()) {
-             i1 -= 12;
-             i1 &= 7;
-             i1 += 12;
+-            i1 -= 12;
+-            i1 &= 7;
+-            i1 += 12;
+-        }
++
++        i1 -= 12;
++        i1 &= 7;
++        i1 += 12;
+ 
+         this.currentPath = this.dragon.findPath(i, i1, null);
+         this.navigateToNextPathNode();
 diff --git a/net/minecraft/world/item/EndCrystalItem.java b/net/minecraft/world/item/EndCrystalItem.java
 index 1bc4c8be71b445f64134548a85fd81442298c0f1..dc39e89d67c0eb96eda87c092f3f1b90a33e891e 100644
 --- a/net/minecraft/world/item/EndCrystalItem.java
@@ -364,6 +609,142 @@ index 1bc4c8be71b445f64134548a85fd81442298c0f1..dc39e89d67c0eb96eda87c092f3f1b90
                      }
  
                      context.getItemInHand().shrink(1);
+diff --git a/net/minecraft/world/level/block/DragonEggBlock.java b/net/minecraft/world/level/block/DragonEggBlock.java
+index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5efd55c111 100644
+--- a/net/minecraft/world/level/block/DragonEggBlock.java
++++ b/net/minecraft/world/level/block/DragonEggBlock.java
+@@ -3,8 +3,13 @@ package net.minecraft.world.level.block;
+ import com.mojang.serialization.MapCodec;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.particles.ParticleTypes;
++import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.util.Mth;
++import net.minecraft.util.RandomSource;
+ import net.minecraft.world.InteractionResult;
++import net.minecraft.world.entity.EntityType;
++import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
++import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.level.BlockGetter;
+ import net.minecraft.world.level.Level;
+@@ -19,6 +24,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
+ public class DragonEggBlock extends FallingBlock {
+     public static final MapCodec<DragonEggBlock> CODEC = simpleCodec(DragonEggBlock::new);
+     protected static final VoxelShape SHAPE = Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
++    // Aincrad start - dragon egg hatching
++    private static boolean isHatching = false;
++    private static int hatchTimer = 0;
++    // Aincrad end
+ 
+     @Override
+     public MapCodec<DragonEggBlock> codec() {
+@@ -36,12 +45,24 @@ public class DragonEggBlock extends FallingBlock {
+ 
+     @Override
+     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
++        // Aincrad start - dragon egg spawn chain
++        if (isHatching) {
++            return InteractionResult.FAIL;
++        }
++        // Aincrad end
++
+         this.teleport(state, level, pos);
+         return InteractionResult.SUCCESS;
+     }
+ 
+     @Override
+     protected void attack(BlockState state, Level level, BlockPos pos, Player player) {
++        // Aincrad start - dragon egg spawn chain
++        if (isHatching) {
++            return;
++        }
++        // Aincrad end
++        
+         this.teleport(state, level, pos);
+     }
+ 
+@@ -65,8 +86,14 @@ public class DragonEggBlock extends FallingBlock {
+ 
+                 blockPos = new BlockPos(event.getToBlock().getX(), event.getToBlock().getY(), event.getToBlock().getZ());
+                 // CraftBukkit end
+-                if (level.isClientSide) {
+-                    for (int i1 = 0; i1 < 128; i1++) {
++                
++                // Aincrad start - fix teleport particles to use actual destination
++                level.setBlock(blockPos, state, 2);
++                level.removeBlock(pos, false);
++                
++                // Send particles from old position to new position
++                if (level instanceof ServerLevel serverLevel) {
++                    for (int j = 0; j < 128; j++) {
+                         double randomDouble = level.random.nextDouble();
+                         float f = (level.random.nextFloat() - 0.5F) * 0.2F;
+                         float f1 = (level.random.nextFloat() - 0.5F) * 0.2F;
+@@ -74,12 +101,10 @@ public class DragonEggBlock extends FallingBlock {
+                         double d = Mth.lerp(randomDouble, (double)blockPos.getX(), (double)pos.getX()) + (level.random.nextDouble() - 0.5) + 0.5;
+                         double d1 = Mth.lerp(randomDouble, (double)blockPos.getY(), (double)pos.getY()) + level.random.nextDouble() - 0.5;
+                         double d2 = Mth.lerp(randomDouble, (double)blockPos.getZ(), (double)pos.getZ()) + (level.random.nextDouble() - 0.5) + 0.5;
+-                        level.addParticle(ParticleTypes.PORTAL, d, d1, d2, f, f1, f2);
++                        serverLevel.sendParticles(ParticleTypes.PORTAL, d, d1, d2, 1, f, f1, f2, 0.0);
+                     }
+-                } else {
+-                    level.setBlock(blockPos, state, 2);
+-                    level.removeBlock(pos, false);
+                 }
++                // Aincrad end
+ 
+                 return;
+             }
+@@ -95,4 +120,49 @@ public class DragonEggBlock extends FallingBlock {
+     protected boolean isPathfindable(BlockState state, PathComputationType pathComputationType) {
+         return false;
+     }
++
++    // Aincrad start - dragon egg spawn chain
++    @Override
++    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
++        // Show particles and decrement timer while hatching
++        if (isHatching) {
++            // Spawn dragon when timer reaches zero
++            if (hatchTimer <= 0) {
++                this.spawnDragon(level, pos, random);
++                return;
++            }
++            
++            // Show particles while waiting
++            double d = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.5;
++            double d1 = pos.getY() + random.nextDouble();
++            double d2 = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.5;
++            level.sendParticles(ParticleTypes.PORTAL, d, d1, d2, 1, 0.0, 0.0, 0.0, 0.0);
++            // Decrement timer and schedule next tick
++            hatchTimer--;
++            level.scheduleTick(pos, this, 1);
++        }
++        
++        // Handle normal falling behavior
++        super.tick(state, level, pos, random);
++    }
++    
++    @Override
++    public void onLand(Level level, BlockPos pos, BlockState state, BlockState replaceableState, net.minecraft.world.entity.item.FallingBlockEntity fallingBlock) {
++        isHatching = true;
++        hatchTimer = 60; // Ticks to wait after landing before spawning dragon
++        ((ServerLevel) level).scheduleTick(pos, this, 1);
++    }
++    
++    private void spawnDragon(ServerLevel level, BlockPos pos, RandomSource random) {
++        level.removeBlock(pos, false);
++        isHatching = false;
++        
++        EnderDragon dragon = new EnderDragon(EntityType.ENDER_DRAGON, level);
++        dragon.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
++        // Set spawn position elevated to prevent terrain destruction from lowering flight path
++        dragon.setSpawn(pos.above(8));
++        dragon.getPhaseManager().setPhase(EnderDragonPhase.HOLDING_PATTERN);
++        level.addFreshEntity(dragon);
++    }
++    // Aincrad end
+ }
 diff --git a/net/minecraft/world/level/dimension/end/DragonRespawnAnimation.java b/net/minecraft/world/level/dimension/end/DragonRespawnAnimation.java
 deleted file mode 100644
 index ba54696b52bf6dc4fd64f8da5182b24d637af5c7..0000000000000000000000000000000000000000

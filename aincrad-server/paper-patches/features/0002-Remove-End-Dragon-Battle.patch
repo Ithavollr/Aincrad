@@ -5,7 +5,7 @@ Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index 2b2ab09fc9fda041766de0e36db096b60c9fa51e..0ffd7367a4fe42612fc786f135574184b7428601 100644
+index 2b2ab09fc9fda041766de0e36db096b60c9fa51e..8a1a77d9c25a152950cdc2678416f77e6ab51a66 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 @@ -96,7 +96,6 @@ import org.bukkit.craftbukkit.block.CraftBlock;
@@ -16,18 +16,15 @@ index 2b2ab09fc9fda041766de0e36db096b60c9fa51e..0ffd7367a4fe42612fc786f135574184
  import org.bukkit.craftbukkit.entity.CraftEntity;
  import org.bukkit.craftbukkit.entity.CraftPlayer;
  import org.bukkit.craftbukkit.generator.structure.CraftGeneratedStructure;
-@@ -2347,11 +2346,6 @@ public class CraftWorld extends CraftRegionAccessor implements World {
-         return persistentRaid.raidMap.values().stream().map(CraftRaid::new).collect(Collectors.toList());
+@@ -2349,7 +2348,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+ 
+     @Override
+     public DragonBattle getEnderDragonBattle() {
+-        return (this.getHandle().getDragonFight() == null) ? null : new CraftDragonBattle(this.getHandle().getDragonFight());
++        return null; // Aincrad - Remove End Dragon Battle
      }
  
--    @Override
--    public DragonBattle getEnderDragonBattle() {
--        return (this.getHandle().getDragonFight() == null) ? null : new CraftDragonBattle(this.getHandle().getDragonFight());
--    }
--
      @Override
-     public Collection<GeneratedStructure> getStructures(int x, int z) {
-         return this.getStructures(x, z, struct -> true);
 diff --git a/src/main/java/org/bukkit/craftbukkit/boss/CraftDragonBattle.java b/src/main/java/org/bukkit/craftbukkit/boss/CraftDragonBattle.java
 deleted file mode 100644
 index 6bfabb38b51115beb2a65a165f235347838b6006..0000000000000000000000000000000000000000
@@ -217,7 +214,7 @@ index 6bfabb38b51115beb2a65a165f235347838b6006..00000000000000000000000000000000
 -    // Paper end - More DragonBattle API
 -}
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java
-index 1ef0ec7ed3b13c25d76c03c7013c8e2eaba4d66a..211cc6f51057635959ae7802f7f3cee585fbaf8d 100644
+index 1ef0ec7ed3b13c25d76c03c7013c8e2eaba4d66a..8a06c2a35d6e907f175fde4d7b45c94f2a5fe920 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java
 @@ -8,7 +8,6 @@ import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
@@ -228,22 +225,23 @@ index 1ef0ec7ed3b13c25d76c03c7013c8e2eaba4d66a..211cc6f51057635959ae7802f7f3cee5
  import org.bukkit.entity.ComplexEntityPart;
  import org.bukkit.entity.EnderDragon;
  import org.bukkit.entity.EnderDragon.Phase;
-@@ -60,13 +59,7 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
+@@ -60,13 +59,12 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
  
      @Override
      public BossBar getBossBar() {
 -        DragonBattle battle = this.getDragonBattle();
 -        return battle != null ? battle.getBossBar() : null;
--    }
--
--    @Override
--    public DragonBattle getDragonBattle() {
--        return this.getHandle().getDragonFight() != null ? new CraftDragonBattle(this.getHandle().getDragonFight()) : null;
-+        return null;
++        return null; // Aincrad - Remove End Dragon Battle
      }
  
      @Override
-@@ -77,7 +70,7 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
+     public DragonBattle getDragonBattle() {
+-        return this.getHandle().getDragonFight() != null ? new CraftDragonBattle(this.getHandle().getDragonFight()) : null;
++        return null; // Aincrad - Remove End Dragon Battle
+     }
+ 
+     @Override
+@@ -77,7 +75,7 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
      // Paper start - Allow changing the EnderDragon podium
      @Override
      public org.bukkit.Location getPodium() {

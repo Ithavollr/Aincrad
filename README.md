@@ -31,7 +31,7 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 ## SETUP
 ### Getting Started (new machines)
 1. Clone repo
-2. `./gradlew applyPatches` from root
+2. `./gradlew applyAllPatches` from root
 
 ## REPO SYNC
 
@@ -40,14 +40,14 @@ Aincrad is a set of patches applied on top of Paper. The Paper upstream commit i
 ### Updating Paper upstream
 
 1. Update `paperCommit` in `gradle.properties` to the latest commit hash from Paper's version branch (e.g., `ver/1.21.4`)
-2. Run `./gradlew applyPatches` to regenerate source directories with the new Paper base
+2. Run `./gradlew applyAllPatches` to regenerate source directories with the new Paper base
 3. If patch conflicts occur, resolve them in the source directories (`aincrad-server/src/minecraft/java/` or `paper-server/`)
 4. Run `./gradlew rebuildPatches` to regenerate the patch files from your changes
 5. Review and commit the updated patches
 
 > [!NOTE]
 > **Handling conflicts:**
-> - After `applyPatches`, check for `.rej` files indicating failed patch hunks
+> - After `applyAllPatches`, check for `.rej` files indicating failed patch hunks
 > - Resolve conflicts manually in the source files, then run `rebuildPatches`
 > - Some patches may need to be dropped entirely if Paper has superseded them
 
@@ -55,7 +55,7 @@ Aincrad is a set of patches applied on top of Paper. The Paper upstream commit i
 > **For mistakes:**  
 > Reset all non-committed local changes: `git reset --hard`  
 > Clean build artifacts: `./gradlew clean`  
-> Regenerate everything: `./gradlew applyPatches`
+> Regenerate everything: `./gradlew applyAllPatches`
 
 ## BUILD
 1. Go to the gradle tasks -> bundling

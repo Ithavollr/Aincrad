@@ -34,23 +34,28 @@ This is the custom server code used in the Minecraft world of Iðavöllr.
 2. `./gradlew applyPatches` from root
 
 ## REPO SYNC
-1. `git checkout main` - switch to the main branch, that tracks Paper
-2. via Github UI, PR all new changes into main
-3. Make a list of any code that should make it into Aincrad
-4. `git checkout seed`
-5. `git cherry-pick <new_paper_goodness_commit_hash>`
-6. `gradlew applyPatches` - this makes sure your patch/source files are in sync. Forgetting this step will lead to errors the next time you `rebuildPatches`
-7. Push the changes back to origin, all done!
+
+Aincrad is a set of patches applied on top of Paper. The Paper upstream commit is tracked in `gradle.properties` as `paperCommit`.
+
+### Updating Paper upstream
+
+1. Update `paperCommit` in `gradle.properties` to the latest commit hash from Paper's version branch (e.g., `ver/1.21.4`)
+2. Run `./gradlew applyPatches` to regenerate source directories with the new Paper base
+3. If patch conflicts occur, resolve them in the source directories (`aincrad-server/src/minecraft/java/` or `paper-server/`)
+4. Run `./gradlew rebuildPatches` to regenerate the patch files from your changes
+5. Review and commit the updated patches
 
 > [!NOTE]
-> for mistakes,  
-> Reset all non-committed local changes: `git reset --hard`  
-> Reset branch to remote state: `git reset --hard origin/seed`  
-> Reset to specific commit: `git reset --hard <commit-hash>`,  
->   then `git push origin seed --force`
+> **Handling conflicts:**
+> - After `applyPatches`, check for `.rej` files indicating failed patch hunks
+> - Resolve conflicts manually in the source files, then run `rebuildPatches`
+> - Some patches may need to be dropped entirely if Paper has superseded them
 
 > [!TIP]
-> Current sync status tracked [here](paper-server/README.md)
+> **For mistakes:**  
+> Reset all non-committed local changes: `git reset --hard`  
+> Clean build artifacts: `./gradlew clean`  
+> Regenerate everything: `./gradlew applyPatches`
 
 ## BUILD
 1. Go to the gradle tasks -> bundling

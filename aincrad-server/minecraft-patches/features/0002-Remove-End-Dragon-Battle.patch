@@ -5,7 +5,7 @@ Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4a2cce3a2 100644
+index b7bb4dbef9fb3293989cb839703826f4261fa030..627dd659cff6e6f76650819fa509ad4589a5c1f7 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -138,7 +138,6 @@ import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
@@ -16,7 +16,7 @@ index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4
  import net.minecraft.world.level.entity.EntityPersistentStorage;
  import net.minecraft.world.level.entity.EntityTickList;
  import net.minecraft.world.level.entity.EntityTypeTest;
-@@ -210,7 +209,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -212,7 +211,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      private final List<CustomSpawner> customSpawners;
      private final ChunkProgressListener progressListener;
      @Nullable
@@ -24,7 +24,7 @@ index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4
      final Int2ObjectMap<EnderDragonPart> dragonParts = new Int2ObjectOpenHashMap<>();
      private final java.util.Map<Class<? extends Entity>, Integer> entityCountsByType = new java.util.HashMap<>();
      private final StructureManager structureManager;
-@@ -672,11 +670,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -674,11 +672,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fixerUpper
          );
          this.structureManager = new StructureManager(this, this.serverLevelData.worldGenOptions(), this.structureCheck); // CraftBukkit
@@ -36,7 +36,7 @@ index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4
  
          this.sleepStatus = new SleepStatus();
          this.gameEventDispatcher = new GameEventDispatcher(this);
-@@ -738,12 +731,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -740,12 +733,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
      // Paper end
  
@@ -49,7 +49,7 @@ index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4
      public void setWeatherParameters(int clearTime, int weatherTime, boolean isRaining, boolean isThundering) {
          this.serverLevelData.setClearWeatherTime(clearTime);
          this.serverLevelData.setRainTime(weatherTime);
-@@ -979,11 +966,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -975,11 +962,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
          if (flag || this.emptyTime++ < 300) {
              profilerFiller.push("entities");
@@ -61,7 +61,7 @@ index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4
  
              io.papermc.paper.entity.activation.ActivationRange.activateEntities(this); // Paper - EAR
              this.entityTickList
-@@ -1572,9 +1554,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1568,9 +1550,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void saveLevelData(boolean join) {
@@ -71,7 +71,7 @@ index a4304e5df366926dac0fe0bf36c0be4469273c9e..c5cdcc433af0f8023b07e913cf8fb1c4
  
          DimensionDataStorage dataStorage = this.getChunkSource().getDataStorage();
          if (join) {
-@@ -2586,11 +2565,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2582,11 +2561,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.serverLevelData.worldGenOptions().seed(); // CraftBukkit
      }
  

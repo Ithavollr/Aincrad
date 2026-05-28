@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Wed, 27 May 2026 23:26:09 -0400
+Subject: [PATCH] Giants AI
+
+
+diff --git a/net/minecraft/world/entity/monster/Giant.java b/net/minecraft/world/entity/monster/Giant.java
+index 969eb604851d1cce50f0f99ed479189061d5de0c..9b4fa361728e5eacf1282b103f1d5bec785d8481 100644
+--- a/net/minecraft/world/entity/monster/Giant.java
++++ b/net/minecraft/world/entity/monster/Giant.java
+@@ -12,12 +12,64 @@ public class Giant extends Monster {
+         super(entityType, level);
+     }
+ 
++    @Override
++    protected void registerGoals() {
++        this.goalSelector.addGoal(0, new net.minecraft.world.entity.ai.goal.FloatGoal(this));
++        this.goalSelector.addGoal(7, new net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal(this, 0.9D));
++        this.goalSelector.addGoal(8, new net.minecraft.world.entity.ai.goal.LookAtPlayerGoal(this, net.minecraft.world.entity.player.Player.class, 16.0F));
++        this.goalSelector.addGoal(8, new net.minecraft.world.entity.ai.goal.RandomLookAroundGoal(this));
++        this.goalSelector.addGoal(5, new net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal(this, 0.9D));
++        this.goalSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.MeleeAttackGoal(this, 0.9D, false));
++        this.targetSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this).setAlertOthers(net.minecraft.world.entity.monster.piglin.Piglin.class));
++        this.targetSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, Phantom.class, true));
++        this.targetSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.player.Player.class, true));
++        this.targetSelector.addGoal(4, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.npc.Villager.class, false));
++        this.targetSelector.addGoal(5, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.animal.IronGolem.class, true));
++        this.targetSelector.addGoal(6, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, Skeleton.class, true));
++        this.targetSelector.addGoal(7, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, Zombie.class, true));
++    }
++
+     public static AttributeSupplier.Builder createAttributes() {
+-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 100.0).add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.ATTACK_DAMAGE, 50.0);
++        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 100.0).add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.ATTACK_DAMAGE, 50.0).add(Attributes.FOLLOW_RANGE, 48.0);
++    }
++
++    @Override
++    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor world, net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.EntitySpawnReason spawnReason, @org.jetbrains.annotations.Nullable net.minecraft.world.entity.SpawnGroupData entityData) {
++        net.minecraft.world.entity.SpawnGroupData groupData = super.finalizeSpawn(world, difficulty, spawnReason, entityData);
++        if (groupData == null) {
++            populateDefaultEquipmentSlots(this.random, difficulty);
++            populateDefaultEquipmentEnchantments(world, this.random, difficulty);
++        }
++        return groupData;
++    }
++
++    @Override
++    protected void populateDefaultEquipmentSlots(net.minecraft.util.RandomSource random, net.minecraft.world.DifficultyInstance difficulty) {
++        super.populateDefaultEquipmentSlots(this.random, difficulty);
++        if (random.nextFloat() < (level().getDifficulty() == net.minecraft.world.Difficulty.HARD ? 0.1F : 0.05F)) {
++            this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_SWORD));
++        }
++    }
++
++    @Override
++    public boolean isSensitiveToWater() {
++        return true;
++    }
++
++    @Override
++    protected boolean isAlwaysExperienceDropper() {
++        return true;
++    }
++
++    @Override
++    public float getJumpPower() {
++        // make giants jump as high as everything else relative to their size
++        // 1.0 makes bottom of feet about as high as their waist when they jump
++        return 0.9F;
+     }
+ 
+     @Override
+     public float getWalkTargetValue(BlockPos pos, LevelReader level) {
+-        return level.getPathfindingCostFromLightLevels(pos);
++        return -level.getPathfindingCostFromLightLevels(pos);
+     }
+ }

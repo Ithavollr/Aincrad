@@ -243,10 +243,10 @@ index 0000000000000000000000000000000000000000..1ad144347a653f305e6191e63987f486
 +}
 diff --git a/src/main/java/org/evlis/controller/MoveControllerWASD.java b/src/main/java/org/evlis/controller/MoveControllerWASD.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..50ef1e4387065a3346f487c00fe72724a6b35ae3
+index 0000000000000000000000000000000000000000..aa617adb41fcac30dd6d9eb14c252b089daa77b3
 --- /dev/null
 +++ b/src/main/java/org/evlis/controller/MoveControllerWASD.java
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,89 @@
 +package org.evlis.controller;
 +
 +import net.minecraft.server.level.ServerPlayer;
@@ -332,11 +332,8 @@ index 0000000000000000000000000000000000000000..50ef1e4387065a3346f487c00fe72724
 +    }
 +
 +    public static boolean spacebarEvent(Mob entity) {
-+        if (RidableSpacebarEvent.getHandlerList().getRegisteredListeners().length > 0) {
-+            return new RidableSpacebarEvent(entity.getBukkitEntity()).callEvent();
-+        } else {
-+            return true;
-+        }
++        // Purpur API event skipped - always allow spacebar
++        return true;
 +    }
 +}
 diff --git a/src/main/java/org/evlis/controller/WaterMoveControllerWASD.java b/src/main/java/org/evlis/controller/WaterMoveControllerWASD.java

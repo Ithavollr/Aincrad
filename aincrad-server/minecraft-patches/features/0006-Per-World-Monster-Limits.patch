@@ -5,10 +5,10 @@ Subject: [PATCH] Per World Monster Limits
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index ef8222b927f4224528320238921fda7a6a3084ab..30b7042a48d60e4f425faece44db3ad1f8bf719b 100644
+index 95061d0095f322b99ec20f2fe5a5287d39900e3c..b0a80606b3bb573ad8d2e43297c0490ec52e8934 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -1587,6 +1587,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1576,6 +1576,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.getEntities(EntityType.ENDER_DRAGON, LivingEntity::isAlive);
      }
  
@@ -27,7 +27,7 @@ index ef8222b927f4224528320238921fda7a6a3084ab..30b7042a48d60e4f425faece44db3ad1
      public List<ServerPlayer> getPlayers(Predicate<? super ServerPlayer> predicate) {
          return this.getPlayers(predicate, Integer.MAX_VALUE);
      }
-@@ -2802,6 +2814,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2791,6 +2803,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                  for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
                      ServerLevel.this.dragonParts.put(enderDragonPart.getId(), enderDragonPart);
                  }
@@ -39,7 +39,7 @@ index ef8222b927f4224528320238921fda7a6a3084ab..30b7042a48d60e4f425faece44db3ad1
              }
  
              entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
-@@ -2872,6 +2889,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2861,6 +2878,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                  for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
                      ServerLevel.this.dragonParts.remove(enderDragonPart.getId());
                  }

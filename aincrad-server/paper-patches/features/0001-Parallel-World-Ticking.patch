@@ -282,7 +282,7 @@ index 69cdd304d255d52c9b7dc9b6a33ffdb630b79abe..ae9d003bea936113f3621852aef13aeb
 +    // SparklyPaper end
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 1fb98caf0101fcbf3f045c0725c89fcbff4e7a7e..66eaf9b5fc51fa2d597c839b94353190739ad7d8 100644
+index 1fb98caf0101fcbf3f045c0725c89fcbff4e7a7e..8142f3145dae773374b5b51310e28d5d8def3d01 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -1287,7 +1287,7 @@ public final class CraftServer implements Server {
@@ -294,13 +294,23 @@ index 1fb98caf0101fcbf3f045c0725c89fcbff4e7a7e..66eaf9b5fc51fa2d597c839b94353190
          Preconditions.checkArgument(creator != null, "WorldCreator cannot be null");
  
          String name = creator.name();
-@@ -1463,13 +1463,13 @@ public final class CraftServer implements Server {
+@@ -1463,13 +1463,23 @@ public final class CraftServer implements Server {
              return null;
          }
  
 +        serverLevel.isDebugWorld = primaryLevelData.isDebugWorld();
          this.console.addLevel(serverLevel); // Paper - Put world into worldlist before initing the world; move up
 -        this.console.initWorld(serverLevel, primaryLevelData, primaryLevelData, primaryLevelData.worldGenOptions());
++
++        // Aincrad - Run event and populators here on main thread to honor vanilla WorldInitEvent contract
++        // This ensures plugins can patch the world before any chunk generation occurs
++        if (serverLevel.generator != null) {
++            serverLevel.getWorld().getPopulators().addAll(serverLevel.generator.getDefaultPopulators(serverLevel.getWorld()));
++        }
++        net.minecraft.world.level.border.WorldBorder worldborder = serverLevel.getWorldBorder();
++        worldborder.applySettings(serverLevel.serverLevelData.getWorldBorder());
++        org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldInitEvent(serverLevel.getWorld()));
++        // End Aincrad
  
          serverLevel.setSpawnSettings(true);
          // Paper - Put world into worldlist before initing the world; move up

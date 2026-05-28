@@ -5,7 +5,7 @@ Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 9972567d7e480b9d87691e775bb3449ec0b334b0..83e55b72e303f5f048f6a1fe401a4b1b5ec79cb4 100644
+index 37ae37f4b180ee4f55df9c204b68f485e3dbce6a..57a44ac1fbf07b727e0c1d9462c6d17d9eed11de 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -138,7 +138,6 @@ import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
@@ -49,7 +49,7 @@ index 9972567d7e480b9d87691e775bb3449ec0b334b0..83e55b72e303f5f048f6a1fe401a4b1b
      public void setWeatherParameters(int clearTime, int weatherTime, boolean isRaining, boolean isThundering) {
          this.serverLevelData.setClearWeatherTime(clearTime);
          this.serverLevelData.setRainTime(weatherTime);
-@@ -964,11 +951,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -967,11 +954,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
          if (flag || this.emptyTime++ < 300) {
              profilerFiller.push("entities");
@@ -61,7 +61,7 @@ index 9972567d7e480b9d87691e775bb3449ec0b334b0..83e55b72e303f5f048f6a1fe401a4b1b
  
              io.papermc.paper.entity.activation.ActivationRange.activateEntities(this); // Paper - EAR
              this.entityTickList
-@@ -1557,9 +1539,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1560,9 +1542,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void saveLevelData(boolean join) {
@@ -71,7 +71,7 @@ index 9972567d7e480b9d87691e775bb3449ec0b334b0..83e55b72e303f5f048f6a1fe401a4b1b
  
          DimensionDataStorage dataStorage = this.getChunkSource().getDataStorage();
          if (join) {
-@@ -2571,11 +2550,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2574,11 +2553,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.serverLevelData.worldGenOptions().seed(); // CraftBukkit
      }
  

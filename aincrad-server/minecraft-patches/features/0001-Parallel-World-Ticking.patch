@@ -2954,7 +2954,7 @@ index f6518e29f805018c72222f5aaa7b662071665b65..df69cd598d0cf9dbba739326e2f1aed1
      public final int rateLimitPacketsPerSecond = this.get("rate-limit", 0);
      public final int viewDistance = this.get("view-distance", 10);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449ec0b334b0 100644
+index 0651a536ad38c3c6d1ac2423b6d351738719339f..37ae37f4b180ee4f55df9c204b68f485e3dbce6a 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -3080,7 +3080,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
      }
  
      // Paper start
-@@ -713,7 +763,133 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -713,7 +763,136 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.structureManager;
      }
  
@@ -3176,6 +3176,9 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
 +                    for (ChunkPos chunkPos : this.initChunks) {
 +                        this.getChunkSource().addTicketAtLevel(TicketType.START, chunkPos, ChunkLevel.ENTITY_TICKING_LEVEL, net.minecraft.util.Unit.INSTANCE);
 +                    }
++                    // Flush ticket updates so chunks can transition to BLOCK_TICKING/ENTITY_TICKING.
++                    // During init we never reach ServerChunkCache.tick(), so this must be done explicitly.
++                    chunkSource.runDistanceManagerUpdates();
 +                    break;
 +                case 3: // set the spawn location
 +                    try {
@@ -3214,7 +3217,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          ProfilerFiller profilerFiller = Profiler.get();
          this.handlingTick = true;
          TickRateManager tickRateManager = this.tickRateManager();
-@@ -955,11 +1131,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -955,11 +1134,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          profilerFiller.popPush("iceandsnow");
  
          if (!this.paperConfig().environment.disableIceAndSnow) { // Paper - Option to disable ice and snow
@@ -3230,7 +3233,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          } // Paper - Option to disable ice and snow
  
          profilerFiller.popPush("tickBlocks");
-@@ -1219,8 +1395,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1219,8 +1398,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fluidState.tick(this, pos, blockState);
          }
          // Paper start - rewrite chunk system
@@ -3241,7 +3244,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          }
          // Paper end - rewrite chunk system
  
-@@ -1232,8 +1408,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1232,8 +1411,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              blockState.tick(this, pos, this.random);
          }
          // Paper start - rewrite chunk system
@@ -3252,7 +3255,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          }
          // Paper end - rewrite chunk system
  
-@@ -1259,23 +1435,23 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1259,23 +1438,23 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                  currentlyTickingEntity.lazySet(entity);
              }
              // Paper end - log detailed entity tick information
@@ -3292,7 +3295,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          } finally {
              if (currentlyTickingEntity.get() == entity) {
                  currentlyTickingEntity.lazySet(null);
-@@ -1296,8 +1472,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1296,8 +1475,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              profilerFiller.incrementCounter("tickPassenger");
              // Paper start - EAR 2
              if (isActive) {
@@ -3303,7 +3306,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
              } else {
                  passengerEntity.setDeltaMovement(Vec3.ZERO);
                  passengerEntity.inactiveTick();
-@@ -1325,7 +1501,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1325,7 +1504,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          }
  
          if (doFull) {
@@ -3312,7 +3315,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          }
          // chunk autosave is already called by the ChunkSystem during unload processing (ChunkMap#processUnloads)
          // Copied from save()
-@@ -1493,6 +1669,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1493,6 +1672,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void addPlayer(ServerPlayer player) {
@@ -3320,7 +3323,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..9972567d7e480b9d87691e775bb3449e
          Entity entity = this.getEntities().get(player.getUUID());
          if (entity != null) {
              LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
-@@ -1505,7 +1682,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1505,7 +1685,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
      // CraftBukkit start
      private boolean addEntity(Entity entity, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason spawnReason) {

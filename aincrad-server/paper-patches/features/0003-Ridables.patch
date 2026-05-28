@@ -243,10 +243,10 @@ index 0000000000000000000000000000000000000000..1ad144347a653f305e6191e63987f486
 +}
 diff --git a/src/main/java/org/evlis/controller/MoveControllerWASD.java b/src/main/java/org/evlis/controller/MoveControllerWASD.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..aa617adb41fcac30dd6d9eb14c252b089daa77b3
+index 0000000000000000000000000000000000000000..8ebda13d5a9b2f38d14a72be806721446a619778
 --- /dev/null
 +++ b/src/main/java/org/evlis/controller/MoveControllerWASD.java
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,88 @@
 +package org.evlis.controller;
 +
 +import net.minecraft.server.level.ServerPlayer;
@@ -255,7 +255,6 @@ index 0000000000000000000000000000000000000000..aa617adb41fcac30dd6d9eb14c252b08
 +import net.minecraft.world.entity.ai.control.MoveControl;
 +import net.minecraft.world.entity.player.Input;
 +import net.minecraft.world.entity.player.Player;
-+import org.purpurmc.purpur.event.entity.RidableSpacebarEvent;
 +
 +public class MoveControllerWASD extends MoveControl {
 +    protected final Mob entity;

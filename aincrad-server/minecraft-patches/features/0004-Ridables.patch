@@ -580,7 +580,7 @@ index d7f9b3b2b1077ea10e8f64b87c8f4c4354e90858..b6c93126ea3b182bdf18c60902ad5241
              this.lookAtCooldown--;
              this.getYRotD().ifPresent(rotationWanted -> this.mob.yHeadRot = this.rotateTowards(this.mob.yHeadRot, rotationWanted + 20.0F, this.yMaxRotSpeed));
 diff --git a/net/minecraft/world/entity/animal/Bee.java b/net/minecraft/world/entity/animal/Bee.java
-index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015594497cf 100644
+index 94244b148533ef026bf5c56abbc2bb5cfa83c938..0d19a3d61f001c5b9c3e251199d97d7b0e97dbee 100644
 --- a/net/minecraft/world/entity/animal/Bee.java
 +++ b/net/minecraft/world/entity/animal/Bee.java
 @@ -145,6 +145,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
@@ -616,7 +616,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015
          }
          this.moveControl = new BeeFlyingMoveControl(this, 20, true);
          // Paper end - Fix MC-167279
-@@ -169,6 +183,49 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -169,6 +183,51 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          this.setPathfindingMalus(PathType.FENCE, -1.0F);
      }
  
@@ -633,7 +633,9 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015
 +
 +    @Override
 +    public boolean isControllable() {
-+        return persistentAngerTarget == null;
++        return !this.isAngry()
++            && this.getRider() instanceof Player player
++            && (player.getMainHandItem().is(ItemTags.BEE_FOOD) || player.getOffhandItem().is(ItemTags.BEE_FOOD));
 +    }
 +
 +    @Override
@@ -666,7 +668,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015
      @Override
      protected void defineSynchedData(SynchedEntityData.Builder builder) {
          super.defineSynchedData(builder);
-@@ -183,6 +240,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -183,6 +242,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
  
      @Override
      protected void registerGoals() {
@@ -674,7 +676,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015
          this.goalSelector.addGoal(0, new Bee.BeeAttackGoal(this, 1.4F, true));
          this.goalSelector.addGoal(1, new Bee.BeeEnterHiveGoal());
          this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
-@@ -200,6 +258,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -200,6 +260,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          this.goalSelector.addGoal(7, new Bee.BeeGrowCropGoal());
          this.goalSelector.addGoal(8, new Bee.BeeWanderGoal());
          this.goalSelector.addGoal(9, new FloatGoal(this));
@@ -682,7 +684,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015
          this.targetSelector.addGoal(1, new Bee.BeeHurtByOtherGoal(this).setAlertOthers(new Class[0]));
          this.targetSelector.addGoal(2, new Bee.BeeBecomeAngryTargetGoal(this));
          this.targetSelector.addGoal(3, new ResetUniversalAngerTargetGoal<>(this, true));
-@@ -1083,15 +1142,15 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -1083,15 +1144,15 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          }
      }
  
@@ -702,7 +704,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..d4313861cd7ad3db8b7761019adee015
          }
  
 diff --git a/net/minecraft/world/entity/animal/Cow.java b/net/minecraft/world/entity/animal/Cow.java
-index befb99f0a96cb23f139061f92497737e9203a8fd..a4dbc3dd8bad58d9b89ef309ad5b4dadf9cb6ece 100644
+index befb99f0a96cb23f139061f92497737e9203a8fd..82a29667a4cb0605ebee55ebef58ae34c0a2e891 100644
 --- a/net/minecraft/world/entity/animal/Cow.java
 +++ b/net/minecraft/world/entity/animal/Cow.java
 @@ -38,9 +38,27 @@ public class Cow extends Animal {
@@ -722,7 +724,7 @@ index befb99f0a96cb23f139061f92497737e9203a8fd..a4dbc3dd8bad58d9b89ef309ad5b4dad
 +
 +    @Override
 +    public boolean isControllable() {
-+        return true;
++        return false;
 +    }
 +    // Purpur end - Ridables
 +
@@ -750,7 +752,7 @@ index befb99f0a96cb23f139061f92497737e9203a8fd..a4dbc3dd8bad58d9b89ef309ad5b4dad
              // CraftBukkit end
              player.playSound(SoundEvents.COW_MILK, 1.0F, 1.0F);
 diff --git a/net/minecraft/world/entity/animal/MushroomCow.java b/net/minecraft/world/entity/animal/MushroomCow.java
-index 12099a5eb45ee21520d3ba68ef26909d5949206d..0ccbe6cb025e3be0924b704041a84ee64d9f9ac7 100644
+index 12099a5eb45ee21520d3ba68ef26909d5949206d..a6f29ff508e517ee49a3c1e2399f7e560f51020e 100644
 --- a/net/minecraft/world/entity/animal/MushroomCow.java
 +++ b/net/minecraft/world/entity/animal/MushroomCow.java
 @@ -55,6 +55,23 @@ public class MushroomCow extends Cow implements Shearable, VariantHolder<Mushroo
@@ -770,7 +772,7 @@ index 12099a5eb45ee21520d3ba68ef26909d5949206d..0ccbe6cb025e3be0924b704041a84ee6
 +
 +    @Override
 +    public boolean isControllable() {
-+        return true;
++        return false;
 +    }
 +    // Purpur end - Ridables
 +
@@ -787,7 +789,7 @@ index 12099a5eb45ee21520d3ba68ef26909d5949206d..0ccbe6cb025e3be0924b704041a84ee6
                      // Paper end - custom shear drops
                  }
 diff --git a/net/minecraft/world/entity/animal/Panda.java b/net/minecraft/world/entity/animal/Panda.java
-index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..3940c1ae40d1159210054f4734d352e09794fc42 100644
+index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..81bb0efcbc6b450e2864ebdb7cbc288ba622e80f 100644
 --- a/net/minecraft/world/entity/animal/Panda.java
 +++ b/net/minecraft/world/entity/animal/Panda.java
 @@ -105,6 +105,32 @@ public class Panda extends Animal {
@@ -807,7 +809,7 @@ index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..3940c1ae40d1159210054f4734d352e0
 +
 +    @Override
 +    public boolean isControllable() {
-+        return true;
++        return false;
 +    }
 +
 +    @Override
@@ -849,7 +851,7 @@ index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..3940c1ae40d1159210054f4734d352e0
              this.setOnBack(false);
              return InteractionResult.SUCCESS;
 diff --git a/net/minecraft/world/entity/animal/PolarBear.java b/net/minecraft/world/entity/animal/PolarBear.java
-index f568c385e1427e183aefb5819013838aca95407b..a386b4ea9f7f2b70e98f5349eefbfe2ca40caa3f 100644
+index f568c385e1427e183aefb5819013838aca95407b..6a595af6e572e7c21241432fbfd46a963743bae1 100644
 --- a/net/minecraft/world/entity/animal/PolarBear.java
 +++ b/net/minecraft/world/entity/animal/PolarBear.java
 @@ -59,6 +59,7 @@ public class PolarBear extends Animal implements NeutralMob {
@@ -877,7 +879,7 @@ index f568c385e1427e183aefb5819013838aca95407b..a386b4ea9f7f2b70e98f5349eefbfe2c
 +
 +    @Override
 +    public boolean isControllable() {
-+        return persistentAngerTarget == null;
++        return false;
 +    }
 +
 +    @Override
@@ -932,7 +934,7 @@ index f568c385e1427e183aefb5819013838aca95407b..a386b4ea9f7f2b70e98f5349eefbfe2c
  
      public float getStandingAnimationScale(float partialTick) {
 diff --git a/net/minecraft/world/entity/animal/Sheep.java b/net/minecraft/world/entity/animal/Sheep.java
-index e686c500e4b5f3e7b0e808af8b2e43ddbd163bef..dcc108272322ca9b218f9e749c9f15663a15893d 100644
+index e686c500e4b5f3e7b0e808af8b2e43ddbd163bef..2c8c3b7cc73c9189fe008dd8f633c366e7775333 100644
 --- a/net/minecraft/world/entity/animal/Sheep.java
 +++ b/net/minecraft/world/entity/animal/Sheep.java
 @@ -81,10 +81,28 @@ public class Sheep extends Animal implements Shearable {
@@ -952,7 +954,7 @@ index e686c500e4b5f3e7b0e808af8b2e43ddbd163bef..dcc108272322ca9b218f9e749c9f1566
 +
 +    @Override
 +    public boolean isControllable() {
-+        return true;
++        return false;
 +    }
 +    // Purpur end - Ridables
 +
@@ -965,7 +967,7 @@ index e686c500e4b5f3e7b0e808af8b2e43ddbd163bef..dcc108272322ca9b218f9e749c9f1566
          this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
          this.goalSelector.addGoal(3, new TemptGoal(this, 1.1, stack -> stack.is(ItemTags.SHEEP_FOOD), false));
 diff --git a/net/minecraft/world/entity/animal/goat/Goat.java b/net/minecraft/world/entity/animal/goat/Goat.java
-index c91e1f8e5fd39bcc48f9f0bf002770b2dff74404..bdda8e11dee0a547878ac2928e0745f3f7fe754d 100644
+index c91e1f8e5fd39bcc48f9f0bf002770b2dff74404..9c44fe7f9e72621f34bd68fa0eabeb54e4da3daf 100644
 --- a/net/minecraft/world/entity/animal/goat/Goat.java
 +++ b/net/minecraft/world/entity/animal/goat/Goat.java
 @@ -111,6 +111,23 @@ public class Goat extends Animal {
@@ -985,7 +987,7 @@ index c91e1f8e5fd39bcc48f9f0bf002770b2dff74404..bdda8e11dee0a547878ac2928e0745f3
 +
 +    @Override
 +    public boolean isControllable() {
-+        return true;
++        return false;
 +    }
 +    // Purpur end - Ridables
 +

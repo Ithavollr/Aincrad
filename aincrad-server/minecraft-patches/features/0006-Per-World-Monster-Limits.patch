@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Wed, 27 May 2026 23:44:05 -0400
+Subject: [PATCH] Per World Monster Limits
+
+
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index ef8222b927f4224528320238921fda7a6a3084ab..30b7042a48d60e4f425faece44db3ad1f8bf719b 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -1587,6 +1587,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+         return this.getEntities(EntityType.ENDER_DRAGON, LivingEntity::isAlive);
+     }
+ 
++    public int getEntityCount(Class<? extends Entity> entityClass) {
++        return this.entityCountsByType.getOrDefault(entityClass, 0);
++    }
++
++    private void incrementEntityCount(Class<? extends Entity> entityClass) {
++        this.entityCountsByType.merge(entityClass, 1, Integer::sum);
++    }
++
++    private void decrementEntityCount(Class<? extends Entity> entityClass) {
++        this.entityCountsByType.computeIfPresent(entityClass, (k, v) -> v > 1 ? v - 1 : null);
++    }
++
+     public List<ServerPlayer> getPlayers(Predicate<? super ServerPlayer> predicate) {
+         return this.getPlayers(predicate, Integer.MAX_VALUE);
+     }
+@@ -2802,6 +2814,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+                 for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
+                     ServerLevel.this.dragonParts.put(enderDragonPart.getId(), enderDragonPart);
+                 }
++                ServerLevel.this.incrementEntityCount(net.minecraft.world.entity.boss.enderdragon.EnderDragon.class);
++            }
++
++            if (entity instanceof net.minecraft.world.entity.monster.Giant) {
++                ServerLevel.this.incrementEntityCount(net.minecraft.world.entity.monster.Giant.class);
+             }
+ 
+             entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
+@@ -2872,6 +2889,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+                 for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
+                     ServerLevel.this.dragonParts.remove(enderDragonPart.getId());
+                 }
++                ServerLevel.this.decrementEntityCount(net.minecraft.world.entity.boss.enderdragon.EnderDragon.class);
++            }
++
++            if (entity instanceof net.minecraft.world.entity.monster.Giant) {
++                ServerLevel.this.decrementEntityCount(net.minecraft.world.entity.monster.Giant.class);
+             }
+ 
+             entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
+diff --git a/net/minecraft/world/entity/SpawnPlacements.java b/net/minecraft/world/entity/SpawnPlacements.java
+index 2ce8e851f68f465d9475d95dda4f6bd46e0b8635..a5069f894bc554891975872fd6fb8854af9d22bd 100644
+--- a/net/minecraft/world/entity/SpawnPlacements.java
++++ b/net/minecraft/world/entity/SpawnPlacements.java
+@@ -28,6 +28,7 @@ import net.minecraft.world.entity.animal.horse.ZombieHorse;
+ import net.minecraft.world.entity.monster.Drowned;
+ import net.minecraft.world.entity.monster.Endermite;
+ import net.minecraft.world.entity.monster.Ghast;
++import net.minecraft.world.entity.monster.Giant;
+ import net.minecraft.world.entity.monster.Guardian;
+ import net.minecraft.world.entity.monster.Husk;
+ import net.minecraft.world.entity.monster.MagmaCube;
+@@ -112,7 +113,7 @@ public class SpawnPlacements {
+         register(EntityType.ENDER_DRAGON, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mob::checkMobSpawnRules);
+         register(EntityType.FROG, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Frog::checkFrogSpawnRules);
+         register(EntityType.GHAST, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Ghast::checkGhastSpawnRules);
+-        register(EntityType.GIANT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
++        register(EntityType.GIANT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Giant::checkGiantSpawnRules);
+         register(EntityType.GLOW_SQUID, SpawnPlacementTypes.IN_WATER, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, GlowSquid::checkGlowSquidSpawnRules);
+         register(EntityType.GOAT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Goat::checkGoatSpawnRules);
+         register(EntityType.HORSE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
+diff --git a/net/minecraft/world/entity/monster/Giant.java b/net/minecraft/world/entity/monster/Giant.java
+index 9b4fa361728e5eacf1282b103f1d5bec785d8481..2ece806740f6c29beb2780183d6ba25c7d5ddca7 100644
+--- a/net/minecraft/world/entity/monster/Giant.java
++++ b/net/minecraft/world/entity/monster/Giant.java
+@@ -5,7 +5,11 @@ import net.minecraft.world.entity.EntityType;
+ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+ import net.minecraft.world.entity.ai.attributes.Attributes;
+ import net.minecraft.world.level.Level;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.world.level.ServerLevelAccessor;
+ import net.minecraft.world.level.LevelReader;
++import net.minecraft.world.entity.EntitySpawnReason;
++import net.minecraft.util.RandomSource;
+ 
+ public class Giant extends Monster {
+     public Giant(EntityType<? extends Giant> entityType, Level level) {
+@@ -33,6 +37,18 @@ public class Giant extends Monster {
+         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 100.0).add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.ATTACK_DAMAGE, 50.0).add(Attributes.FOLLOW_RANGE, 48.0);
+     }
+ 
++    public static boolean checkGiantSpawnRules(EntityType<? extends Giant> entityType, ServerLevelAccessor level, EntitySpawnReason spawnReason, BlockPos pos, RandomSource random) {
++        if (!Monster.checkMonsterSpawnRules(entityType, level, spawnReason, pos, random)) {
++            return false;
++        }
++
++        if (level.getLevel() instanceof ServerLevel serverLevel) {
++            int maxGiants = 1;
++            return serverLevel.getEntityCount(Giant.class) < maxGiants;
++        }
++        return true;
++    }
++
+     @Override
+     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor world, net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.EntitySpawnReason spawnReason, @org.jetbrains.annotations.Nullable net.minecraft.world.entity.SpawnGroupData entityData) {
+         net.minecraft.world.entity.SpawnGroupData groupData = super.finalizeSpawn(world, difficulty, spawnReason, entityData);

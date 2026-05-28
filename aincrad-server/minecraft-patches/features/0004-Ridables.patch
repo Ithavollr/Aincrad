@@ -1,0 +1,851 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Wed, 27 May 2026 16:48:34 -0400
+Subject: [PATCH] Ridables
+
+
+diff --git a/net/minecraft/gametest/framework/GameTestHelper.java b/net/minecraft/gametest/framework/GameTestHelper.java
+index fe4ae6bcdcbb55c47e9f9a4d63ead4c39e6d63cf..ec0998369158286fccb38c8e10c3cfa2a653a8aa 100644
+--- a/net/minecraft/gametest/framework/GameTestHelper.java
++++ b/net/minecraft/gametest/framework/GameTestHelper.java
+@@ -279,6 +279,10 @@ public class GameTestHelper {
+                 return gameType.isCreative();
+             }
+ 
++            public void setAfk(final boolean afk) {} // Purpur - AFK API
++
++            public void resetLastActionTime() {} // Purpur - Ridables
++
+             @Override
+             public boolean isLocalPlayer() {
+                 return true;
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index 627dd659cff6e6f76650819fa509ad4589a5c1f7..ef8222b927f4224528320238921fda7a6a3084ab 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -225,6 +225,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     public boolean hasPhysicsEvent = true; // Paper - BlockPhysicsEvent
+     public boolean hasEntityMoveEvent; // Paper - Add EntityMoveEvent
+     private final alternate.current.wire.WireHandler wireHandler = new alternate.current.wire.WireHandler(this); // Paper - optimize redstone (Alternate Current)
++    public boolean hasRidableMoveEvent = false; // Purpur - Ridables
+ 
+     public LevelChunk getChunkIfLoaded(int x, int z) {
+         return this.chunkSource.getChunkAtIfLoadedImmediately(x, z); // Paper - Use getChunkIfLoadedImmediately
+diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
+index faa2b7c59f26ef50ea6e140b961220968ed68edd..d2af04b7d81d54c0339ca1567119bc69e172dbd7 100644
+--- a/net/minecraft/server/level/ServerPlayer.java
++++ b/net/minecraft/server/level/ServerPlayer.java
+@@ -839,6 +839,15 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+         this.trackEnteredOrExitedLavaOnVehicle();
+         this.updatePlayerAttributes();
+         this.advancements.flushDirty(this);
++
++        // Purpur start - Ridables
++        if (this.getVehicle() != null && this.getVehicle().getRider() == this && this.level().getGameTime() % 100 == 0) { // 5 seconds
++            MobEffectInstance nightVision = this.getEffect(MobEffects.NIGHT_VISION);
++            if (nightVision == null || nightVision.getDuration() <= 300) { // 15 seconds
++                this.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0)); // 20 seconds
++            }
++        }
++        // Purpur end - Ridables
+     }
+ 
+     private void updatePlayerAttributes() {
+diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index a2c70d36f79b7f8560923e098e52fa7f82ca7416..b176e292d7f830b002d11a87b869de54a377e6a6 100644
+--- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -2766,6 +2766,8 @@ public class ServerGamePacketListenerImpl
+ 
+                                     ServerGamePacketListenerImpl.this.cserver.getPluginManager().callEvent(event);
+ 
++                                    player.processClick(hand); // Purpur - Ridables
++
+                                     // Entity in bucket - SPIGOT-4048 and SPIGOT-6859a
+                                     if ((target instanceof Bucketable && target instanceof LivingEntity && origItem != null && origItem.asItem() == Items.WATER_BUCKET) && (event.isCancelled() || ServerGamePacketListenerImpl.this.player.getInventory().getSelected() == null || ServerGamePacketListenerImpl.this.player.getInventory().getSelected().getItem() != origItem)) {
+                                         target.resendPossiblyDesyncedEntityData(ServerGamePacketListenerImpl.this.player); // Paper - The entire mob gets deleted, so resend it
+diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
+index 9a52328f070f4991a4998cecaa8062f8b60a0fb3..0fdc0226b536b30967ea941a129105e133a131fe 100644
+--- a/net/minecraft/world/entity/Entity.java
++++ b/net/minecraft/world/entity/Entity.java
+@@ -295,7 +295,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+     private final Set<String> tags = new io.papermc.paper.util.SizeLimitedSet<>(new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(), MAX_ENTITY_TAG_COUNT); // Paper - fully limit tag size - replace set impl
+     private final double[] pistonDeltas = new double[]{0.0, 0.0, 0.0};
+     private long pistonDeltasGameTime;
+-    private EntityDimensions dimensions;
++    protected EntityDimensions dimensions;
+     private float eyeHeight;
+     public boolean isInPowderSnow;
+     public boolean wasInPowderSnow;
+@@ -819,7 +819,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+     // CraftBukkit start
+     public void postTick() {
+         // No clean way to break out of ticking once the entity has been copied to a new world, so instead we move the portalling later in the tick cycle
+-        if (false && !(this instanceof ServerPlayer) && this.isAlive()) { // Paper - don't attempt to teleport dead entities // SparklyPaper - parallel world ticking (see issue #9, this is executed in the server level tick for non-player entities)
++        if (!(this instanceof ServerPlayer) && this.isAlive()) { // Paper - don't attempt to teleport dead entities
+             this.handlePortal();
+         }
+     }
+@@ -1896,7 +1896,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+         return this.isInWater() || flag;
+     }
+ 
+-    void updateInWaterStateAndDoWaterCurrentPushing() {
++    public void updateInWaterStateAndDoWaterCurrentPushing() {
+         if (this.getVehicle() instanceof AbstractBoat abstractBoat && !abstractBoat.isUnderWater()) {
+             this.wasTouchingWater = false;
+         } else if (this.updateFluidHeightAndDoFluidPushing(FluidTags.WATER, 0.014)) {
+@@ -3123,6 +3123,13 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+                 this.passengers = ImmutableList.copyOf(list);
+             }
+ 
++            // Purpur start - Ridables
++            if (isRidable() && this.passengers.get(0) == passenger && passenger instanceof Player player) {
++                onMount(player);
++                this.rider = player;
++            }
++            // Purpur end - Ridables
++
+             this.gameEvent(GameEvent.ENTITY_MOUNT, passenger);
+         }
+     }
+@@ -3164,6 +3171,14 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+                 return false;
+             }
+             // CraftBukkit end
++
++            // Purpur start - Ridables
++            if (this.rider != null && this.passengers.get(0) == this.rider) {
++                onDismount(this.rider);
++                this.rider = null;
++            }
++            // Purpur end - Ridables
++
+             if (this.passengers.size() == 1 && this.passengers.get(0) == passenger) {
+                 this.passengers = ImmutableList.of();
+             } else {
+@@ -3805,7 +3820,6 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+     }
+ 
+     private Entity teleportCrossDimension(ServerLevel level, TeleportTransition teleportTransition) {
+-        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread(level, "Cannot teleport entity to another world off-main, from world " + this.level.getWorld().getName() + " to world " + level.getWorld().getName()); // SparklyPaper - parallel world ticking (additional concurrency issues logs)
+         List<Entity> passengers = this.getPassengers();
+         List<Entity> list = new ArrayList<>(passengers.size());
+         this.ejectPassengers();
+@@ -5079,4 +5093,44 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+         return ((ServerLevel) this.level).isPositionEntityTicking(this.blockPosition());
+     }
+     // Paper end - Expose entity id counter
++    // Purpur start - Ridables
++    @Nullable
++    private Player rider = null;
++
++    @Nullable
++    public Player getRider() {
++        return rider;
++    }
++
++    public boolean isRidable() {
++        return false;
++    }
++
++    public boolean isControllable() {
++        return true;
++    }
++
++    public void onMount(Player rider) {
++        if (this instanceof Mob) {
++            ((Mob) this).setTarget(null, null, false);
++            ((Mob) this).getNavigation().stop();
++        }
++        rider.setJumping(false); // fixes jump on mount
++    }
++
++    public void onDismount(Player player) {
++    }
++
++    public boolean onSpacebar() {
++        return false;
++    }
++
++    public boolean onClick(InteractionHand hand) {
++        return false;
++    }
++
++    public boolean processClick(InteractionHand hand) {
++        return false;
++    }
++    // Purpur end - Ridables
+ }
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 4546aca8e2e144ec207653c713fc49f849908827..9492996abf653d34df8923a42725f4899a08e548 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -250,9 +250,9 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     protected float rotOffs;
+     public float lastHurt;
+     public boolean jumping;
+-    public float xxa;
+-    public float yya;
+-    public float zza;
++    public float xxa; public float getStrafeMot() { return xxa; } public void setStrafeMot(float strafe) { xxa = strafe; } // Purpur - OBFHELPER
++    public float yya; public float getVerticalMot() { return yya; } public void setVerticalMot(float vertical) { yya = vertical; } // Purpur - OBFHELPER
++    public float zza; public float getForwardMot() { return zza; } public void setForwardMot(float forward) { zza = forward; } // Purpur - OBFHELPER
+     protected int lerpSteps;
+     protected double lerpX;
+     protected double lerpY;
+@@ -310,7 +310,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+ 
+     protected LivingEntity(EntityType<? extends LivingEntity> entityType, Level level) {
+         super(entityType, level);
+-        this.attributes = new AttributeMap(DefaultAttributes.getSupplier(entityType));
++        this.attributes = new AttributeMap(DefaultAttributes.getSupplier(entityType), this); // Purpur - Ridables
+         this.craftAttributes = new CraftAttributeMap(this.attributes); // CraftBukkit
+         // CraftBukkit - this.setHealth(this.getMaxHealth()) inlined and simplified to skip the instanceof check for Player, as getBukkitEntity() is not initialized in constructor
+         this.entityData.set(LivingEntity.DATA_HEALTH_ID, this.getMaxHealth());
+@@ -377,6 +377,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             .add(Attributes.MOVEMENT_EFFICIENCY)
+             .add(Attributes.ATTACK_KNOCKBACK);
+     }
++    public boolean shouldSendAttribute(Attribute attribute) { return true; } // Purpur - Ridables
+ 
+     @Override
+     protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
+@@ -871,11 +872,11 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         if (compound.contains("SleepingX", 99) && compound.contains("SleepingY", 99) && compound.contains("SleepingZ", 99)) {
+             BlockPos blockPos = new BlockPos(compound.getInt("SleepingX"), compound.getInt("SleepingY"), compound.getInt("SleepingZ"));
+             if (this.position().distanceToSqr(blockPos.getX(), blockPos.getY(), blockPos.getZ()) < 16 * 16) { // Paper - The sleeping pos will always also set the actual pos, so a desync suggests something is wrong
+-            this.setSleepingPos(blockPos);
+-            this.entityData.set(DATA_POSE, Pose.SLEEPING);
+-            if (!this.firstTick) {
+-                this.setPosToBed(blockPos);
+-            }
++                this.setSleepingPos(blockPos);
++                this.entityData.set(DATA_POSE, Pose.SLEEPING);
++                if (!this.firstTick) {
++                    this.setPosToBed(blockPos);
++                }
+             } // Paper - The sleeping pos will always also set the actual pos, so a desync suggests something is wrong
+         }
+ 
+@@ -1132,11 +1133,11 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             }
+ 
+             if (fireEvent) { // Paper - Don't fire sync event during generation
+-            EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, effectInstance, cause, override);
+-            override = event.isOverride(); // Paper - Don't fire sync event during generation
+-            if (event.isCancelled()) {
+-                return false;
+-            }
++                EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, effectInstance, cause, override);
++                override = event.isOverride(); // Paper - Don't fire sync event during generation
++                if (event.isCancelled()) {
++                    return false;
++                }
+             } // Paper - Don't fire sync event during generation
+             // CraftBukkit end
+             if (mobEffectInstance == null) {
+@@ -1163,7 +1164,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             return this.getType().is(EntityTypeTags.IMMUNE_TO_OOZING)
+                 ? !effectInstance.is(MobEffects.OOZING)
+                 : !this.getType().is(EntityTypeTags.IGNORES_POISON_AND_REGEN)
+-                    || !effectInstance.is(MobEffects.REGENERATION) && !effectInstance.is(MobEffects.POISON);
++                  || !effectInstance.is(MobEffects.REGENERATION) && !effectInstance.is(MobEffects.POISON);
+         }
+     }
+ 
+@@ -1612,7 +1613,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+                 }
+                 // Paper end - fix NPE when pre-cancelled EntityResurrectEvent is uncancelled
+                 if (itemStack != null && this instanceof final ServerPlayer serverPlayer) {
+-            // CraftBukkit end
++                    // CraftBukkit end
+                     serverPlayer.awardStat(Stats.ITEM_USED.get(itemStack.getItem()));
+                     CriteriaTriggers.USED_TOTEM.trigger(serverPlayer, itemStack);
+                     this.gameEvent(GameEvent.ITEM_INTERACT_FINISH);
+@@ -1742,14 +1743,14 @@ public abstract class LivingEntity extends Entity implements Attackable {
+                     this.setHealth((float) deathEvent.getReviveHealth());
+                 }
+                 // Paper end
+-                    this.createWitherRose(killCredit);
+-                }
++                this.createWitherRose(killCredit);
++            }
+ 
+             // Paper start
+             if (this.dead) { // Paper
+                 this.level().broadcastEntityEvent(this, (byte)3);
+ 
+-            this.setPose(Pose.DYING);
++                this.setPose(Pose.DYING);
+             }
+             // Paper end
+         }
+@@ -1822,9 +1823,9 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     public int getExpReward(ServerLevel level, @Nullable Entity entity) { // CraftBukkit
+         if (!this.wasExperienceConsumed()
+             && (
+-                this.isAlwaysExperienceDropper()
+-                    || this.lastHurtByPlayerTime > 0 && this.shouldDropExperience() && level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)
+-            )) {
++            this.isAlwaysExperienceDropper()
++                || this.lastHurtByPlayerTime > 0 && this.shouldDropExperience() && level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)
++        )) {
+             return this.getExperienceReward(level, entity); // CraftBukkit
+         }
+         return 0; // CraftBukkit
+@@ -2828,7 +2829,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             if (this.isSprinting()) {
+                 float f = this.getYRot() * (float) (Math.PI / 180.0);
+                 if (canCrit) // Paper - Prevent excessive velocity through repeated crits
+-                this.addDeltaMovement(new Vec3(-Mth.sin(f) * 0.2, 0.0, Mth.cos(f) * 0.2));
++                    this.addDeltaMovement(new Vec3(-Mth.sin(f) * 0.2, 0.0, Mth.cos(f) * 0.2));
+             }
+ 
+             this.hasImpulse = true;
+@@ -3438,8 +3439,8 @@ public abstract class LivingEntity extends Entity implements Attackable {
+                 if (!this.isInLava() || this.onGround() && !(fluidHeight > fluidJumpThreshold)) {
+                     if ((this.onGround() || flag && fluidHeight <= fluidJumpThreshold) && this.noJumpDelay == 0) {
+                         if (new com.destroystokyo.paper.event.entity.EntityJumpEvent(getBukkitLivingEntity()).callEvent()) { // Paper - Entity Jump API
+-                        this.jumpFromGround();
+-                        this.noJumpDelay = 10;
++                            this.jumpFromGround();
++                            this.noJumpDelay = 10;
+                         } else { this.setJumping(false); } // Paper - Entity Jump API; setJumping(false) stops a potential loop
+                     }
+                 } else {
+@@ -3504,8 +3505,10 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         this.pushEntities();
+         profilerFiller.pop();
+         // Paper start - Add EntityMoveEvent
+-        if (((ServerLevel) this.level()).hasEntityMoveEvent && !(this instanceof Player)) {
+-            if (this.xo != this.getX() || this.yo != this.getY() || this.zo != this.getZ() || this.yRotO != this.getYRot() || this.xRotO != this.getXRot()) {
++        // Purpur start - Ridables
++        if (this.xo != this.getX() || this.yo != this.getY() || this.zo != this.getZ() || this.yRotO != this.getYRot() || this.xRotO != this.getXRot()) {
++            if (((ServerLevel) this.level()).hasEntityMoveEvent && !(this instanceof Player)) {
++                // Purpur end - Ridables
+                 Location from = new Location(this.level().getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
+                 Location to = new Location(this.level().getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+                 io.papermc.paper.event.entity.EntityMoveEvent event = new io.papermc.paper.event.entity.EntityMoveEvent(this.getBukkitLivingEntity(), from, to.clone());
+@@ -3515,6 +3518,21 @@ public abstract class LivingEntity extends Entity implements Attackable {
+                     this.absMoveTo(event.getTo().getX(), event.getTo().getY(), event.getTo().getZ(), event.getTo().getYaw(), event.getTo().getPitch());
+                 }
+             }
++            // Purpur start - Ridables
++            if (getRider() != null) {
++                getRider().resetLastActionTime();
++                if (((ServerLevel) level()).hasRidableMoveEvent && this instanceof Mob) {
++                    Location from = new Location(level().getWorld(), xo, yo, zo, this.yRotO, this.xRotO);
++                    Location to = new Location(level().getWorld(), getX(), getY(), getZ(), this.getYRot(), this.getXRot());
++                    org.purpurmc.purpur.event.entity.RidableMoveEvent event = new org.purpurmc.purpur.event.entity.RidableMoveEvent((org.bukkit.entity.Mob) getBukkitLivingEntity(), (org.bukkit.entity.Player) getRider().getBukkitEntity(), from, to.clone());
++                    if (!event.callEvent()) {
++                        absMoveTo(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch());
++                    } else if (!to.equals(event.getTo())) {
++                        absMoveTo(to.getX(), to.getY(), to.getZ(), to.getYaw(), to.getPitch());
++                    }
++                }
++            }
++            // Purpur end - Ridables
+         }
+         // Paper end - Add EntityMoveEvent
+         if (this.level() instanceof ServerLevel serverLevel && this.isSensitiveToWater() && this.isInWaterRainOrBubble()) {
+@@ -3531,7 +3549,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         if (!this.level().isClientSide) {
+             if (!this.canGlide()) {
+                 if (this.getSharedFlag(7) != false && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
+-                this.setSharedFlag(7, false);
++                    this.setSharedFlag(7, false);
+                 return;
+             }
+ 
+@@ -3549,7 +3567,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         }
+     }
+ 
+-    protected boolean canGlide() {
++    public boolean canGlide() {
+         if (!this.onGround() && !this.isPassenger() && !this.hasEffect(MobEffects.LEVITATION)) {
+             for (EquipmentSlot equipmentSlot : EquipmentSlot.VALUES) {
+                 if (canGlideUsing(this.getItemBySlot(equipmentSlot), equipmentSlot)) {
+diff --git a/net/minecraft/world/entity/Mob.java b/net/minecraft/world/entity/Mob.java
+index e330bf990e4874baed1b21cd8c9b44d66ec5b823..a2423e94ea12b3ee30f49032e26170cfbdf88265 100644
+--- a/net/minecraft/world/entity/Mob.java
++++ b/net/minecraft/world/entity/Mob.java
+@@ -150,8 +150,8 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+         super(entityType, level);
+         this.goalSelector = new GoalSelector();
+         this.targetSelector = new GoalSelector();
+-        this.lookControl = new LookControl(this);
+-        this.moveControl = new MoveControl(this);
++        this.lookControl = new org.evlis.controller.LookControllerWASD(this); // Purpur - Ridables
++        this.moveControl = new org.evlis.controller.MoveControllerWASD(this); // Purpur - Ridables
+         this.jumpControl = new JumpControl(this);
+         this.bodyRotationControl = this.createBodyControl();
+         this.navigation = this.createNavigation(level);
+@@ -826,7 +826,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+                 // Despawn if hard/soft limit is exceeded
+                 if (despawnRangePair.hard().shouldDespawn(shape, dxSqr, dySqr, dzSqr, dy) && this.removeWhenFarAway(distanceSquared)) {
+                     this.discard(EntityRemoveEvent.Cause.DESPAWN); // CraftBukkit - add Bukkit remove cause
+-                 }
++                }
+ 
+                 if (despawnRangePair.soft().shouldDespawn(shape, dxSqr, dySqr, dzSqr, dy)) {
+                     if (this.noActionTime > 600 && this.random.nextInt(800) == 0 && this.removeWhenFarAway(distanceSquared)) {
+@@ -1090,8 +1090,8 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+ 
+                     this.spawnAtLocation(level, itemBySlot);
+                     if (this.clearEquipmentSlots) { // Paper
+-                    this.setItemSlot(equipmentSlot, ItemStack.EMPTY);
+-                    // Paper start
++                        this.setItemSlot(equipmentSlot, ItemStack.EMPTY);
++                        // Paper start
+                     } else {
+                         this.clearedEquipmentSlots.add(equipmentSlot);
+                     }
+@@ -1379,7 +1379,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+     }
+ 
+     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+-        return InteractionResult.PASS;
++        return tryRide(player, hand); // Purpur - Ridables
+     }
+ 
+     public boolean isWithinRestriction() {
+@@ -1422,7 +1422,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+     public <T extends Mob> T convertTo(
+         EntityType<T> entityType, ConversionParams conversionParams, EntitySpawnReason spawnReason, ConversionParams.AfterConversion<T> afterConversion, EntityTransformEvent.TransformReason transformReason, CreatureSpawnEvent.SpawnReason creatureSpawnReason
+     ) {
+-    // Paper start - entity zap event - allow cancellation of conversion post creation
++        // Paper start - entity zap event - allow cancellation of conversion post creation
+         return this.convertTo(entityType, conversionParams, spawnReason, e -> { afterConversion.finalizeConversion(e); return true; }, transformReason, creatureSpawnReason);
+     }
+     @Nullable
+@@ -1471,12 +1471,12 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+ 
+     @Nullable
+     public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams coversionParams, ConversionParams.AfterConversion<T> afterConversion, EntityTransformEvent.TransformReason transformReason, CreatureSpawnEvent.SpawnReason creatureSpawnReason) {
+-    // Paper start - entity zap event - allow cancellation of conversion post creation
++        // Paper start - entity zap event - allow cancellation of conversion post creation
+         return this.convertTo(entityType, coversionParams, e -> { afterConversion.finalizeConversion(e); return true; }, transformReason, creatureSpawnReason);
+     }
+     @Nullable
+     public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams coversionParams, ConversionParams.CancellingAfterConversion<T> afterConversion, EntityTransformEvent.TransformReason transformReason, CreatureSpawnEvent.SpawnReason creatureSpawnReason) {
+-    // Paper start - entity zap event - allow cancellation of conversion post creation
++        // Paper start - entity zap event - allow cancellation of conversion post creation
+         return this.convertTo(entityType, coversionParams, EntitySpawnReason.CONVERSION, afterConversion, transformReason, creatureSpawnReason);
+         // CraftBukkit end
+     }
+@@ -1696,4 +1696,55 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+     public float[] getArmorDropChances() {
+         return this.armorDropChances;
+     }
++
++    // Purpur start - Ridables
++    public double getMaxY() {
++        return level().getHeight();
++    }
++
++    public InteractionResult tryRide(Player player, InteractionHand hand) {
++        return tryRide(player, hand, InteractionResult.PASS);
++    }
++
++    public InteractionResult tryRide(Player player, InteractionHand hand, InteractionResult result) {
++        if (!isRidable()) {
++            return result;
++        }
++        if (hand != InteractionHand.MAIN_HAND) {
++            return InteractionResult.PASS;
++        }
++        if (player.isShiftKeyDown()) {
++            return InteractionResult.PASS;
++        }
++        if (!player.getItemInHand(hand).isEmpty()) {
++            return InteractionResult.PASS;
++        }
++        if (!passengers.isEmpty() || player.isPassenger()) {
++            return InteractionResult.PASS;
++        }
++        if (this instanceof TamableAnimal tamable) {
++            if (tamable.isTame() && !tamable.isOwnedBy(player)) {
++                return InteractionResult.PASS;
++            } // if not tame && not untamed is rideable then
++            if (!tamable.isTame()) {
++                return InteractionResult.PASS;
++            }
++        }
++        if (this instanceof AgeableMob ageable) {
++            if (ageable.isBaby()) {
++                return InteractionResult.PASS;
++            }
++        }
++        if (!player.getBukkitEntity().hasPermission("allow.ride." + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(getType()).getPath())) {
++            return InteractionResult.PASS;
++        }
++        player.setYRot(this.getYRot());
++        player.setXRot(this.getXRot());
++        if (player.startRiding(this)) {
++            return InteractionResult.SUCCESS;
++        } else {
++            return InteractionResult.PASS;
++        }
++    }
++    // Purpur end - Ridables
+ }
+diff --git a/net/minecraft/world/entity/ai/attributes/AttributeMap.java b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
+index 4c808c7ef336de74048f40bd1cc8b14131a9325d..a25d74592e89e3d6339479c6dc2b6f45d1932cfc 100644
+--- a/net/minecraft/world/entity/ai/attributes/AttributeMap.java
++++ b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
+@@ -23,14 +23,21 @@ public class AttributeMap {
+     private final Set<AttributeInstance> attributesToSync = new ObjectOpenHashSet<>();
+     private final Set<AttributeInstance> attributesToUpdate = new ObjectOpenHashSet<>();
+     private final AttributeSupplier supplier;
++    private final net.minecraft.world.entity.LivingEntity entity; // Purpur - Ridables
+ 
+     public AttributeMap(AttributeSupplier supplier) {
+-        this.supplier = supplier;
++        // Purpur start - Ridables
++        this(supplier, null);
++    }
++    public AttributeMap(AttributeSupplier defaultAttributes, net.minecraft.world.entity.LivingEntity entity) {
++        this.entity = entity;
++        // Purpur end - Ridables
++        this.supplier = defaultAttributes;
+     }
+ 
+     private void onAttributeModified(AttributeInstance instance) {
+         this.attributesToUpdate.add(instance);
+-        if (instance.getAttribute().value().isClientSyncable()) {
++        if (instance.getAttribute().value().isClientSyncable() && (entity == null || entity.shouldSendAttribute(instance.getAttribute().value()))) { // Purpur - Ridables
+             this.attributesToSync.add(instance);
+         }
+     }
+@@ -44,7 +51,7 @@ public class AttributeMap {
+     }
+ 
+     public Collection<AttributeInstance> getSyncableAttributes() {
+-        return this.attributes.values().stream().filter(instance -> instance.getAttribute().value().isClientSyncable()).collect(Collectors.toList());
++        return this.attributes.values().stream().filter(instance -> instance.getAttribute().value().isClientSyncable() && (entity == null || entity.shouldSendAttribute(instance.getAttribute().value()))).collect(Collectors.toList()); // Purpur - Ridables
+     }
+ 
+     @Nullable
+diff --git a/net/minecraft/world/entity/ai/control/MoveControl.java b/net/minecraft/world/entity/ai/control/MoveControl.java
+index 0f9bf0cb0655a6ed449a86e99b17f89b4e3264df..92b6f0f0881186673ee3b711630df8f65a4b738d 100644
+--- a/net/minecraft/world/entity/ai/control/MoveControl.java
++++ b/net/minecraft/world/entity/ai/control/MoveControl.java
+@@ -29,6 +29,20 @@ public class MoveControl implements Control {
+         this.mob = mob;
+     }
+ 
++    // Purpur start - Ridables
++    public void setSpeedModifier(double speed) {
++        this.speedModifier = speed;
++    }
++
++    public void setForward(float forward) {
++        this.strafeForwards = forward;
++    }
++
++    public void setStrafe(float strafe) {
++        this.strafeRight = strafe;
++    }
++    // Purpur end - Ridables
++
+     public boolean hasWanted() {
+         return this.operation == MoveControl.Operation.MOVE_TO;
+     }
+@@ -100,9 +114,9 @@ public class MoveControl implements Control {
+             VoxelShape collisionShape = blockState.getCollisionShape(this.mob.level(), blockPos);
+             if (d2 > this.mob.maxUpStep() && d * d + d1 * d1 < Math.max(1.0F, this.mob.getBbWidth())
+                 || !collisionShape.isEmpty()
+-                    && this.mob.getY() < collisionShape.max(Direction.Axis.Y) + blockPos.getY()
+-                    && !blockState.is(BlockTags.DOORS)
+-                    && !blockState.is(BlockTags.FENCES)) {
++                && this.mob.getY() < collisionShape.max(Direction.Axis.Y) + blockPos.getY()
++                && !blockState.is(BlockTags.DOORS)
++                && !blockState.is(BlockTags.FENCES)) {
+                 this.mob.getJumpControl().jump();
+                 this.operation = MoveControl.Operation.JUMPING;
+             }
+@@ -122,7 +136,7 @@ public class MoveControl implements Control {
+             NodeEvaluator nodeEvaluator = navigation.getNodeEvaluator();
+             if (nodeEvaluator != null
+                 && nodeEvaluator.getPathType(this.mob, BlockPos.containing(this.mob.getX() + relativeX, this.mob.getBlockY(), this.mob.getZ() + relativeZ))
+-                    != PathType.WALKABLE) {
++                != PathType.WALKABLE) {
+                 return false;
+             }
+         }
+diff --git a/net/minecraft/world/entity/ai/control/SmoothSwimmingLookControl.java b/net/minecraft/world/entity/ai/control/SmoothSwimmingLookControl.java
+index d7f9b3b2b1077ea10e8f64b87c8f4c4354e90858..b6c93126ea3b182bdf18c60902ad5241ac6e72b7 100644
+--- a/net/minecraft/world/entity/ai/control/SmoothSwimmingLookControl.java
++++ b/net/minecraft/world/entity/ai/control/SmoothSwimmingLookControl.java
+@@ -3,7 +3,7 @@ package net.minecraft.world.entity.ai.control;
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.entity.Mob;
+ 
+-public class SmoothSwimmingLookControl extends LookControl {
++public class SmoothSwimmingLookControl extends org.evlis.controller.LookControllerWASD { // Purpur - Ridables
+     private final int maxYRotFromCenter;
+     private static final int HEAD_TILT_X = 10;
+     private static final int HEAD_TILT_Y = 20;
+@@ -14,7 +14,7 @@ public class SmoothSwimmingLookControl extends LookControl {
+     }
+ 
+     @Override
+-    public void tick() {
++    public void vanillaTick() { // Purpur - Ridables
+         if (this.lookAtCooldown > 0) {
+             this.lookAtCooldown--;
+             this.getYRotD().ifPresent(rotationWanted -> this.mob.yHeadRot = this.rotateTowards(this.mob.yHeadRot, rotationWanted + 20.0F, this.yMaxRotSpeed));
+diff --git a/net/minecraft/world/entity/animal/Bee.java b/net/minecraft/world/entity/animal/Bee.java
+index 94244b148533ef026bf5c56abbc2bb5cfa83c938..109b73cadce50c1f06586dfe0d32ab1c10e6b794 100644
+--- a/net/minecraft/world/entity/animal/Bee.java
++++ b/net/minecraft/world/entity/animal/Bee.java
+@@ -145,6 +145,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+ 
+     public Bee(EntityType<? extends Bee> entityType, Level level) {
+         super(entityType, level);
++        final org.evlis.controller.FlyingMoveControllerWASD flyingController = new org.evlis.controller.FlyingMoveControllerWASD(this, 0.25F, 1.0F, false); // Purpur - Ridables
+         // Paper start - Fix MC-167279
+         class BeeFlyingMoveControl extends FlyingMoveControl {
+             public BeeFlyingMoveControl(final Mob entity, final int maxPitchChange, final boolean noGravity) {
+@@ -153,11 +154,24 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+ 
+             @Override
+             public void tick() {
++                // Purpur start - Ridables
++                if (mob.getRider() != null && mob.isControllable()) {
++                    flyingController.purpurTick(mob.getRider());
++                    return;
++                }
++                // Purpur end - Ridables
+                 if (this.mob.getY() <= Bee.this.level().getMinY()) {
+                     this.mob.setNoGravity(false);
+                 }
+                 super.tick();
+             }
++
++            // Purpur start - Ridables
++            @Override
++            public boolean hasWanted() {
++                return mob.getRider() != null || !mob.isControllable() || super.hasWanted();
++            }
++            // Purpur end - Ridables
+         }
+         this.moveControl = new BeeFlyingMoveControl(this, 20, true);
+         // Paper end - Fix MC-167279
+@@ -169,6 +183,40 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         this.setPathfindingMalus(PathType.FENCE, -1.0F);
+     }
+ 
++    // Purpur start - Ridables
++    @Override
++    public boolean isRidable() {
++        return true;
++    }
++
++    @Override
++    public boolean dismountsUnderwater() {
++        return super.dismountsUnderwater();
++    }
++
++    @Override
++    public boolean isControllable() {
++        return persistentAngerTarget != null;
++    }
++
++    @Override
++    public double getMaxY() {
++        return 320D;
++    }
++
++    @Override
++    public void travel(Vec3 vec3) {
++        super.travel(vec3);
++        if (getRider() != null && this.isControllable() && !onGround) {
++            float speed = (float) getAttributeValue(Attributes.FLYING_SPEED) * 2;
++            setSpeed(speed);
++            Vec3 mot = getDeltaMovement();
++            move(net.minecraft.world.entity.MoverType.SELF, mot.multiply(speed, speed, speed));
++            setDeltaMovement(mot.scale(0.9D));
++        }
++    }
++    // Purpur end - Ridables
++
+     @Override
+     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+         super.defineSynchedData(builder);
+@@ -183,6 +231,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+ 
+     @Override
+     protected void registerGoals() {
++        this.goalSelector.addGoal(0, new org.evlis.entity.ai.HasRider(this)); // Purpur - Ridables
+         this.goalSelector.addGoal(0, new Bee.BeeAttackGoal(this, 1.4F, true));
+         this.goalSelector.addGoal(1, new Bee.BeeEnterHiveGoal());
+         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
+@@ -200,6 +249,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         this.goalSelector.addGoal(7, new Bee.BeeGrowCropGoal());
+         this.goalSelector.addGoal(8, new Bee.BeeWanderGoal());
+         this.goalSelector.addGoal(9, new FloatGoal(this));
++        this.targetSelector.addGoal(0, new org.evlis.entity.ai.HasRider(this)); // Purpur - Ridables
+         this.targetSelector.addGoal(1, new Bee.BeeHurtByOtherGoal(this).setAlertOthers(new Class[0]));
+         this.targetSelector.addGoal(2, new Bee.BeeBecomeAngryTargetGoal(this));
+         this.targetSelector.addGoal(3, new ResetUniversalAngerTargetGoal<>(this, true));
+@@ -1083,15 +1133,15 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         }
+     }
+ 
+-    class BeeLookControl extends LookControl {
++    class BeeLookControl extends org.evlis.controller.LookControllerWASD { // Purpur - Ridables
+         BeeLookControl(final Mob mob) {
+             super(mob);
+         }
+ 
+         @Override
+-        public void tick() {
++        public void vanillaTick() { // Purpur - Ridables
+             if (!Bee.this.isAngry()) {
+-                super.tick();
++                super.vanillaTick(); // Purpur - Ridables
+             }
+         }
+ 
+diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
+index a0813aa9ebf5b32375b1bc9f294d8fc34cc867fe..8b61e85201891ecdac977bb958c33b1051375001 100644
+--- a/net/minecraft/world/entity/player/Player.java
++++ b/net/minecraft/world/entity/player/Player.java
+@@ -211,6 +211,19 @@ public abstract class Player extends LivingEntity {
+     }
+     // CraftBukkit end
+ 
++    // Purpur start - Ridables
++    public abstract void resetLastActionTime();
++
++    @Override
++    public boolean processClick(InteractionHand hand) {
++        Entity vehicle = getRootVehicle();
++        if (vehicle != null && vehicle.getRider() == this) {
++            return vehicle.onClick(hand);
++        }
++        return false;
++    }
++    // Purpur end - Ridables
++
+     public Player(Level level, BlockPos pos, float yRot, GameProfile gameProfile) {
+         super(EntityType.PLAYER, level);
+         this.setUUID(gameProfile.getId());
+@@ -626,7 +639,7 @@ public abstract class Player extends LivingEntity {
+         this.playShoulderEntityAmbientSound(this.getShoulderEntityRight());
+         if (!this.level().isClientSide && (this.fallDistance > 0.5F || this.isInWater()) || this.abilities.flying || this.isSleeping() || this.isInPowderSnow) {
+             if (!this.level().paperConfig().entities.behavior.parrotsAreUnaffectedByPlayerMovement) // Paper - Add option to make parrots stay
+-            this.removeEntitiesOnShoulder();
++                this.removeEntitiesOnShoulder();
+         }
+     }
+ 
+@@ -1224,7 +1237,7 @@ public abstract class Player extends LivingEntity {
+ 
+         if (playerAttackEntityEvent.callEvent() && willAttack) { // Logic moved to willAttack local variable.
+             {
+-        // Paper end - PlayerAttackEntityEvent
++                // Paper end - PlayerAttackEntityEvent
+                 float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
+                 ItemStack weaponItem = this.getWeaponItem();
+                 DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().playerAttack(this));
+@@ -1235,14 +1248,14 @@ public abstract class Player extends LivingEntity {
+                 // this.resetAttackStrengthTicker(); // CraftBukkit - Moved to EntityLiving to reset the cooldown after the damage is dealt
+                 if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
+                     && target instanceof Projectile projectile) {
+-                        // CraftBukkit start
+-                        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(target, damageSource, f1, false)) {
+-                            return;
+-                        }
+-                        if (projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, this, true)) {
+-                            this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, this.getSoundSource());
+-                            return;
+-                        }
++                    // CraftBukkit start
++                    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(target, damageSource, f1, false)) {
++                        return;
++                    }
++                    if (projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, this, true)) {
++                        this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, this.getSoundSource());
++                        return;
++                    }
+                 }
+                 {
+                     // CraftBukkit end
+@@ -1309,7 +1322,7 @@ public abstract class Player extends LivingEntity {
+                                 this.setDeltaMovement(this.getDeltaMovement().multiply(0.6, 1.0, 0.6));
+                                 // Paper start - Configurable sprint interruption on attack
+                                 if (!this.level().paperConfig().misc.disableSprintInterruptionOnAttack) {
+-                                this.setSprinting(false);
++                                    this.setSprinting(false);
+                                 }
+                                 // Paper end - Configurable sprint interruption on attack
+                             }
+@@ -1363,9 +1376,9 @@ public abstract class Player extends LivingEntity {
+                                 }
+ 
+                                 if (!cancelled) {
+-                                ((ServerPlayer)target).connection.send(new ClientboundSetEntityMotionPacket(target));
+-                                target.hurtMarked = false;
+-                                target.setDeltaMovement(deltaMovement);
++                                    ((ServerPlayer)target).connection.send(new ClientboundSetEntityMotionPacket(target));
++                                    target.hurtMarked = false;
++                                    target.setDeltaMovement(deltaMovement);
+                                 }
+                                 // CraftBukkit end
+                             }
+@@ -1378,12 +1391,12 @@ public abstract class Player extends LivingEntity {
+                             if (!flag2 && !flag3) {
+                                 if (flag) {
+                                     this.sendSoundEffect(
+-                                            this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
+-                                        );
++                                        this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
++                                    );
+                                 } else {
+                                     this.sendSoundEffect(
+-                                            this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_WEAK, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
+-                                        );
++                                        this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_WEAK, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
++                                    );
+                                 }
+                             }
+ 
+@@ -1632,7 +1645,7 @@ public abstract class Player extends LivingEntity {
+     }
+ 
+     @Override
+-    protected boolean canGlide() {
++    public boolean canGlide() {
+         return !this.abilities.flying && super.canGlide();
+     }
+ 
+@@ -1710,8 +1723,8 @@ public abstract class Player extends LivingEntity {
+     public void stopFallFlying() {
+         // CraftBukkit start
+         if (!org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) {
+-        this.setSharedFlag(7, true);
+-        this.setSharedFlag(7, false);
++            this.setSharedFlag(7, true);
++            this.setSharedFlag(7, false);
+         }
+         // CraftBukkit end
+     }
+@@ -2016,12 +2029,12 @@ public abstract class Player extends LivingEntity {
+     // Paper end - release entity api
+ 
+     private boolean respawnEntityOnShoulder(CompoundTag entityCompound) { // CraftBukkit void->boolean
+-    // Paper start - release entity api - return entity - overload
++        // Paper start - release entity api - return entity - overload
+         return this.respawnEntityOnShoulder0(entityCompound) != null;
+     }
+     @Nullable
+     private Entity respawnEntityOnShoulder0(CompoundTag entityCompound) { // CraftBukkit void->boolean
+-    // Paper end - release entity api - return entity - overload
++        // Paper end - release entity api - return entity - overload
+         if (!this.level().isClientSide && !entityCompound.isEmpty()) {
+             return EntityType.create(entityCompound, this.level(), EntitySpawnReason.LOAD).map((entity) -> { // CraftBukkit
+                 if (entity instanceof TamableAnimal) {

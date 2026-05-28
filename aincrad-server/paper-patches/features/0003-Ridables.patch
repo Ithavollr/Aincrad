@@ -1,0 +1,567 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Wed, 27 May 2026 16:48:20 -0400
+Subject: [PATCH] Ridables
+
+
+diff --git a/src/main/java/org/evlis/controller/FlyingMoveControllerWASD.java b/src/main/java/org/evlis/controller/FlyingMoveControllerWASD.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..dfde5ec03fa3570a53f7f41bca33539c1972cb25
+--- /dev/null
++++ b/src/main/java/org/evlis/controller/FlyingMoveControllerWASD.java
+@@ -0,0 +1,74 @@
++package org.evlis.controller;
++
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.ai.attributes.Attributes;
++import net.minecraft.world.entity.player.Input;
++import net.minecraft.world.entity.player.Player;
++
++public class FlyingMoveControllerWASD extends MoveControllerWASD {
++    protected final float groundSpeedModifier;
++    protected final float flyingSpeedModifier;
++    protected int tooHighCooldown = 0;
++    protected boolean setNoGravityFlag;
++
++    public FlyingMoveControllerWASD(Mob entity) {
++        this(entity, 1.0F);
++    }
++
++    public FlyingMoveControllerWASD(Mob entity, float groundSpeedModifier) {
++        this(entity, groundSpeedModifier, 1.0F, true);
++    }
++
++    public FlyingMoveControllerWASD(Mob entity, float groundSpeedModifier, float flyingSpeedModifier) {
++        this(entity, groundSpeedModifier, flyingSpeedModifier, true);
++    }
++
++    public FlyingMoveControllerWASD(Mob entity, float groundSpeedModifier, float flyingSpeedModifier, boolean setNoGravityFlag) {
++        super(entity);
++        this.groundSpeedModifier = groundSpeedModifier;
++        this.flyingSpeedModifier = flyingSpeedModifier;
++        this.setNoGravityFlag = setNoGravityFlag;
++    }
++
++    @Override
++    public void purpurTick(Player rider) {
++        Input lastClientInput = ((ServerPlayer) rider).getLastClientInput();
++        float forward = lastClientInput.forward() == lastClientInput.backward() ? 0.0F : lastClientInput.forward() ? 1.0F : 0.0F;
++        float vertical = forward == 0.0F ? 0.0F : -(rider.xRotO / 45.0F);
++        float strafe = (lastClientInput.left() == lastClientInput.right() ? 0.0F : lastClientInput.left() ? 1.0F : -1.0F);
++
++        if (lastClientInput.jump() && spacebarEvent(entity)) {
++            entity.onSpacebar();
++        }
++
++        if (entity.getY() >= entity.getMaxY() || --tooHighCooldown > 0) {
++            if (tooHighCooldown <= 0) {
++                tooHighCooldown = 20;
++            }
++            entity.setDeltaMovement(entity.getDeltaMovement().add(0.0D, -0.05D, 0.0D));
++            vertical = 0.0F;
++        }
++
++        setSpeedModifier(entity.getAttributeValue(Attributes.MOVEMENT_SPEED));
++        float speed = (float) getSpeedModifier();
++
++        if (entity.onGround) {
++            speed *= groundSpeedModifier; // TODO = fix this!
++        } else {
++            speed *= flyingSpeedModifier;
++        }
++
++        if (setNoGravityFlag) {
++            entity.setNoGravity(forward > 0);
++        }
++
++        entity.setSpeed(speed);
++        entity.setVerticalMot(vertical);
++        entity.setStrafeMot(strafe);
++        entity.setForwardMot(forward);
++
++        setForward(entity.getForwardMot());
++        setStrafe(entity.getStrafeMot());
++    }
++}
+diff --git a/src/main/java/org/evlis/controller/FlyingWithSpacebarMoveControllerWASD.java b/src/main/java/org/evlis/controller/FlyingWithSpacebarMoveControllerWASD.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..689cd37b636b0d1903dbf655f56da0d6d6e699a6
+--- /dev/null
++++ b/src/main/java/org/evlis/controller/FlyingWithSpacebarMoveControllerWASD.java
+@@ -0,0 +1,66 @@
++package org.evlis.controller;
++
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.ai.attributes.Attributes;
++import net.minecraft.world.entity.player.Input;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.phys.Vec3;
++
++public class FlyingWithSpacebarMoveControllerWASD extends FlyingMoveControllerWASD {
++    public FlyingWithSpacebarMoveControllerWASD(Mob entity) {
++        super(entity);
++    }
++
++    public FlyingWithSpacebarMoveControllerWASD(Mob entity, float groundSpeedModifier) {
++        super(entity, groundSpeedModifier);
++    }
++
++    @Override
++    public void purpurTick(Player rider) {
++        Input lastClientInput = ((ServerPlayer) rider).getLastClientInput();
++        float forward = (lastClientInput.forward() == lastClientInput.backward() ? 0.0F : lastClientInput.forward() ? 1.0F : -1.0F);
++        float strafe = (lastClientInput.left() == lastClientInput.right() ? 0.0F : lastClientInput.left() ? 1.0F : -1.0F) * 0.5F;
++        float vertical = 0;
++
++        if (forward < 0.0F) {
++            forward *= 0.5F;
++            strafe *= 0.5F;
++        }
++
++        float speed = (float) entity.getAttributeValue(Attributes.MOVEMENT_SPEED);
++
++        if (entity.onGround) {
++            speed *= groundSpeedModifier;
++        }
++
++        if (lastClientInput.jump() && spacebarEvent(entity) && !entity.onSpacebar()) {
++            entity.setNoGravity(true);
++            vertical = 1.0F;
++        } else {
++            entity.setNoGravity(false);
++        }
++
++        if (entity.getY() >= entity.getMaxY() || --tooHighCooldown > 0) {
++            if (tooHighCooldown <= 0) {
++                tooHighCooldown = 20;
++            }
++            entity.setDeltaMovement(entity.getDeltaMovement().add(0.0D, -0.2D, 0.0D));
++            vertical = 0.0F;
++        }
++
++        setSpeedModifier(speed);
++        entity.setSpeed((float) getSpeedModifier());
++        entity.setVerticalMot(vertical);
++        entity.setStrafeMot(strafe);
++        entity.setForwardMot(forward);
++
++        setForward(entity.getForwardMot());
++        setStrafe(entity.getStrafeMot());
++
++        Vec3 mot = entity.getDeltaMovement();
++        if (mot.y > 0.2D) {
++            entity.setDeltaMovement(mot.x, 0.2D, mot.z);
++        }
++    }
++}
+diff --git a/src/main/java/org/evlis/controller/LookControllerWASD.java b/src/main/java/org/evlis/controller/LookControllerWASD.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..1ad144347a653f305e6191e63987f4860c57b521
+--- /dev/null
++++ b/src/main/java/org/evlis/controller/LookControllerWASD.java
+@@ -0,0 +1,79 @@
++package org.evlis.controller;
++
++
++import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.util.Mth;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.ai.control.LookControl;
++import net.minecraft.world.entity.player.Player;
++
++public class LookControllerWASD extends LookControl {
++    protected final Mob entity;
++    private float yOffset = 0;
++    private float xOffset = 0;
++
++    public LookControllerWASD(Mob entity) {
++        super(entity);
++        this.entity = entity;
++    }
++
++    // tick
++    @Override
++    public void tick() {
++        if (entity.getRider() != null && entity.isControllable()) {
++            purpurTick(entity.getRider());
++        } else {
++            vanillaTick();
++        }
++    }
++
++    protected void purpurTick(Player rider) {
++        setYawPitch(rider.getYRot(), rider.getXRot());
++    }
++
++    public void vanillaTick() {
++        super.tick();
++    }
++
++    public void setYawPitch(float yRot, float xRot) {
++        entity.setXRot(normalizePitch(xRot + xOffset));
++        entity.setYRot(normalizeYaw(yRot + yOffset));
++        entity.setYHeadRot(entity.getYRot());
++        entity.xRotO = entity.getXRot();
++        entity.yRotO = entity.getYRot();
++
++        ClientboundMoveEntityPacket.PosRot entityPacket = new ClientboundMoveEntityPacket.PosRot(
++            entity.getId(),
++            (short) 0, (short) 0, (short) 0,
++            (byte) Mth.floor(entity.getYRot() * 256.0F / 360.0F),
++            (byte) Mth.floor(entity.getXRot() * 256.0F / 360.0F),
++            entity.onGround
++        );
++        ((ServerLevel) entity.level()).getChunkSource().broadcast(entity, entityPacket);
++    }
++
++    public void setOffsets(float yaw, float pitch) {
++        yOffset = yaw;
++        xOffset = pitch;
++    }
++
++    public float normalizeYaw(float yaw) {
++        yaw %= 360.0f;
++        if (yaw >= 180.0f) {
++            yaw -= 360.0f;
++        } else if (yaw < -180.0f) {
++            yaw += 360.0f;
++        }
++        return yaw;
++    }
++
++    public float normalizePitch(float pitch) {
++        if (pitch > 90.0f) {
++            pitch = 90.0f;
++        } else if (pitch < -90.0f) {
++            pitch = -90.0f;
++        }
++        return pitch;
++    }
++}
+diff --git a/src/main/java/org/evlis/controller/MoveControllerWASD.java b/src/main/java/org/evlis/controller/MoveControllerWASD.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..50ef1e4387065a3346f487c00fe72724a6b35ae3
+--- /dev/null
++++ b/src/main/java/org/evlis/controller/MoveControllerWASD.java
+@@ -0,0 +1,92 @@
++package org.evlis.controller;
++
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.ai.attributes.Attributes;
++import net.minecraft.world.entity.ai.control.MoveControl;
++import net.minecraft.world.entity.player.Input;
++import net.minecraft.world.entity.player.Player;
++import org.purpurmc.purpur.event.entity.RidableSpacebarEvent;
++
++public class MoveControllerWASD extends MoveControl {
++    protected final Mob entity;
++    private final double speedModifier;
++
++    public MoveControllerWASD(Mob entity) {
++        this(entity, 1.0D);
++    }
++
++    public MoveControllerWASD(Mob entity, double speedModifier) {
++        super(entity);
++        this.entity = entity;
++        this.speedModifier = speedModifier;
++    }
++
++    @Override
++    public boolean hasWanted() {
++        return entity.getRider() != null ? strafeForwards != 0 || strafeRight != 0 : super.hasWanted();
++    }
++
++    @Override
++    public void tick() {
++        if (entity.getRider() != null && entity.isControllable()) {
++            purpurTick(entity.getRider());
++        } else {
++            vanillaTick();
++        }
++    }
++
++    public void vanillaTick() {
++        super.tick();
++    }
++
++    public void purpurTick(Player rider) {
++        Input lastClientInput = ((ServerPlayer) rider).getLastClientInput();
++        float forward = (lastClientInput.forward() == lastClientInput.backward() ? 0.0F : lastClientInput.forward() ? 1.0F : -1.0F) * 0.5F;
++        float strafe = (lastClientInput.left() == lastClientInput.right() ? 0.0F : lastClientInput.left() ? 1.0F : -1.0F) * 0.25F;
++
++        if (forward <= 0.0F) {
++            forward *= 0.5F;
++        }
++
++        float yawOffset = 0;
++        if (strafe != 0) {
++            if (forward == 0) {
++                yawOffset += strafe > 0 ? -90 : 90;
++                forward = Math.abs(strafe * 2);
++            } else {
++                yawOffset += strafe > 0 ? -30 : 30;
++                strafe /= 2;
++                if (forward < 0) {
++                    yawOffset += strafe > 0 ? -110 : 110;
++                    forward *= -1;
++                }
++            }
++        } else if (forward < 0) {
++            yawOffset -= 180;
++            forward *= -1;
++        }
++
++        ((LookControllerWASD) entity.getLookControl()).setOffsets(yawOffset, 0);
++
++        if (lastClientInput.jump() && spacebarEvent(entity) && !entity.onSpacebar() && entity.onGround) {
++            entity.jumpFromGround();
++        }
++
++        setSpeedModifier(entity.getAttributeValue(Attributes.MOVEMENT_SPEED) * speedModifier);
++
++        entity.setSpeed((float) getSpeedModifier());
++        entity.setForwardMot(forward);
++
++        setForward(entity.getForwardMot());
++        setStrafe(entity.getStrafeMot());
++    }
++
++    public static boolean spacebarEvent(Mob entity) {
++        if (RidableSpacebarEvent.getHandlerList().getRegisteredListeners().length > 0) {
++            return new RidableSpacebarEvent(entity.getBukkitEntity()).callEvent();
++        } else {
++            return true;
++        }
++    }
++}
+diff --git a/src/main/java/org/evlis/controller/WaterMoveControllerWASD.java b/src/main/java/org/evlis/controller/WaterMoveControllerWASD.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..db81c25d6cd86053ed14421eba3e2c86f63095b2
+--- /dev/null
++++ b/src/main/java/org/evlis/controller/WaterMoveControllerWASD.java
+@@ -0,0 +1,53 @@
++package org.evlis.controller;
++
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.ai.attributes.Attributes;
++import net.minecraft.world.entity.player.Input;
++import net.minecraft.world.entity.player.Player;
++
++public class WaterMoveControllerWASD extends MoveControllerWASD {
++    private final double speedModifier;
++
++    public WaterMoveControllerWASD(Mob entity) {
++        this(entity, 1.0D);
++    }
++
++    public WaterMoveControllerWASD(Mob entity, double speedModifier) {
++        super(entity);
++        this.speedModifier = speedModifier;
++    }
++
++    @Override
++    public void purpurTick(Player rider) {
++        Input lastClientInput = ((ServerPlayer) rider).getLastClientInput();
++        float forward = (lastClientInput.forward() == lastClientInput.backward() ? 0.0F : lastClientInput.forward() ? 1.0F : -1.0F);
++        float strafe = (lastClientInput.left() == lastClientInput.right() ? 0.0F : lastClientInput.left() ? 1.0F : -1.0F) * 0.5F; // strafe slower by default
++        float vertical = -(rider.xRotO / 90);
++
++        if (forward == 0.0F) {
++            // strafe slower if not moving forward
++            strafe *= 0.5F;
++            // do not move vertically if not moving forward
++            vertical = 0.0F;
++        } else if (forward < 0.0F) {
++            // water animals can't swim backwards
++            forward = 0.0F;
++            vertical = 0.0F;
++        }
++
++        if (rider.jumping && spacebarEvent(entity)) {
++            entity.onSpacebar();
++        }
++
++        setSpeedModifier(entity.getAttributeValue(Attributes.MOVEMENT_SPEED) * speedModifier);
++        entity.setSpeed((float) getSpeedModifier() * 0.1F);
++
++        entity.setForwardMot(forward * (float) speedModifier);
++        entity.setStrafeMot(strafe * (float) speedModifier);
++        entity.setVerticalMot(vertical * (float) speedModifier);
++
++        setForward(entity.getForwardMot());
++        setStrafe(entity.getStrafeMot());
++    }
++}
+diff --git a/src/main/java/org/evlis/entity/ai/HasRider.java b/src/main/java/org/evlis/entity/ai/HasRider.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c854e69159a700d8488d072e124cbd3bd6a5a57
+--- /dev/null
++++ b/src/main/java/org/evlis/entity/ai/HasRider.java
+@@ -0,0 +1,19 @@
++package org.evlis.entity.ai;
++
++import java.util.EnumSet;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.ai.goal.Goal;
++
++public class HasRider extends Goal {
++    public final Mob entity;
++
++    public HasRider(Mob entity) {
++        this.entity = entity;
++        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.TARGET, Flag.UNKNOWN_BEHAVIOR));
++    }
++
++    @Override
++    public boolean canUse() {
++        return entity.getRider() != null && entity.isControllable();
++    }
++}
+diff --git a/src/main/java/org/evlis/entity/ai/HorseHasRider.java b/src/main/java/org/evlis/entity/ai/HorseHasRider.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..93195a64db36cfd4fd23ce8489079162eaab38d2
+--- /dev/null
++++ b/src/main/java/org/evlis/entity/ai/HorseHasRider.java
+@@ -0,0 +1,17 @@
++package org.evlis.entity.ai;
++
++import net.minecraft.world.entity.animal.horse.AbstractHorse;
++
++public class HorseHasRider extends HasRider {
++    public final AbstractHorse horse;
++
++    public HorseHasRider(AbstractHorse entity) {
++        super(entity);
++        this.horse = entity;
++    }
++
++    @Override
++    public boolean canUse() {
++        return super.canUse() && horse.isSaddled();
++    }
++}
+diff --git a/src/main/java/org/evlis/entity/ai/LlamaHasRider.java b/src/main/java/org/evlis/entity/ai/LlamaHasRider.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..13d75f47ad38f4ad8c5829920485ed0b1c8c79a5
+--- /dev/null
++++ b/src/main/java/org/evlis/entity/ai/LlamaHasRider.java
+@@ -0,0 +1,17 @@
++package org.evlis.entity.ai;
++
++import net.minecraft.world.entity.animal.horse.Llama;
++
++public class LlamaHasRider extends HasRider {
++    public final Llama llama;
++
++    public LlamaHasRider(Llama entity) {
++        super(entity);
++        this.llama = entity;
++    }
++
++    @Override
++    public boolean canUse() {
++        return super.canUse() && llama.isSaddled() && llama.isControllable();
++    }
++}
+diff --git a/src/main/java/org/evlis/entity/ai/ReceiveFlower.java b/src/main/java/org/evlis/entity/ai/ReceiveFlower.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..a8adb0d6e00dfadf29a5a29190286b6504a81eab
+--- /dev/null
++++ b/src/main/java/org/evlis/entity/ai/ReceiveFlower.java
+@@ -0,0 +1,90 @@
++package org.evlis.entity.ai;
++
++import java.util.EnumSet;
++import java.util.UUID;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.InteractionHand;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.ai.goal.Goal;
++import net.minecraft.world.entity.animal.IronGolem;
++import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.level.block.Blocks;
++
++public class ReceiveFlower extends Goal {
++    private final IronGolem irongolem;
++    private ServerPlayer target;
++    private int cooldown;
++
++    public ReceiveFlower(IronGolem entity) {
++        this.irongolem = entity;
++        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
++    }
++
++    @Override
++    public boolean canUse() {
++        if (this.irongolem.getOfferFlowerTick() > 0) {
++            return false;
++        }
++        if (!this.irongolem.isAngry()) {
++            return false;
++        }
++        UUID uuid = this.irongolem.getPersistentAngerTarget();
++        if (uuid == null) {
++            return false;
++        }
++        Entity target = ((ServerLevel) this.irongolem.level()).getEntity(uuid);
++        if (!(target instanceof ServerPlayer player)) {
++            return false;
++        }
++        InteractionHand hand = getPoppyHand(player);
++        if (hand == null) {
++            return false;
++        }
++        removeFlower(player, hand);
++        this.target = player;
++        return true;
++    }
++
++    @Override
++    public boolean canContinueToUse() {
++        return this.cooldown > 0;
++    }
++
++    @Override
++    public void start() {
++        this.cooldown = 100;
++        this.irongolem.stopBeingAngry();
++        this.irongolem.offerFlower(true);
++    }
++
++    @Override
++    public void stop() {
++        this.irongolem.offerFlower(false);
++        this.target = null;
++    }
++
++    @Override
++    public void tick() {
++        this.irongolem.getLookControl().setLookAt(this.target, 30.0F, 30.0F);
++        --this.cooldown;
++    }
++
++    private InteractionHand getPoppyHand(ServerPlayer player) {
++        if (isPoppy(player.getMainHandItem())) {
++            return InteractionHand.MAIN_HAND;
++        }
++        if (isPoppy(player.getOffhandItem())) {
++            return InteractionHand.OFF_HAND;
++        }
++        return null;
++    }
++
++    private void removeFlower(ServerPlayer player, InteractionHand hand) {
++        player.setItemInHand(hand, ItemStack.EMPTY);
++    }
++
++    private boolean isPoppy(ItemStack item) {
++        return item.getItem() == Blocks.POPPY.asItem();
++    }
++}

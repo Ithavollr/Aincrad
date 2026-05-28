@@ -2,30 +2,21 @@
 This is the custom server code used in the Minecraft world of Iðavöllr.
 
 **Changes from PaperMC**
-- [ ] Re-implement ALL old Aincrad patches.....  
-
-| # | Filename | Original |
-|---|----------|----------|
-| 0001 | Parallel-World-Ticking-SP | 0032 |
-| 0002 | Network-Modifications | 0033 |
-| 0003 | Water-World-Modifications | 0034 |
-| 0004 | Remove-End-Dragon-Battle | 0035 |
-| 0005 | Giants-AI | 0036 |
-| 0006 | Per-world-Monster-Limits | 0037 |
+- [x] Re-implement ALL old Aincrad patches!
 - [x] Edit max speeds so minecart > horse > ice boat (paddles only, sails should still be fast)
 - [x] Implement Giants AI
 - [ ] Add new source of Levitation Effect
 - [x] Strongly suggest Villagers do not swim
 - [x] Make Shulkers aquatic, fix shulker bullet water pathing
 - [x] Make Chorus fruit aquatic
-- [ ] Implement [Purpur](https://github.com/PurpurMC/Purpur) rideables
-- [ ] Implement Villager Tasks (Armorer heals golems, Priest heals villagers)
+- [x] Implement [Purpur](https://github.com/PurpurMC/Purpur) rideables
 - [x] Implement [Sparkly](https://github.com/SparklyPower/SparklyPaper) per-world ticking
 - [ ] Integrate [Denizen](https://github.com/DenizenScript/Denizen) for _all_ entity goals & behaviours
   - [ ] Merge NMS/world/entity/ai/behavior
   - [ ] Merge NMS/world/entity/ai/goal
 - [ ] Find out how Brain.java is leaking default-world POI's to serverLevelTickExecutors (so far detected in `SetWalkTargetFromBlockMemory` & `AssignProfessionFromJobSite`)
   - [ ] Re-implement [SmartBrainLib](https://github.com/Tslat/SmartBrainLib)
+  - [ ] Implement Villager Tasks (Armorer heals golems, Priest heals villagers)
 - [ ] Inspect and understand net/minecrarft/core/dispenser parallel ticking updates
 
 ## SETUP

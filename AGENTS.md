@@ -1,20 +1,34 @@
 # AGENT INSTRUCTIONS
 
 ## Purpose
-This repository is a multithreaded fork of the Paper high-performance Minecraft server implementation focused on stability and new custom content.
+This repository is a multithreaded fork of the Paper high-performance Minecraft server implementation focused on stability, maximizing online player capacity, and new custom content.
 
 ## High-Level Directives
 - **Maintain an updated list of files you have read in your context**
 - **After reading a file, IMMEDIATELY summarize your findings and next actions**
-- **STAY FOCUSED! After each action you should ask yourself "how does this relate to the initial request?"**
+- **STAY FOCUSED! After each action ask yourself "how does this relate to the initial request?"**
+- **ASK before making design decisions. Implement only what is requested.**
 
-## Key Files and Project Structure
-- Original Minecraft code is located at paper-server/src/minecraft/java/net/minecraft
-  - This code already has all the patches applied from the paper-server/patches dir.
-  - Entrypoint of the Java application is the runServer() method in paper-server/src/minecraft/java/net/minecraft/server/MinecraftServer.java
-  - Most main loop logic for the game gets called from either tickServer() or tickChildren() in paper-server/src/minecraft/java/net/minecraft/server/MinecraftServer.java
-  - **Multi-threading**
-    - The Vanilla chunk system has been replaced with a multi-threaded version, "ca.spottedleaf.moonrise".
-    - World ticking has been parallelized by assigning each ServerLevel instance its own tickExecutor from org.evlis.ServerLevelTickExecutorThreadFactory, limited by a global serverLevelTickingSemaphore that is initialized in paper-server/src/minecraft/java/net/minecraft/server/dedicated/DedicatedServer.java
-    - World creation/initialization has been moved out of MinecraftServer.java and into ServerLevel.java to allow creation and execution to happen off the main thread.
-- The PaperAPI code is under paper-api/src/main/java
+## Project Structure
+
+### Aincrad-specific code (where custom work happens)
+- `aincrad-server/src/minecraft/java/net/minecraft/` — Patched Minecraft server source (NMS)
+  - Custom sections marked with `// Aincrad start` / `// Aincrad end` comments
+  - Key file: `world/item/alchemy/PotionBrewing.java` — Custom potion brewing system
+  - Key file: `server/MinecraftServer.java` — Server entrypoint (`runServer()`, `tickServer()`, `tickChildren()`)
+  - Key file: `server/dedicated/DedicatedServer.java` — Server initialization
+- `aincrad-server/minecraft-patches/` — Patch files for NMS code
+- `aincrad-api/` — Custom API additions (builds on top of paper-api)
+
+### Paper upstream code (Aincrad patches this too)
+- `paper-server/src/main/java/` — Paper server code (CraftBukkit, Spottedleaf Moonrise, Paper additions)
+- `paper-api/src/main/java/` — Bukkit/Paper API
+- `aincrad-server/paper-patches/` — Patch files for Paper server code
+- `aincrad-api/paper-patches/` — Patch files for Paper API
+
+## Key Architecture Notes
+
+### Multi-threading
+- Vanilla chunk system replaced with `ca.spottedleaf.moonrise`
+- World ticking parallelized via per-ServerLevel tick executors
+- World creation/initialization moved into ServerLevel.java for off-main-thread execution

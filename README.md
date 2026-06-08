@@ -83,6 +83,12 @@ There are two working trees, each with its own patch set:
 2. `git add . && git commit -m "Your feature name"` inside `paper-server/`
 3. `./gradlew rebuildPaperServerFeaturePatches` from root
 
+**Paper API classes:**
+1. Edit files in `paper-api/src/main/java/`
+2. `git add . && git commit -m "Your feature name"` inside `paper-api/`
+3. `./gradlew rebuildPaperApiFeaturePatches` from root
+4. `./gradlew :aincrad-api:publishToMavenLocal` from root (to publish for local plugin development)
+
 ### Fixup an existing feature patch
 
 **Minecraft classes:**
@@ -98,6 +104,14 @@ There are two working trees, each with its own patch set:
 3. `git commit -a --fixup <target_hash>` inside `paper-server/`
 4. `git rebase -i --autosquash base` inside `paper-server/`
 5. `./gradlew rebuildPaperServerFeaturePatches` from root
+
+**Paper API classes:**
+1. Edit files in `paper-api/src/main/java/`
+2. `git log` inside `paper-api/` — find the target commit hash
+3. `git commit -a --fixup <target_hash>` inside `paper-api/`
+4. `git rebase -i --autosquash base` inside `paper-api/`
+5. `./gradlew rebuildPaperApiFeaturePatches` from root
+6. `./gradlew :aincrad-api:publishToMavenLocal` from root (to publish for local plugin development)
 
 #### Add files for patching
 find the file needed using "view source" or manually in the gradle cache, add the full classpath to `./build-data/dev-imports.txt`, run the Gradle task "applyPatches", and you should be able to find your new NMS file in the `./Paper-Server` dir.

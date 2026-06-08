@@ -1,0 +1,351 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Mon, 8 Jun 2026 15:32:38 -0400
+Subject: [PATCH] Better Potions
+
+
+diff --git a/net/minecraft/world/item/alchemy/PotionBrewing.java b/net/minecraft/world/item/alchemy/PotionBrewing.java
+index f7826f1ab4985cd7a754c4c550252943e874864e..a58c881deddd725f496534dca5f2b709a4210407 100644
+--- a/net/minecraft/world/item/alchemy/PotionBrewing.java
++++ b/net/minecraft/world/item/alchemy/PotionBrewing.java
+@@ -2,20 +2,104 @@ package net.minecraft.world.item.alchemy;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
++import java.util.Map;
+ import java.util.Optional;
++import java.util.Set;
+ import net.minecraft.core.Holder;
+ import net.minecraft.core.component.DataComponents;
+ import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.resources.ResourceKey;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.world.effect.MobEffect;
++import net.minecraft.world.effect.MobEffectInstance;
++import net.minecraft.world.effect.MobEffects;
+ import net.minecraft.world.flag.FeatureFlagSet;
+ import net.minecraft.world.item.Item;
+ import net.minecraft.world.item.ItemStack;
+ import net.minecraft.world.item.Items;
+ import net.minecraft.world.item.PotionItem;
++import net.minecraft.world.item.component.CustomData;
+ import net.minecraft.world.item.crafting.Ingredient;
+ 
+ public class PotionBrewing {
+     public static final int BREWING_TIME_SECONDS = 20;
+     public static final PotionBrewing EMPTY = new PotionBrewing(List.of(), List.of(), List.of());
++    // Aincrad start - custom potion brewing
++    public record BaseRecipe(String name, List<MobEffectInstance> effects) {
++        public BaseRecipe(String name, Holder<MobEffect> effect, int duration) {
++            this(name, List.of(new MobEffectInstance(effect, duration)));
++        }
++        public BaseRecipe(String name, Holder<MobEffect> effect, int duration, int amplifier) {
++            this(name, List.of(new MobEffectInstance(effect, duration, amplifier)));
++        }
++    }
++
++    public static final Map<Holder<MobEffect>, BaseRecipe> INVERSION_RECIPES = Map.ofEntries(
++        Map.entry(MobEffects.DAMAGE_BOOST,      new BaseRecipe("weakness",     MobEffects.WEAKNESS,           1800)),
++        Map.entry(MobEffects.WEAKNESS,          new BaseRecipe("strength",     MobEffects.DAMAGE_BOOST,       3600)),
++        Map.entry(MobEffects.HEAL,              new BaseRecipe("harming",      MobEffects.HARM,                  1)),
++        Map.entry(MobEffects.HARM,              new BaseRecipe("healing",      MobEffects.HEAL,                  1)),
++        Map.entry(MobEffects.POISON,            new BaseRecipe("regeneration", MobEffects.REGENERATION,         900)),
++        Map.entry(MobEffects.REGENERATION,      new BaseRecipe("poison",       MobEffects.POISON,               900)),
++        Map.entry(MobEffects.NIGHT_VISION,      new BaseRecipe("invisibility", MobEffects.INVISIBILITY,        3600)),
++        Map.entry(MobEffects.INVISIBILITY,      new BaseRecipe("night_vision", MobEffects.NIGHT_VISION,        3600)),
++        Map.entry(MobEffects.MOVEMENT_SPEED,    new BaseRecipe("slowness",     MobEffects.MOVEMENT_SLOWDOWN,   1800)),
++        Map.entry(MobEffects.MOVEMENT_SLOWDOWN, new BaseRecipe("swiftness",    MobEffects.MOVEMENT_SPEED,      3600)),
++        Map.entry(MobEffects.SATURATION,        new BaseRecipe("hunger",       MobEffects.SATURATION,             1, -1))
++    );
++
++    // Effects that support Glowstone amplification (have levels/amplifier variants)
++    public static final Set<Holder<MobEffect>> AMPLIFIABLE_EFFECTS = Set.of(
++        MobEffects.POISON, MobEffects.REGENERATION, MobEffects.DAMAGE_BOOST, MobEffects.WEAKNESS,
++        MobEffects.JUMP, MobEffects.MOVEMENT_SPEED, MobEffects.MOVEMENT_SLOWDOWN,
++        MobEffects.HEAL, MobEffects.HARM, MobEffects.WITHER, MobEffects.HEALTH_BOOST,
++        MobEffects.DAMAGE_RESISTANCE, MobEffects.ABSORPTION, MobEffects.SATURATION
++    );
++
++    public static final Map<Item, BaseRecipe> BASE_RECIPES = Map.ofEntries(
++        Map.entry(Items.SPIDER_EYE,              new BaseRecipe("poison",         MobEffects.POISON,           900)),
++        Map.entry(Items.GOLDEN_CARROT,           new BaseRecipe("night_vision",   MobEffects.NIGHT_VISION,    3600)),
++        Map.entry(Items.MAGMA_CREAM,             new BaseRecipe("fire_resistance",MobEffects.FIRE_RESISTANCE, 3600)),
++        Map.entry(Items.RABBIT_FOOT,             new BaseRecipe("leaping",        MobEffects.JUMP,            3600)),
++        Map.entry(Items.SUGAR,                   new BaseRecipe("swiftness",      MobEffects.MOVEMENT_SPEED,  3600)),
++        Map.entry(Items.PUFFERFISH,              new BaseRecipe("water_breathing",MobEffects.WATER_BREATHING, 3600)),
++        Map.entry(Items.GLISTERING_MELON_SLICE,  new BaseRecipe("healing",        MobEffects.HEAL,               1)),
++        Map.entry(Items.GHAST_TEAR,              new BaseRecipe("regeneration",   MobEffects.REGENERATION,     900)),
++        Map.entry(Items.BLAZE_POWDER,            new BaseRecipe("strength",       MobEffects.DAMAGE_BOOST,    3600)),
++        Map.entry(Items.PHANTOM_MEMBRANE,        new BaseRecipe("slow_falling",   MobEffects.SLOW_FALLING,    1800)),
++        Map.entry(Items.TURTLE_HELMET,           new BaseRecipe("turtle_master",  List.of(
++            new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 400, 3),
++            new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 400, 2)
++        ))),
++        Map.entry(Items.BREEZE_ROD,              new BaseRecipe("wind_charged",   MobEffects.WIND_CHARGED,    3600)),
++        Map.entry(Items.SLIME_BLOCK,             new BaseRecipe("oozing",         MobEffects.OOZING,          3600)),
++        Map.entry(Items.STONE,                   new BaseRecipe("infested",       MobEffects.INFESTED,        3600)),
++        Map.entry(Items.COBWEB,                  new BaseRecipe("weaving",        MobEffects.WEAVING,         3600)),
++        Map.entry(Items.WITHER_ROSE,             new BaseRecipe("wither",         MobEffects.WITHER,           900)),
++        Map.entry(Items.ROTTEN_FLESH,            new BaseRecipe("hunger",         MobEffects.SATURATION,         1, -1)),
++        Map.entry(Items.CAKE,                    new BaseRecipe("saturation",     MobEffects.SATURATION,         1)),
++        Map.entry(Items.WIND_CHARGE,             new BaseRecipe("levitation",     MobEffects.LEVITATION,       600)),
++        Map.entry(Items.INK_SAC,                 new BaseRecipe("blindness",      MobEffects.BLINDNESS,       900))
++    );
++
++    public static boolean isUpgraded(ItemStack stack) {
++        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
++        CompoundTag check = new CompoundTag();
++        check.putBoolean("PotionHasBeenUpgraded", true); // build the comparision flag
++        if (customData.matchedBy(check)) return true; // compare flag against existing NBT data
++        Optional<Holder<Potion>> potion = stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion();
++        if (potion.isEmpty()) return false;
++        ResourceLocation key = potion.get().unwrapKey().map(ResourceKey::location).orElse(null);
++        if (key == null) return false;
++        String path = key.getPath();
++        return path.startsWith("long_") || path.startsWith("strong_");
++    }
++
++    public static void markUpgraded(ItemStack stack) {
++        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean("PotionHasBeenUpgraded", true));
++    }
++    // Aincrad end - custom potion brewing
+     private final List<Ingredient> containers;
+     private final List<PotionBrewing.Mix<Potion>> potionMixes;
+     private final List<PotionBrewing.Mix<Item>> containerMixes;
+@@ -28,6 +112,11 @@ public class PotionBrewing {
+     }
+ 
+     public boolean isIngredient(ItemStack stack) {
++        // Aincrad start - custom potion brewing
++        if (BASE_RECIPES.containsKey(stack.getItem())) return true;
++        if (stack.is(Items.REDSTONE) || stack.is(Items.GLOWSTONE_DUST)) return true;
++        if (stack.is(Items.FERMENTED_SPIDER_EYE)) return true;
++        // Aincrad end - custom potion brewing
+         return this.isContainerIngredient(stack) || this.isPotionIngredient(stack) || this.isCustomIngredient(stack); // Paper - Custom Potion Mixes
+     }
+ 
+@@ -77,9 +166,58 @@ public class PotionBrewing {
+             return true;
+         }
+         // Paper end - Custom Potion Mixes
++        // Aincrad start - custom potion brewing
++        if (this.hasAincradMix(reagent, potionItem)) {
++            return true;
++        }
++        // Aincrad end - custom potion brewing
+         return this.isContainer(reagent) && (this.hasContainerMix(reagent, potionItem) || this.hasPotionMix(reagent, potionItem));
+     }
+ 
++    // Aincrad start - custom potion brewing
++    private boolean hasAincradMix(ItemStack reagent, ItemStack potionItem) {
++        PotionContents contents = reagent.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
++        // Base brew: AWKWARD + BASE_RECIPES ingredient
++        if (contents.is(Potions.AWKWARD) && BASE_RECIPES.containsKey(potionItem.getItem())) return true;
++        // Upgrade: custom-effect potion OR registry base potion + Redstone or Glowstone
++        if (!isUpgraded(reagent)) {
++            List<MobEffectInstance> effects = contents.customEffects();
++            if (effects.isEmpty() && contents.potion().isPresent()) {
++                effects = contents.potion().get().value().getEffects();
++            }
++            if (!effects.isEmpty()) {
++                // Redstone: allowed if not all effects are instant
++                if (potionItem.is(Items.REDSTONE) && !effects.stream().allMatch(e -> e.getEffect().value().isInstantenous())) {
++                    return true;
++                }
++                // Glowstone: allowed if all effects are amplifiable
++                if (potionItem.is(Items.GLOWSTONE_DUST) && effects.stream().allMatch(e -> AMPLIFIABLE_EFFECTS.contains(e.getEffect()))) {
++                    return true;
++                }
++            }
++        }
++        // Inversion: single-effect, un-upgraded potion + Fermented Spider Eye
++        if (potionItem.is(Items.FERMENTED_SPIDER_EYE) && !isUpgraded(reagent)) {
++            List<MobEffectInstance> effects = contents.customEffects();
++            if (effects.isEmpty() && contents.potion().isPresent()) {
++                effects = contents.potion().get().value().getEffects();
++            }
++            if (effects.size() == 1) {
++                MobEffectInstance effect = effects.get(0);
++                // SATURATION: only invert if amplifier >= 0 (saturation -> hunger)
++                if (effect.getEffect() == MobEffects.SATURATION && effect.getAmplifier() < 0) return false;
++                if (INVERSION_RECIPES.containsKey(effect.getEffect())) return true;
++            }
++        }
++        // Container mixes: gunpowder (potion->splash) and dragon's breath (splash->lingering) for custom potions
++        if (!contents.customEffects().isEmpty()) {
++            if (potionItem.is(Items.GUNPOWDER) && reagent.is(Items.POTION)) return true;
++            if (potionItem.is(Items.DRAGON_BREATH) && reagent.is(Items.SPLASH_POTION)) return true;
++        }
++        return false;
++    }
++    // Aincrad end - custom potion brewing
++
+     public boolean hasContainerMix(ItemStack reagent, ItemStack potionItem) {
+         for (PotionBrewing.Mix<Item> mix : this.containerMixes) {
+             if (reagent.is(mix.from) && mix.ingredient.test(potionItem)) {
+@@ -116,7 +254,103 @@ public class PotionBrewing {
+                 }
+             }
+             // Paper end - Custom Potion Mixes
+-            Optional<Holder<Potion>> optional = potionItem.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion();
++            // Aincrad start - custom potion brewing
++            PotionContents contents = potionItem.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
++            // Base brew: AWKWARD + ingredient -> custom-effect potion
++            if (contents.is(Potions.AWKWARD)) {
++                BaseRecipe recipe = BASE_RECIPES.get(potion.getItem());
++                if (recipe != null) {
++                    ItemStack result = new ItemStack(potionItem.getItem());
++                    result.set(DataComponents.POTION_CONTENTS, new PotionContents(
++                        Optional.empty(), Optional.empty(), recipe.effects(), Optional.of(recipe.name())
++                    ));
++                    return result;
++                }
++            }
++            // Upgrade: Redstone (duration x2) or Glowstone (amplifier +1)
++            if (!isUpgraded(potionItem)) {
++                List<MobEffectInstance> baseEffects = contents.customEffects();
++                Optional<String> name = contents.customName();
++                // If no custom effects, extract from registry potion
++                if (baseEffects.isEmpty() && contents.potion().isPresent()) {
++                    baseEffects = contents.potion().get().value().getEffects();
++                    if (name.isEmpty()) {
++                        name = Optional.of(contents.potion().get().value().name());
++                    }
++                }
++                if (!baseEffects.isEmpty()) {
++                    List<MobEffectInstance> upgraded = null;
++                    if (potion.is(Items.REDSTONE)) {
++                        // Block Redstone if all effects are instant (no duration to extend)
++                        boolean allInstant = baseEffects.stream().anyMatch(e -> e.getEffect().value().isInstantenous());
++                        if (!allInstant) {
++                            upgraded = baseEffects.stream()
++                                .map(e -> new MobEffectInstance(e.getEffect(), e.getDuration() * 2, e.getAmplifier()))
++                                .toList();
++                        }
++                    } else if (potion.is(Items.GLOWSTONE_DUST)) {
++                        // Block Glowstone if any effect is not in AMPLIFIABLE_EFFECTS
++                        boolean allAmplifiable = baseEffects.stream().allMatch(e -> AMPLIFIABLE_EFFECTS.contains(e.getEffect()));
++                        if (allAmplifiable) {
++                            upgraded = baseEffects.stream()
++                                .map(e -> { // sign-aware addition, to boost negative amps like hunger
++                                    int amp = e.getAmplifier();
++                                    int newAmp = amp >= 0 ? amp + 1 : amp - 1; // sign-aware addition
++                                    return new MobEffectInstance(e.getEffect(), e.getDuration(), newAmp);
++                                })
++                                .toList();
++                        }
++                    }
++                    if (upgraded != null) {
++                        ItemStack result = new ItemStack(potionItem.getItem());
++                        result.set(DataComponents.POTION_CONTENTS, new PotionContents(
++                            Optional.empty(), contents.customColor(), upgraded, name
++                        ));
++                        markUpgraded(result);
++                        return result;
++                    }
++                }
++            }
++            // Inversion: Fermented Spider Eye -> invert single effect, no flag set
++            if (potion.is(Items.FERMENTED_SPIDER_EYE) && !isUpgraded(potionItem)) {
++                List<MobEffectInstance> effects = contents.customEffects();
++                if (effects.isEmpty() && contents.potion().isPresent()) {
++                    effects = contents.potion().get().value().getEffects();
++                }
++                if (effects.size() == 1) {
++                    MobEffectInstance effect = effects.get(0);
++                    // SATURATION: only invert if amplifier >= 0 (saturation -> hunger, not hunger -> saturation)
++                    if (effect.getEffect() == MobEffects.SATURATION && effect.getAmplifier() < 0) {
++                        return potionItem; // Don't invert hunger
++                    }
++                    BaseRecipe recipe = INVERSION_RECIPES.get(effect.getEffect());
++                    if (recipe != null) {
++                        ItemStack result = new ItemStack(potionItem.getItem());
++                        result.set(DataComponents.POTION_CONTENTS, new PotionContents(
++                            Optional.empty(), Optional.empty(), recipe.effects(), Optional.of(recipe.name())
++                        ));
++                        return result;
++                    }
++                }
++            }
++            // Container mixes for custom potions: gunpowder/dragon's breath
++            if (!contents.customEffects().isEmpty()) {
++                Item targetItem = null;
++                if (potion.is(Items.GUNPOWDER)) {
++                    if (potionItem.is(Items.POTION)) targetItem = Items.SPLASH_POTION;
++                } else if (potion.is(Items.DRAGON_BREATH)) {
++                    if (potionItem.is(Items.SPLASH_POTION)) targetItem = Items.LINGERING_POTION;
++                }
++                if (targetItem != null) {
++                    ItemStack result = new ItemStack(targetItem);
++                    result.set(DataComponents.POTION_CONTENTS, new PotionContents(
++                        Optional.empty(), contents.customColor(), contents.customEffects(), contents.customName()
++                    ));
++                    return result;
++                }
++            }
++            // Aincrad end - custom potion brewing
++            Optional<Holder<Potion>> optional = contents.potion();
+             if (optional.isEmpty()) {
+                 return potionItem;
+             } else {
+@@ -149,58 +383,7 @@ public class PotionBrewing {
+         builder.addContainer(Items.LINGERING_POTION);
+         builder.addContainerRecipe(Items.POTION, Items.GUNPOWDER, Items.SPLASH_POTION);
+         builder.addContainerRecipe(Items.SPLASH_POTION, Items.DRAGON_BREATH, Items.LINGERING_POTION);
+-        builder.addMix(Potions.WATER, Items.GLOWSTONE_DUST, Potions.THICK);
+-        builder.addMix(Potions.WATER, Items.REDSTONE, Potions.MUNDANE);
+-        builder.addMix(Potions.WATER, Items.NETHER_WART, Potions.AWKWARD);
+-        builder.addStartMix(Items.BREEZE_ROD, Potions.WIND_CHARGED);
+-        builder.addStartMix(Items.SLIME_BLOCK, Potions.OOZING);
+-        builder.addStartMix(Items.STONE, Potions.INFESTED);
+-        builder.addStartMix(Items.COBWEB, Potions.WEAVING);
+-        builder.addMix(Potions.AWKWARD, Items.GOLDEN_CARROT, Potions.NIGHT_VISION);
+-        builder.addMix(Potions.NIGHT_VISION, Items.REDSTONE, Potions.LONG_NIGHT_VISION);
+-        builder.addMix(Potions.NIGHT_VISION, Items.FERMENTED_SPIDER_EYE, Potions.INVISIBILITY);
+-        builder.addMix(Potions.LONG_NIGHT_VISION, Items.FERMENTED_SPIDER_EYE, Potions.LONG_INVISIBILITY);
+-        builder.addMix(Potions.INVISIBILITY, Items.REDSTONE, Potions.LONG_INVISIBILITY);
+-        builder.addStartMix(Items.MAGMA_CREAM, Potions.FIRE_RESISTANCE);
+-        builder.addMix(Potions.FIRE_RESISTANCE, Items.REDSTONE, Potions.LONG_FIRE_RESISTANCE);
+-        builder.addStartMix(Items.RABBIT_FOOT, Potions.LEAPING);
+-        builder.addMix(Potions.LEAPING, Items.REDSTONE, Potions.LONG_LEAPING);
+-        builder.addMix(Potions.LEAPING, Items.GLOWSTONE_DUST, Potions.STRONG_LEAPING);
+-        builder.addMix(Potions.LEAPING, Items.FERMENTED_SPIDER_EYE, Potions.SLOWNESS);
+-        builder.addMix(Potions.LONG_LEAPING, Items.FERMENTED_SPIDER_EYE, Potions.LONG_SLOWNESS);
+-        builder.addMix(Potions.SLOWNESS, Items.REDSTONE, Potions.LONG_SLOWNESS);
+-        builder.addMix(Potions.SLOWNESS, Items.GLOWSTONE_DUST, Potions.STRONG_SLOWNESS);
+-        builder.addMix(Potions.AWKWARD, Items.TURTLE_HELMET, Potions.TURTLE_MASTER);
+-        builder.addMix(Potions.TURTLE_MASTER, Items.REDSTONE, Potions.LONG_TURTLE_MASTER);
+-        builder.addMix(Potions.TURTLE_MASTER, Items.GLOWSTONE_DUST, Potions.STRONG_TURTLE_MASTER);
+-        builder.addMix(Potions.SWIFTNESS, Items.FERMENTED_SPIDER_EYE, Potions.SLOWNESS);
+-        builder.addMix(Potions.LONG_SWIFTNESS, Items.FERMENTED_SPIDER_EYE, Potions.LONG_SLOWNESS);
+-        builder.addStartMix(Items.SUGAR, Potions.SWIFTNESS);
+-        builder.addMix(Potions.SWIFTNESS, Items.REDSTONE, Potions.LONG_SWIFTNESS);
+-        builder.addMix(Potions.SWIFTNESS, Items.GLOWSTONE_DUST, Potions.STRONG_SWIFTNESS);
+-        builder.addMix(Potions.AWKWARD, Items.PUFFERFISH, Potions.WATER_BREATHING);
+-        builder.addMix(Potions.WATER_BREATHING, Items.REDSTONE, Potions.LONG_WATER_BREATHING);
+-        builder.addStartMix(Items.GLISTERING_MELON_SLICE, Potions.HEALING);
+-        builder.addMix(Potions.HEALING, Items.GLOWSTONE_DUST, Potions.STRONG_HEALING);
+-        builder.addMix(Potions.HEALING, Items.FERMENTED_SPIDER_EYE, Potions.HARMING);
+-        builder.addMix(Potions.STRONG_HEALING, Items.FERMENTED_SPIDER_EYE, Potions.STRONG_HARMING);
+-        builder.addMix(Potions.HARMING, Items.GLOWSTONE_DUST, Potions.STRONG_HARMING);
+-        builder.addMix(Potions.POISON, Items.FERMENTED_SPIDER_EYE, Potions.HARMING);
+-        builder.addMix(Potions.LONG_POISON, Items.FERMENTED_SPIDER_EYE, Potions.HARMING);
+-        builder.addMix(Potions.STRONG_POISON, Items.FERMENTED_SPIDER_EYE, Potions.STRONG_HARMING);
+-        builder.addStartMix(Items.SPIDER_EYE, Potions.POISON);
+-        builder.addMix(Potions.POISON, Items.REDSTONE, Potions.LONG_POISON);
+-        builder.addMix(Potions.POISON, Items.GLOWSTONE_DUST, Potions.STRONG_POISON);
+-        builder.addStartMix(Items.GHAST_TEAR, Potions.REGENERATION);
+-        builder.addMix(Potions.REGENERATION, Items.REDSTONE, Potions.LONG_REGENERATION);
+-        builder.addMix(Potions.REGENERATION, Items.GLOWSTONE_DUST, Potions.STRONG_REGENERATION);
+-        builder.addStartMix(Items.BLAZE_POWDER, Potions.STRENGTH);
+-        builder.addMix(Potions.STRENGTH, Items.REDSTONE, Potions.LONG_STRENGTH);
+-        builder.addMix(Potions.STRENGTH, Items.GLOWSTONE_DUST, Potions.STRONG_STRENGTH);
+-        builder.addMix(Potions.WATER, Items.FERMENTED_SPIDER_EYE, Potions.WEAKNESS);
+-        builder.addMix(Potions.WEAKNESS, Items.REDSTONE, Potions.LONG_WEAKNESS);
+-        builder.addMix(Potions.AWKWARD, Items.PHANTOM_MEMBRANE, Potions.SLOW_FALLING);
+-        builder.addMix(Potions.SLOW_FALLING, Items.REDSTONE, Potions.LONG_SLOW_FALLING);
++        builder.addMix(Potions.WATER, Items.NETHER_WART, Potions.AWKWARD); // Aincrad - only vanilla registry mix kept
+     }
+ 
+     // Paper start - Custom Potion Mixes

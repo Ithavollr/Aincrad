@@ -102,6 +102,32 @@ Brewing guard:
   If not upgraded → apply transformation
 ```
 
+## Implementation Progress
+
+### Completed
+- **Step 1** — `BaseRecipe` record + `BASE_RECIPES` map (15 entries, all Awkward-based recipes)
+- **Step 1b** — `INVERSION_RECIPES` map (10 bi-directional pairs keyed by `Holder<MobEffect>`)
+- **Step 2** — `isUpgraded(ItemStack)` and `markUpgraded(ItemStack)` helpers
+- **Step 3** — `mix()`: base brew, upgrade (Redstone/Glowstone), and inversion (Fermented Spider Eye) logic
+- **Step 3** — `hasMix()`: `hasAincradMix()` added for all three Aincrad paths
+- **Step 3** — `isIngredient()`: early-returns for BASE_RECIPES ingredients, Redstone, Glowstone, Fermented Spider Eye
+- **Step 6** — `addVanillaMixes()` stripped to containers + Gunpowder/Dragon Breath + WATER→AWKWARD only
+
+### Design Decisions Made
+- Fermented Spider Eye is **inversion-only** — no Weakness base recipe; Weakness is reached via Strength inversion
+- Inversion is **bi-directional** and sets **no upgrade flag** (infinitely repeatable)
+- Inversion is **blocked** on upgraded potions and multi-effect potions (e.g. Turtle Master)
+- Leaping has no inversion
+
+### Open Concerns
+
+#### 1. `customEffects()` returns copies
+`PotionContents.customEffects()` returns instances wrapped via `Lists.transform(..., MobEffectInstance::new)` — each call produces new `MobEffectInstance` objects. Reading `getEffect()`, `getDuration()`, and `getAmplifier()` is safe. The `Holder<MobEffect>` key used for `INVERSION_RECIPES` lookup comes from the same `MobEffects` static fields on both sides, so identity/equality holds. **No action needed**, but worth verifying if inversion lookups ever miss unexpectedly.
+
+#### 2. Container conversions (Gunpowder/Dragon Breath) on custom-effect potions
+The vanilla `containerMixes` path in `mix()` calls `PotionContents.createItemStack(mix.to.value(), optional.get())`, which requires `optional` (the registry potion holder) to be non-empty. Custom-effect potions have `potion=Optional.empty()`, so the code hits `if (optional.isEmpty()) return potionItem` before reaching the container mix loop — **Gunpowder and Dragon Breath do nothing on custom-effect potions**.
+Fix needed: detect container conversion before the `optional.isEmpty()` guard and manually copy `PotionContents` to the new item type.
+
 ## Advantages
 - No network protocol changes → client compatibility preserved
 - No registry modifications → no client mod required
@@ -112,3 +138,4 @@ Brewing guard:
 ## Caveats
 - Must handle existing registry potions (LONG_SLOW_FALLING, etc.) as already upgraded
 - Datapacks and commands can spawn registry potions, so the upgrade guard must check both NBT flag and registry potion type
+- Custom potions (e.g. Wither) require a server-side resource pack to provide translation keys like `item.minecraft.potion.effect.wither` — without it, clients will display the raw key. This is the correct long-term fix and requires no client mod (vanilla resource pack mechanism).

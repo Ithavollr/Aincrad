@@ -153,3 +153,4 @@ org.bukkit.Raid createRaid(@NotNull Player player, @NotNull Location location,
 | `paper-server/.../CraftRaid.java` | Implement `forceStop()` |
 | `paper-server/.../CraftWorld.java` | Implement `createRaid()` |
 | `aincrad-api` patches | Add `forceStop()` + `isPluginControlled()` to `Raid`, add `createRaid()` to `World` |
+

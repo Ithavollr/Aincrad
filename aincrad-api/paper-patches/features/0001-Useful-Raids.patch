@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Tue, 9 Jun 2026 22:06:16 -0400
+Subject: [PATCH] Useful Raids
+
+
+diff --git a/src/main/java/org/bukkit/Raid.java b/src/main/java/org/bukkit/Raid.java
+index fa98599e3eee37bf68f0e9813497c718f457485c..b64ca2de21fb16faa769a9a3924f2f2f84642623 100644
+--- a/src/main/java/org/bukkit/Raid.java
++++ b/src/main/java/org/bukkit/Raid.java
+@@ -147,4 +147,27 @@ public interface Raid extends org.bukkit.persistence.PersistentDataHolder { // P
+      */
+     org.bukkit.boss.@NotNull BossBar getBossBar();
+     // Paper end
++
++    // Aincrad start
++    /**
++     * Forcibly ends this raid with the given outcome, firing {@link org.bukkit.event.raid.RaidFinishEvent}.
++     * <p>
++     * If {@code victory} is {@code true}, Hero of the Village is awarded to all heroes
++     * and the vanilla victory path is followed. If {@code false}, the raid ends as a loss.
++     * <p>
++     * Has no effect if the raid is not {@link RaidStatus#ONGOING}.
++     *
++     * @param victory {@code true} for a victory outcome, {@code false} for a loss
++     */
++    void forceStop(boolean victory);
++
++    /**
++     * Returns whether this raid was started via the plugin API rather than the vanilla
++     * Bad Omen trigger. Plugin-controlled raids do not terminate when the center block
++     * position is no longer inside a village.
++     *
++     * @return {@code true} if this is a plugin-controlled raid
++     */
++    boolean isPluginControlled();
++    // Aincrad end
+ }
+diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
+index bff01411f4b2d3ecd9e6d807c3f450d72c108323..2352d9ceb4cf29185de790acd297190dc8d569ae 100644
+--- a/src/main/java/org/bukkit/World.java
++++ b/src/main/java/org/bukkit/World.java
+@@ -4260,6 +4260,27 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
+     @Nullable Raid getRaid(int id);
+     // Paper end - more Raid API
+ 
++    // Aincrad start
++    /**
++     * Creates a new raid centered at the given location, triggered by the given player.
++     * <p>
++     * Unlike the vanilla trigger, this bypasses the village POI check — the raid will not
++     * stop due to {@link org.bukkit.event.raid.RaidStopEvent.Reason#NOT_IN_VILLAGE} when
++     * {@code pluginControlled} is {@code true}.
++     * <p>
++     * {@link org.bukkit.event.raid.RaidTriggerEvent} is still fired and may cancel creation.
++     * The difficulty and 40-minute timeout still apply.
++     *
++     * @param player          the player triggering the raid (must not be a spectator)
++     * @param location        the center of the raid
++     * @param badOmenLevel    the Bad Omen level (0–5)
++     * @param pluginControlled whether to skip village validation during the raid's lifetime
++     * @return the created {@link Raid}, or {@code null} if creation failed or was cancelled
++     */
++    @Nullable
++    Raid createRaid(@NotNull org.bukkit.entity.Player player, @NotNull Location location, int badOmenLevel, boolean pluginControlled);
++    // Aincrad end
++
+     /**
+      * Gets all raids that are going on over this world.
+      *

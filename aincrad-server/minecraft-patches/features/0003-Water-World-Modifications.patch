@@ -16,6 +16,27 @@ index 38e1d2e113ead0524eb93ba89fa9a3b9900440c0..9d891e6bb63627708f7b7698e29c024e
                  EntityType.SQUID,
                  EntityType.TROPICAL_FISH,
                  EntityType.TADPOLE,
+diff --git a/net/minecraft/world/entity/SpawnPlacements.java b/net/minecraft/world/entity/SpawnPlacements.java
+index 2ce8e851f68f465d9475d95dda4f6bd46e0b8635..78d5e8f34807093e2069fe923acda633307b50eb 100644
+--- a/net/minecraft/world/entity/SpawnPlacements.java
++++ b/net/minecraft/world/entity/SpawnPlacements.java
+@@ -34,6 +34,7 @@ import net.minecraft.world.entity.monster.MagmaCube;
+ import net.minecraft.world.entity.monster.Monster;
+ import net.minecraft.world.entity.monster.PatrollingMonster;
+ import net.minecraft.world.entity.monster.Silverfish;
++import net.minecraft.world.entity.monster.breeze.Breeze;
+ import net.minecraft.world.entity.monster.Slime;
+ import net.minecraft.world.entity.monster.Stray;
+ import net.minecraft.world.entity.monster.Strider;
+@@ -101,7 +102,7 @@ public class SpawnPlacements {
+         register(EntityType.BAT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Bat::checkBatSpawnRules);
+         register(EntityType.BLAZE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkAnyLightMonsterSpawnRules);
+         register(EntityType.BOGGED, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
+-        register(EntityType.BREEZE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkAnyLightMonsterSpawnRules);
++        register(EntityType.BREEZE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Breeze::checkBreezeSpawnRules); // Aincrad - custom spawn rules for Breeze
+         register(EntityType.CAVE_SPIDER, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
+         register(EntityType.CHICKEN, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
+         register(EntityType.COW, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
 diff --git a/net/minecraft/world/entity/monster/Shulker.java b/net/minecraft/world/entity/monster/Shulker.java
 index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253b32d4c88 100644
 --- a/net/minecraft/world/entity/monster/Shulker.java
@@ -68,6 +89,39 @@ index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253
                      && this.level().getWorldBorder().isWithinBounds(blockPos1)
                      && this.level().noCollision(this, new AABB(blockPos1).deflate(1.0E-6))) {
                      Direction direction = this.findAttachableSurface(blockPos1);
+diff --git a/net/minecraft/world/entity/monster/breeze/Breeze.java b/net/minecraft/world/entity/monster/breeze/Breeze.java
+index 23dff1d01387ce89b020aa93de99e6ef557c04e3..048a76f55344924d3e2ca520adfad592e74be676 100644
+--- a/net/minecraft/world/entity/monster/breeze/Breeze.java
++++ b/net/minecraft/world/entity/monster/breeze/Breeze.java
+@@ -28,7 +28,9 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+ import net.minecraft.world.entity.monster.Monster;
+ import net.minecraft.world.entity.projectile.Projectile;
+ import net.minecraft.world.entity.projectile.ProjectileDeflection;
++import net.minecraft.world.Difficulty;
+ import net.minecraft.world.level.Level;
++import net.minecraft.world.level.ServerLevelAccessor;
+ import net.minecraft.world.level.block.RenderShape;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.pathfinder.PathType;
+@@ -65,6 +67,18 @@ public class Breeze extends Monster {
+             .add(Attributes.ATTACK_DAMAGE, 3.0);
+     }
+ 
++    // Aincrad start - Breezes only spawn in bad weather
++    public static boolean checkBreezeSpawnRules(
++        EntityType<? extends Breeze> entityType, ServerLevelAccessor level, 
++        net.minecraft.world.entity.EntitySpawnReason spawnReason, net.minecraft.core.BlockPos pos, 
++        net.minecraft.util.RandomSource random
++    ) {
++        return level.getDifficulty() != Difficulty.PEACEFUL
++            && level.getLevel().isRaining()
++            && Monster.checkMobSpawnRules(entityType, level, spawnReason, pos, random);
++    }
++    // Aincrad end
++
+     public Breeze(EntityType<? extends Monster> entityType, Level level) {
+         super(entityType, level);
+         this.setPathfindingMalus(PathType.DANGER_TRAPDOOR, -1.0F);
 diff --git a/net/minecraft/world/entity/projectile/ShulkerBullet.java b/net/minecraft/world/entity/projectile/ShulkerBullet.java
 index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69395b50f5 100644
 --- a/net/minecraft/world/entity/projectile/ShulkerBullet.java

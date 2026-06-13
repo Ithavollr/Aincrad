@@ -52,7 +52,7 @@ index 44090c5973c142bf10f32e63d5647145c5bc009a..943f1d823f19490b7d2d0719adc6dfac
  
              entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
 diff --git a/net/minecraft/world/entity/SpawnPlacements.java b/net/minecraft/world/entity/SpawnPlacements.java
-index 2ce8e851f68f465d9475d95dda4f6bd46e0b8635..a5069f894bc554891975872fd6fb8854af9d22bd 100644
+index 78d5e8f34807093e2069fe923acda633307b50eb..158865319086352b9942cdd6a786da16ed8fcdaf 100644
 --- a/net/minecraft/world/entity/SpawnPlacements.java
 +++ b/net/minecraft/world/entity/SpawnPlacements.java
 @@ -28,6 +28,7 @@ import net.minecraft.world.entity.animal.horse.ZombieHorse;
@@ -63,7 +63,7 @@ index 2ce8e851f68f465d9475d95dda4f6bd46e0b8635..a5069f894bc554891975872fd6fb8854
  import net.minecraft.world.entity.monster.Guardian;
  import net.minecraft.world.entity.monster.Husk;
  import net.minecraft.world.entity.monster.MagmaCube;
-@@ -112,7 +113,7 @@ public class SpawnPlacements {
+@@ -113,7 +114,7 @@ public class SpawnPlacements {
          register(EntityType.ENDER_DRAGON, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mob::checkMobSpawnRules);
          register(EntityType.FROG, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Frog::checkFrogSpawnRules);
          register(EntityType.GHAST, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Ghast::checkGhastSpawnRules);

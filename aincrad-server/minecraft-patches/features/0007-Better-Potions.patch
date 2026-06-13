@@ -5,7 +5,7 @@ Subject: [PATCH] Better Potions
 
 
 diff --git a/net/minecraft/world/item/alchemy/PotionBrewing.java b/net/minecraft/world/item/alchemy/PotionBrewing.java
-index f7826f1ab4985cd7a754c4c550252943e874864e..a58c881deddd725f496534dca5f2b709a4210407 100644
+index f7826f1ab4985cd7a754c4c550252943e874864e..9696c2fda4730a79df4f8a0a3d7802276c78ef4c 100644
 --- a/net/minecraft/world/item/alchemy/PotionBrewing.java
 +++ b/net/minecraft/world/item/alchemy/PotionBrewing.java
 @@ -2,20 +2,104 @@ package net.minecraft.world.item.alchemy;
@@ -89,7 +89,7 @@ index f7826f1ab4985cd7a754c4c550252943e874864e..a58c881deddd725f496534dca5f2b709
 +        Map.entry(Items.WITHER_ROSE,             new BaseRecipe("wither",         MobEffects.WITHER,           900)),
 +        Map.entry(Items.ROTTEN_FLESH,            new BaseRecipe("hunger",         MobEffects.SATURATION,         1, -1)),
 +        Map.entry(Items.CAKE,                    new BaseRecipe("saturation",     MobEffects.SATURATION,         1)),
-+        Map.entry(Items.WIND_CHARGE,             new BaseRecipe("levitation",     MobEffects.LEVITATION,       600)),
++        Map.entry(Items.WIND_CHARGE,             new BaseRecipe("levitation",     MobEffects.LEVITATION,       400)),
 +        Map.entry(Items.INK_SAC,                 new BaseRecipe("blindness",      MobEffects.BLINDNESS,       900))
 +    );
 +

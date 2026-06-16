@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Mon, 15 Jun 2026 18:31:42 -0400
+Subject: [PATCH] Void World Fixes
+
+
+diff --git a/net/minecraft/world/entity/animal/Bee.java b/net/minecraft/world/entity/animal/Bee.java
+index 0d19a3d61f001c5b9c3e251199d97d7b0e97dbee..819669d9514046382e03230683121f1ac7d398b0 100644
+--- a/net/minecraft/world/entity/animal/Bee.java
++++ b/net/minecraft/world/entity/animal/Bee.java
+@@ -142,6 +142,10 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+     private Bee.BeeGoToKnownFlowerGoal goToKnownFlowerGoal;
+     private int underWaterTicks;
+     public net.kyori.adventure.util.TriState rollingOverride = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Rolling override
++    // Aincrad start - void-world bee pathfinding
++    private int stableDestinationFailures = 0;
++    private static final int STABLE_DESTINATION_FAILURES_BEFORE_RELAXING = 3;
++    // Aincrad end - void-world bee pathfinding
+ 
+     public Bee(EntityType<? extends Bee> entityType, Level level) {
+         super(entityType, level);
+@@ -245,6 +249,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         this.goalSelector.addGoal(0, new org.evlis.entity.ai.HasRider(this)); // Purpur - Ridables
+         this.goalSelector.addGoal(0, new Bee.BeeAttackGoal(this, 1.4F, true));
+         this.goalSelector.addGoal(1, new Bee.BeeEnterHiveGoal());
++        this.goalSelector.addGoal(2, new Bee.BeeFlyUpwardsGoal()); // Aincrad - void-world safety
+         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
+         this.goalSelector.addGoal(3, new TemptGoal(this, 1.25, stack -> stack.is(ItemTags.BEE_FOOD), false));
+         this.goalSelector.addGoal(3, new Bee.ValidateHiveGoal());
+@@ -646,7 +651,14 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         FlyingPathNavigation flyingPathNavigation = new FlyingPathNavigation(this, level) {
+             @Override
+             public boolean isStableDestination(BlockPos pos) {
+-                return !this.level.getBlockState(pos.below()).isAir();
++                // Aincrad start - void-world bee pathfinding
++                if (!this.level.getBlockState(pos.below()).isAir()) {
++                    if (Bee.this.stableDestinationFailures > 0) Bee.this.stableDestinationFailures = 0;
++                    return true;
++                }
++                Bee.this.stableDestinationFailures++;
++                return Bee.this.stableDestinationFailures >= STABLE_DESTINATION_FAILURES_BEFORE_RELAXING;
++                // Aincrad end - void-world bee pathfinding
+             }
+ 
+             @Override
+@@ -1403,6 +1415,43 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         }
+     }
+ 
++    // Aincrad start - void-world safety: fly back up when below Y=0
++    class BeeFlyUpwardsGoal extends Goal {
++        private int targetY;
++
++        BeeFlyUpwardsGoal() {
++            this.setFlags(EnumSet.of(Goal.Flag.MOVE));
++        }
++
++        @Override
++        public boolean canUse() {
++            return Bee.this.getY() < 0 && this.isOverVoid();
++        }
++
++        private boolean isOverVoid() { // use chunk-cached heightmap to check if ANY solid blocks exist in column
++            return Bee.this.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, Bee.this.getBlockX(), Bee.this.getBlockZ()) <= Bee.this.level().getMinY();
++        }
++
++        @Override
++        public boolean canContinueToUse() {
++            return Bee.this.getY() < this.targetY && Bee.this.navigation.isInProgress();
++        }
++
++        @Override
++        public void start() {
++            this.targetY = Bee.this.random.nextInt(4) + 1;
++            Bee.this.navigation.moveTo(Bee.this.getX(), this.targetY, Bee.this.getZ(), 1.0);
++        }
++
++        @Override
++        public void tick() {
++            if (!Bee.this.navigation.isInProgress()) {
++                Bee.this.navigation.moveTo(Bee.this.getX(), this.targetY, Bee.this.getZ(), 1.0);
++            }
++        }
++    }
++    // Aincrad end - void-world safety
++
+     class ValidateHiveGoal extends Bee.BaseBeeGoal {
+         private final int VALIDATE_HIVE_COOLDOWN = Mth.nextInt(Bee.this.random, 20, 40);
+         private long lastValidateTick = -1L;

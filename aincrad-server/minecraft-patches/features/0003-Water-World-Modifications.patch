@@ -90,10 +90,18 @@ index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253
                      && this.level().noCollision(this, new AABB(blockPos1).deflate(1.0E-6))) {
                      Direction direction = this.findAttachableSurface(blockPos1);
 diff --git a/net/minecraft/world/entity/monster/breeze/Breeze.java b/net/minecraft/world/entity/monster/breeze/Breeze.java
-index 23dff1d01387ce89b020aa93de99e6ef557c04e3..048a76f55344924d3e2ca520adfad592e74be676 100644
+index 23dff1d01387ce89b020aa93de99e6ef557c04e3..5a7c50a66b208ef911104e2fd86d1f4c99d1965a 100644
 --- a/net/minecraft/world/entity/monster/breeze/Breeze.java
 +++ b/net/minecraft/world/entity/monster/breeze/Breeze.java
-@@ -28,7 +28,9 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+@@ -17,6 +17,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
+ import net.minecraft.world.damagesource.DamageSource;
+ import net.minecraft.world.entity.AnimationState;
+ import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.EntitySpawnReason;
+ import net.minecraft.world.entity.EntityType;
+ import net.minecraft.world.entity.LivingEntity;
+ import net.minecraft.world.entity.Mob;
+@@ -28,7 +29,9 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
  import net.minecraft.world.entity.monster.Monster;
  import net.minecraft.world.entity.projectile.Projectile;
  import net.minecraft.world.entity.projectile.ProjectileDeflection;
@@ -103,7 +111,7 @@ index 23dff1d01387ce89b020aa93de99e6ef557c04e3..048a76f55344924d3e2ca520adfad592
  import net.minecraft.world.level.block.RenderShape;
  import net.minecraft.world.level.block.state.BlockState;
  import net.minecraft.world.level.pathfinder.PathType;
-@@ -65,6 +67,18 @@ public class Breeze extends Monster {
+@@ -65,6 +68,19 @@ public class Breeze extends Monster {
              .add(Attributes.ATTACK_DAMAGE, 3.0);
      }
  
@@ -115,6 +123,7 @@ index 23dff1d01387ce89b020aa93de99e6ef557c04e3..048a76f55344924d3e2ca520adfad592
 +    ) {
 +        return level.getDifficulty() != Difficulty.PEACEFUL
 +            && level.getLevel().isRaining()
++            && (EntitySpawnReason.isSpawner(spawnReason) || level.canSeeSky(pos))
 +            && Monster.checkMobSpawnRules(entityType, level, spawnReason, pos, random);
 +    }
 +    // Aincrad end

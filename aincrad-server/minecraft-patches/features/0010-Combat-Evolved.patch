@@ -59,8 +59,71 @@ index 22d2b39d22580ebd47153a134979132fd1ad463e..d5381cd01b6808f5794e181654b462e4
          this.tag(ItemTags.MINING_ENCHANTABLE).addTag(ItemTags.AXES).addTag(ItemTags.PICKAXES).addTag(ItemTags.SHOVELS).addTag(ItemTags.HOES).add(Items.SHEARS);
          this.tag(ItemTags.MINING_LOOT_ENCHANTABLE).addTag(ItemTags.AXES).addTag(ItemTags.PICKAXES).addTag(ItemTags.SHOVELS).addTag(ItemTags.HOES);
          this.tag(ItemTags.FISHING_ENCHANTABLE).add(Items.FISHING_ROD);
+diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
+index 85e1e45cbe02d0cb336031464f6f54a75e6bcb6f..d34bc2ac14b57660a693a6c8c6fb75a35abf9433 100644
+--- a/net/minecraft/server/level/ServerPlayer.java
++++ b/net/minecraft/server/level/ServerPlayer.java
+@@ -425,6 +425,23 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+     // Paper end - rewrite chunk system
+     public boolean hasTickedAtLeastOnceInNewWorld = false; // SparklyPaper - parallel world ticking (fixes bug in DreamResourceReset where the inventory is opened AFTER the player has changed worlds, if you click with the quick tp torch in a chest, because the inventory is opened AFTER the player has teleported)
+ 
++    // Aincrad start - off-hand interaction suppression
++    // A custom main-hand item action (e.g. the Wind Burst axe firing a wind charge) consumes a
++    // right-click that the vanilla client doesn't recognise. The client then falls through to the
++    // off-hand and the server would place/use the off-hand item too. When a main-hand action claims
++    // the interaction it stamps the current tick here; the packet handler drops any off-hand use for
++    // that same tick. Generic so future items (e.g. spears) can reuse it.
++    private long offHandUseSuppressedTick = Long.MIN_VALUE;
++
++    public void suppressOffHandUseThisTick() {
++        this.offHandUseSuppressedTick = this.level().getGameTime();
++    }
++
++    public boolean isOffHandUseSuppressed() {
++        return this.offHandUseSuppressedTick == this.level().getGameTime();
++    }
++    // Aincrad end - off-hand interaction suppression
++
+     public ServerPlayer(MinecraftServer server, ServerLevel level, GameProfile gameProfile, ClientInformation clientInformation) {
+         super(level, level.getSharedSpawnPos(), level.getSharedSpawnAngle(), gameProfile);
+         this.textFilter = server.createTextFilterForPlayer(this);
+diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index b176e292d7f830b002d11a87b869de54a377e6a6..8e6e0693bb20c7fa4d653a52245edbed9ab4d5d5 100644
+--- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -1918,6 +1918,16 @@ public class ServerGamePacketListenerImpl
+             ServerLevel serverLevel = this.player.serverLevel();
+             InteractionHand hand = packet.getHand();
+             ItemStack itemInHand = this.player.getItemInHand(hand);
++            // Aincrad start - drop off-hand block interaction claimed by a custom main-hand action this tick
++            if (hand == InteractionHand.OFF_HAND && this.player.isOffHandUseSuppressed()) {
++                BlockHitResult suppressedHit = packet.getHitResult();
++                BlockPos suppressedPos = suppressedHit.getBlockPos();
++                this.player.connection.send(new ClientboundBlockUpdatePacket(serverLevel, suppressedPos));
++                this.player.connection.send(new ClientboundBlockUpdatePacket(serverLevel, suppressedPos.relative(suppressedHit.getDirection())));
++                this.player.containerMenu.sendAllDataToRemote();
++                return;
++            }
++            // Aincrad end
+             if (itemInHand.isItemEnabled(serverLevel.enabledFeatures())) {
+                 BlockHitResult hitResult = packet.getHitResult();
+                 Vec3 location = hitResult.getLocation();
+@@ -1985,6 +1995,13 @@ public class ServerGamePacketListenerImpl
+             InteractionHand hand = packet.getHand();
+             ItemStack itemInHand = this.player.getItemInHand(hand);
+             this.player.resetLastActionTime();
++            // Aincrad start - drop off-hand use claimed by a custom main-hand action this tick
++            if (hand == InteractionHand.OFF_HAND && this.player.isOffHandUseSuppressed()) {
++                this.player.resyncUsingItem(this.player);
++                this.player.containerMenu.sendAllDataToRemote();
++                return;
++            }
++            // Aincrad end
+             if (!itemInHand.isEmpty() && itemInHand.isItemEnabled(serverLevel.enabledFeatures())) {
+                 float f = Mth.wrapDegrees(packet.getYRot());
+                 float f1 = Mth.wrapDegrees(packet.getXRot());
 diff --git a/net/minecraft/world/item/AxeItem.java b/net/minecraft/world/item/AxeItem.java
-index d4b79f897ee7950893d608dc343073dbcff6ab14..88c9e4536380f27a9ea1e9f723616af1c1512cbe 100644
+index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b048c9645a 100644
 --- a/net/minecraft/world/item/AxeItem.java
 +++ b/net/minecraft/world/item/AxeItem.java
 @@ -3,18 +3,38 @@ package net.minecraft.world.item;
@@ -110,7 +173,7 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..88c9e4536380f27a9ea1e9f723616af1
  
  public class AxeItem extends DiggerItem {
      protected static final Map<Block, Block> STRIPPABLES = new Builder<Block, Block>()
-@@ -54,6 +75,156 @@ public class AxeItem extends DiggerItem {
+@@ -54,6 +75,161 @@ public class AxeItem extends DiggerItem {
          super(material, BlockTags.MINEABLE_WITH_AXE, attackDamage, attackSpeed, properties);
      }
  
@@ -248,6 +311,11 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..88c9e4536380f27a9ea1e9f723616af1
 +            player.awardStat(Stats.ITEM_USED.get(this));
 +            itemInHand.hurtAndBreak(4, player, LivingEntity.getSlotForHand(hand));
 +            // Paper end - PlayerLaunchProjectileEvent
++            // Aincrad start - claim this right-click so the vanilla client cannot also trigger the off-hand item this tick
++            if (player instanceof ServerPlayer serverPlayer3) {
++                serverPlayer3.suppressOffHandUseThisTick();
++            }
++            // Aincrad end
 +        }
 +
 +        level.playSound(

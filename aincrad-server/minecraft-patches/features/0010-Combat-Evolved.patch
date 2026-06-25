@@ -60,7 +60,7 @@ index 22d2b39d22580ebd47153a134979132fd1ad463e..d5381cd01b6808f5794e181654b462e4
          this.tag(ItemTags.MINING_LOOT_ENCHANTABLE).addTag(ItemTags.AXES).addTag(ItemTags.PICKAXES).addTag(ItemTags.SHOVELS).addTag(ItemTags.HOES);
          this.tag(ItemTags.FISHING_ENCHANTABLE).add(Items.FISHING_ROD);
 diff --git a/net/minecraft/world/item/AxeItem.java b/net/minecraft/world/item/AxeItem.java
-index d4b79f897ee7950893d608dc343073dbcff6ab14..32082e790f82cddf856a9ac6eb198830fe655786 100644
+index d4b79f897ee7950893d608dc343073dbcff6ab14..88c9e4536380f27a9ea1e9f723616af1c1512cbe 100644
 --- a/net/minecraft/world/item/AxeItem.java
 +++ b/net/minecraft/world/item/AxeItem.java
 @@ -3,18 +3,38 @@ package net.minecraft.world.item;
@@ -246,7 +246,7 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..32082e790f82cddf856a9ac6eb198830
 +            }
 +            // Aincrad end
 +            player.awardStat(Stats.ITEM_USED.get(this));
-+            itemInHand.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
++            itemInHand.hurtAndBreak(4, player, LivingEntity.getSlotForHand(hand));
 +            // Paper end - PlayerLaunchProjectileEvent
 +        }
 +

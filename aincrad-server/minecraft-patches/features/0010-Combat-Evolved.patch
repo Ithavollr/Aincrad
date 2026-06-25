@@ -267,3 +267,25 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..88c9e4536380f27a9ea1e9f723616af1
      @Override
      public InteractionResult useOn(UseOnContext context) {
          Level level = context.getLevel();
+diff --git a/net/minecraft/world/item/enchantment/Enchantments.java b/net/minecraft/world/item/enchantment/Enchantments.java
+index 5eb11c5893f3ea64d6d97155f29b1273937251d1..45eb01deba3f855860d595b9885c922cf8f6d68a 100644
+--- a/net/minecraft/world/item/enchantment/Enchantments.java
++++ b/net/minecraft/world/item/enchantment/Enchantments.java
+@@ -1132,7 +1132,7 @@ public class Enchantments {
+             DENSITY,
+             Enchantment.enchantment(
+                     Enchantment.definition(
+-                        holderGetter2.getOrThrow(ItemTags.MACE_ENCHANTABLE),
++                        holderGetter2.getOrThrow(ItemTags.DIRT),
+                         5,
+                         5,
+                         Enchantment.dynamicCost(5, 8),
+@@ -1149,7 +1149,7 @@ public class Enchantments {
+             BREACH,
+             Enchantment.enchantment(
+                     Enchantment.definition(
+-                        holderGetter2.getOrThrow(ItemTags.MACE_ENCHANTABLE),
++                        holderGetter2.getOrThrow(ItemTags.DIRT),
+                         2,
+                         4,
+                         Enchantment.dynamicCost(15, 9),

@@ -4,6 +4,36 @@ Date: Mon, 8 Jun 2026 15:32:38 -0400
 Subject: [PATCH] Better Potions
 
 
+diff --git a/net/minecraft/world/entity/npc/VillagerTrades.java b/net/minecraft/world/entity/npc/VillagerTrades.java
+index 830d5ee7fff4c9761de5b740e699795c9129deaa..cc5bf139ec6e92513e94d8ff33ea860805eea926 100644
+--- a/net/minecraft/world/entity/npc/VillagerTrades.java
++++ b/net/minecraft/world/entity/npc/VillagerTrades.java
+@@ -1805,10 +1805,21 @@ public class VillagerTrades {
+         @Override
+         public MerchantOffer getOffer(Entity trader, RandomSource random) {
+             ItemCost itemCost = new ItemCost(Items.EMERALD, this.emeraldCost);
+-            List<Holder<Potion>> list = BuiltInRegistries.POTION
+-                .listElements()
+-                .filter(reference -> !reference.value().getEffects().isEmpty() && trader.level().potionBrewing().isBrewablePotion(reference))
+-                .collect(Collectors.toList());
++            // Aincrad start - custom potion brewing: use manually defined list as brewable check is now empty
++            List<Holder<Potion>> list = List.of(
++                Potions.SLOWNESS,
++                Potions.LONG_SLOWNESS,
++                Potions.HARMING,
++                Potions.STRONG_HARMING,
++                Potions.POISON,
++                Potions.LONG_POISON,
++                Potions.WEAKNESS,
++                Potions.LONG_WEAKNESS,
++                Potions.WEAVING,
++                Potions.OOZING,
++                Potions.WIND_CHARGED
++            );
++            // Aincrad end - custom potion brewing
+             Holder<Potion> holder = Util.getRandom(list, random);
+             ItemStack itemStack = new ItemStack(this.toItem.getItem(), this.toCount);
+             itemStack.set(DataComponents.POTION_CONTENTS, new PotionContents(holder));
 diff --git a/net/minecraft/world/item/alchemy/PotionBrewing.java b/net/minecraft/world/item/alchemy/PotionBrewing.java
 index f7826f1ab4985cd7a754c4c550252943e874864e..9696c2fda4730a79df4f8a0a3d7802276c78ef4c 100644
 --- a/net/minecraft/world/item/alchemy/PotionBrewing.java

@@ -368,6 +368,32 @@ tasks.registerRunTask("runReobfPaperclip") {
     classpath(tasks.createReobfPaperclipJar.flatMap { it.outputZip })
     mainClass.set(null as String?)
 }
+// CI-only: run the built server with AutoStop for auto-shutdown
+tasks.register<JavaExec>("runServerTest") {
+    group = "runs"
+    description = "Spin up a test server for CI with AutoStop for auto-shutdown"
+    classpath(tasks.createMojmapBundlerJar.flatMap { it.outputZip })
+    mainClass.set(null as String?)
+    val runDir = rootProject.layout.projectDirectory.dir("run").asFile
+    workingDir = runDir
+    args("--nogui")
+    jvmArgs("-Xms2G", "-Xmx2G")
+
+    val autoStopUrl = "https://github.com/Ifiht/AutoStop/releases/download/v1.2.0/AutoStop-1.2.0.jar"
+    val pluginsDir = runDir.resolve("plugins")
+    val autoStopJar = pluginsDir.resolve("AutoStop-1.2.0.jar")
+    doFirst {
+        runDir.mkdirs()
+        pluginsDir.mkdirs()
+        if (!autoStopJar.exists()) {
+            uri(autoStopUrl).toURL().openStream().use { input ->
+                autoStopJar.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+        runDir.resolve("eula.txt").writeText("eula=true\n")
+    }
+}
+
 repositories {
     mavenCentral()
 }

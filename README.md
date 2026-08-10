@@ -1,4 +1,4 @@
-# Aincrad 🛡️ [![Discord](https://img.shields.io/discord/1211431882957267024.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/RnKzBfWh7j)
+# Aincrad 🛡️ [![Build](https://github.com/Ithavollr/Aincrad/actions/workflows/build.yml/badge.svg)](https://github.com/Ithavollr/Aincrad/actions/workflows/build.yml) [![Discord](https://img.shields.io/discord/1211431882957267024.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/RnKzBfWh7j)
 This is the custom server code used in the Minecraft world of Iðavöllr.
 
 **Changes from PaperMC**

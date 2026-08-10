@@ -32,13 +32,13 @@ jobs:
         run: |
           git config --global user.email "no-reply@github.com"
           git config --global user.name "GitHub Actions"
-          gradle applyAllPatches --stacktrace
+          ./gradlew applyAllPatches --stacktrace
 
       - name: Build
-        run: gradle build --stacktrace
+        run: ./gradlew build --stacktrace
 
       - name: Run Server Test
-        run: gradle runServerTest --stacktrace
+        run: ./gradlew runServerTest --stacktrace
         timeout-minutes: 5
 
       - name: Upload Test Results

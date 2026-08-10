@@ -1,5 +1,6 @@
 import io.papermc.paperweight.attribute.DevBundleOutput
 import io.papermc.paperweight.util.*
+import java.net.URI
 import java.time.Instant
 
 plugins {
@@ -386,7 +387,7 @@ tasks.register<JavaExec>("runServerTest") {
         runDir.mkdirs()
         pluginsDir.mkdirs()
         if (!autoStopJar.exists()) {
-            uri(autoStopUrl).toURL().openStream().use { input ->
+            URI(autoStopUrl).toURL().openStream().use { input ->
                 autoStopJar.outputStream().use { output -> input.copyTo(output) }
             }
         }

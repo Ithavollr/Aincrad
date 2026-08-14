@@ -15,6 +15,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -48,6 +50,45 @@ jobs:
           name: Test Results (${{ matrix.java }})
           path: |
             **/build/test-results/test/TEST-*.xml
+
+      - name: Build mojmap bundler jar
+        if: github.event_name == 'push'
+        run: ./gradlew :aincrad-server:createMojmapBundlerJar --stacktrace
+
+      # === Version-file-driven release: a push that bumps `acVersion=` (or
+      # `mcVersion=`) in gradle.properties gets tagged and released
+      # automatically; any other push (tag already exists) is a plain CI run.
+      - name: Read version
+        if: github.event_name == 'push'
+        id: version
+        run: |
+          MC=$(grep '^mcVersion=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          AC=$(grep '^acVersion=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "version=$MC-$AC" >> "$GITHUB_OUTPUT"
+
+      - name: Check for existing release tag
+        if: github.event_name == 'push'
+        id: tag_exists
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ "$VERSION" = "-" ] || [ -z "$VERSION" ]; then
+            echo "ERROR: mcVersion/acVersion not found in gradle.properties"
+            exit 1
+          fi
+          if git ls-remote --exit-code origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && steps.tag_exists.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          files: aincrad-server/build/libs/aincrad-bundler-*-mojmap.jar
 
   event_file:
     name: "Event File"

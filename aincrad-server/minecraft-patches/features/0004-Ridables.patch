@@ -20,10 +20,10 @@ index fe4ae6bcdcbb55c47e9f9a4d63ead4c39e6d63cf..ec0998369158286fccb38c8e10c3cfa2
              public boolean isLocalPlayer() {
                  return true;
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 627dd659cff6e6f76650819fa509ad4589a5c1f7..ef8222b927f4224528320238921fda7a6a3084ab 100644
+index d141f8be1770b70dabea8cf23a68d3e280c8c11b..952b22cb3d3934bee8d0d4ad95ca64392664ce52 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -225,6 +225,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -226,6 +226,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      public boolean hasPhysicsEvent = true; // Paper - BlockPhysicsEvent
      public boolean hasEntityMoveEvent; // Paper - Add EntityMoveEvent
      private final alternate.current.wire.WireHandler wireHandler = new alternate.current.wire.WireHandler(this); // Paper - optimize redstone (Alternate Current)

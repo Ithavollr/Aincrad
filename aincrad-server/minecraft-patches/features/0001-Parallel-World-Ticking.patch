@@ -2946,7 +2946,7 @@ index f6518e29f805018c72222f5aaa7b662071665b65..df69cd598d0cf9dbba739326e2f1aed1
      public final int rateLimitPacketsPerSecond = this.get("rate-limit", 0);
      public final int viewDistance = this.get("view-distance", 10);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bddc2702f89 100644
+index 0651a536ad38c3c6d1ac2423b6d351738719339f..aa4e5919d04143f2f670d82f568db3e3f14554b3 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -3073,7 +3073,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
      }
  
      // Paper start
-@@ -713,7 +764,142 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -713,7 +764,146 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.structureManager;
      }
  
@@ -3180,19 +3180,21 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
 +                    chunkSource.runDistanceManagerUpdates();
 +                    break;
 +                case 3: // set the spawn location
-+                    try {
-+                        setInitialSpawn(isDebugWorld);
-+                        //serverLevelData.setInitialized(true);
-+                        if (isDebugWorld) {
-+                            this.setupDebugLevel(this.server.getWorldData());
-+                        }
-+                    } catch (Throwable var23) {
-+                        net.minecraft.CrashReport crashReport = net.minecraft.CrashReport.forThrowable(var23, "Exception initializing level");
++                    if (!serverLevelData.isInitialized()) { // Aincrad - skip for initialized worlds; re-running overwrites plugin-set spawns and orphans stage-2 tickets
 +                        try {
-+                            this.fillReportDetails(crashReport);
-+                        } catch (Throwable var22) {
++                            setInitialSpawn(isDebugWorld);
++                            //serverLevelData.setInitialized(true);
++                            if (isDebugWorld) {
++                                this.setupDebugLevel(this.server.getWorldData());
++                            }
++                        } catch (Throwable var23) {
++                            net.minecraft.CrashReport crashReport = net.minecraft.CrashReport.forThrowable(var23, "Exception initializing level");
++                            try {
++                                this.fillReportDetails(crashReport);
++                            } catch (Throwable var22) {
++                            }
++                            throw new net.minecraft.ReportedException(crashReport);
 +                        }
-+                        throw new net.minecraft.ReportedException(crashReport);
 +                    }
 +                    break;
 +                case 4: // prepare the start region, should be quick since the chunks are loaded
@@ -3201,7 +3203,9 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
 +                    }
 +                    break;
 +                case 5: // declare the world initialized
-+                    serverLevelData.setInitialized(true);
++                    if (!serverLevelData.isInitialized()) {
++                        serverLevelData.setInitialized(true);
++                    }
 +                    this.isInitializingLevel = false;
 +                    LOGGER.info("Done preparing level \"{}\"!", this.dimension().location());
 +                    break;
@@ -3216,7 +3220,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          ProfilerFiller profilerFiller = Profiler.get();
          this.handlingTick = true;
          TickRateManager tickRateManager = this.tickRateManager();
-@@ -955,11 +1141,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -955,11 +1145,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          profilerFiller.popPush("iceandsnow");
  
          if (!this.paperConfig().environment.disableIceAndSnow) { // Paper - Option to disable ice and snow
@@ -3232,7 +3236,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          } // Paper - Option to disable ice and snow
  
          profilerFiller.popPush("tickBlocks");
-@@ -1219,8 +1405,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1219,8 +1409,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fluidState.tick(this, pos, blockState);
          }
          // Paper start - rewrite chunk system
@@ -3243,7 +3247,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          }
          // Paper end - rewrite chunk system
  
-@@ -1232,8 +1418,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1232,8 +1422,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              blockState.tick(this, pos, this.random);
          }
          // Paper start - rewrite chunk system
@@ -3254,7 +3258,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          }
          // Paper end - rewrite chunk system
  
-@@ -1259,23 +1445,23 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1259,23 +1449,23 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                  currentlyTickingEntity.lazySet(entity);
              }
              // Paper end - log detailed entity tick information
@@ -3294,7 +3298,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          } finally {
              if (currentlyTickingEntity.get() == entity) {
                  currentlyTickingEntity.lazySet(null);
-@@ -1296,8 +1482,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1296,8 +1486,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              profilerFiller.incrementCounter("tickPassenger");
              // Paper start - EAR 2
              if (isActive) {
@@ -3305,7 +3309,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
              } else {
                  passengerEntity.setDeltaMovement(Vec3.ZERO);
                  passengerEntity.inactiveTick();
-@@ -1325,7 +1511,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1325,7 +1515,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          }
  
          if (doFull) {
@@ -3314,7 +3318,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          }
          // chunk autosave is already called by the ChunkSystem during unload processing (ChunkMap#processUnloads)
          // Copied from save()
-@@ -1493,6 +1679,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1493,6 +1683,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void addPlayer(ServerPlayer player) {
@@ -3322,7 +3326,7 @@ index 0651a536ad38c3c6d1ac2423b6d351738719339f..fa1ffe93275a50f6c328bc27d8a62bdd
          Entity entity = this.getEntities().get(player.getUUID());
          if (entity != null) {
              LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
-@@ -1505,7 +1692,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1505,7 +1696,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
      // CraftBukkit start
      private boolean addEntity(Entity entity, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason spawnReason) {

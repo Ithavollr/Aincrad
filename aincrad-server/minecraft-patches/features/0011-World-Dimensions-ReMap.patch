@@ -5,10 +5,23 @@ Subject: [PATCH] World Dimensions ReMap
 
 
 diff --git a/net/minecraft/server/Main.java b/net/minecraft/server/Main.java
-index 9aa664537cc37e44db46d5a2a64ae3116938c681..329710e63d7cf4af67e264f8ecd07323af03b4d9 100644
+index 9aa664537cc37e44db46d5a2a64ae3116938c681..4690e4f0f5acd0034ca22b2d134ba8d4f976562e 100644
 --- a/net/minecraft/server/Main.java
 +++ b/net/minecraft/server/Main.java
-@@ -305,7 +305,8 @@ public class Main {
+@@ -228,6 +228,12 @@ public class Main {
+             if (hasOptionSpec) {
+                 LOGGER.warn("Safe mode active, only vanilla datapack will be loaded");
+             }
++            // Aincrad start - world dimensions remap
++            if (hasOptionSpec && Boolean.getBoolean("aincrad.healLevelDat")) {
++                LOGGER.error("--safeMode with -Daincrad.healLevelDat=true is unsupported; remove one and restart");
++                return;
++            }
++            // Aincrad end
+ 
+             PackRepository packRepository = ServerPacksSource.createPackRepository(levelStorageAccess);
+             // CraftBukkit start
+@@ -305,7 +311,8 @@ public class Main {
                      .get();
              } catch (Exception var39) {
                  LOGGER.warn(
@@ -19,28 +32,59 @@ index 9aa664537cc37e44db46d5a2a64ae3116938c681..329710e63d7cf4af67e264f8ecd07323
                  );
                  return;
 diff --git a/net/minecraft/world/level/storage/LevelStorageSource.java b/net/minecraft/world/level/storage/LevelStorageSource.java
-index de43e54698125ce9f319d4889dd49f7029fe95e0..7dd38c431687060fd27abf1fbb3d511231c2905b 100644
+index de43e54698125ce9f319d4889dd49f7029fe95e0..1b9510d7d07944abdcb61a6aaebcde853fdfd091 100644
 --- a/net/minecraft/world/level/storage/LevelStorageSource.java
 +++ b/net/minecraft/world/level/storage/LevelStorageSource.java
 @@ -138,6 +138,7 @@ public class LevelStorageSource {
      ) {
          Dynamic<?> dynamic = RegistryOps.injectRegistryContext(levelData, registries);
          Dynamic<?> dynamic1 = dynamic.get("WorldGenSettings").orElseEmptyMap();
-+        if (Boolean.getBoolean("aincrad.healLevelDat")) dynamic1 = replaceStoredDimensions(dynamic1, levelStemRegistry); // Aincrad - level.dat healing
++        if (Boolean.getBoolean("aincrad.healLevelDat")) dynamic1 = remapWorldDimensions(dynamic1, levelStemRegistry, registries); // Aincrad - world dimensions remap
          WorldGenSettings worldGenSettings = WorldGenSettings.CODEC.parse(dynamic1).getOrThrow();
          LevelSettings levelSettings = LevelSettings.parse(dynamic, dataConfiguration);
          WorldDimensions.Complete complete = worldGenSettings.dimensions().bake(levelStemRegistry);
-@@ -149,6 +150,16 @@ public class LevelStorageSource {
+@@ -149,6 +150,47 @@ public class LevelStorageSource {
          return new LevelDataAndDimensions(primaryLevelData, complete);
      }
  
-+    // Aincrad start - level.dat healing
-+    private static <T> Dynamic<T> replaceStoredDimensions(Dynamic<T> worldGenSettings, Registry<LevelStem> levelStemRegistry) {
-+        T dimensions = com.mojang.serialization.Codec
-+            .unboundedMap(ResourceKey.codec(net.minecraft.core.registries.Registries.LEVEL_STEM), LevelStem.CODEC)
-+            .encodeStart(worldGenSettings.getOps(), new WorldDimensions(levelStemRegistry).dimensions())
-+            .getOrThrow();
-+        return worldGenSettings.set("dimensions", new Dynamic<>(worldGenSettings.getOps(), dimensions));
++    // Aincrad start - world dimensions remap
++    // Per stored dimension: loads fine = kept unchanged; fails to load = rebuilt from the datapack, else the vanilla preset.
++    private static <T> Dynamic<T> remapWorldDimensions(Dynamic<T> worldGenSettings, Registry<LevelStem> levelStemRegistry, HolderLookup.Provider registries) {
++        java.util.Optional<java.util.Map<Dynamic<T>, Dynamic<T>>> entries =
++            worldGenSettings.get("dimensions").orElseEmptyMap().getMapValues().result();
++        if (entries.isEmpty()) {
++            return worldGenSettings; // no stored dimensions: nothing to heal
++        }
++        // vanilla overworld/nether/end; the fallback when no datapack defines the dimension
++        WorldDimensions presetDimensions = net.minecraft.world.level.levelgen.presets.WorldPresets.createNormalWorldDimensions(registries);
++        java.util.Map<Dynamic<?>, Dynamic<?>> remapped = new java.util.LinkedHashMap<>();
++        boolean changed = false;
++        for (java.util.Map.Entry<Dynamic<T>, Dynamic<T>> entry : entries.get().entrySet()) {
++            if (LevelStem.CODEC.parse(entry.getValue()).result().isPresent()) {
++                remapped.put(entry.getKey(), entry.getValue()); // loads fine: keep unchanged
++                continue;
++            }
++            // fails to load: e.g. references content from a datapack that was removed
++            ResourceKey<LevelStem> key = ResourceKey.codec(net.minecraft.core.registries.Registries.LEVEL_STEM).parse(entry.getKey()).result().orElse(null);
++            if (key == null || key == LevelStem.OVERWORLD) {
++                remapped.put(entry.getKey(), entry.getValue()); // irreplaceable; kept for the strict parse to report
++                continue;
++            }
++            // rebuild source: the loaded datapack's definition first, else the vanilla preset
++            java.util.Optional<LevelStem> replacement = levelStemRegistry.getOptional(key).or(() -> presetDimensions.get(key));
++            if (replacement.isEmpty()) { // custom dimension with no source anywhere: drop it
++                LOGGER.error("world dimensions remap: no replacement source for unparseable dimension {}, dropping it", key.location());
++                changed = true;
++                continue;
++            }
++            LOGGER.error("world dimensions remap: rebuilding unparseable dimension {} from {}", key.location(),
++                levelStemRegistry.getOptional(key).isPresent() ? "the datapack registry" : "the normal world preset");
++            // encode the replacement back into level.dat's format, under the same key
++            remapped.put(entry.getKey(), new Dynamic<>(entry.getValue().getOps(), LevelStem.CODEC.encodeStart(entry.getValue().getOps(), replacement.get()).getOrThrow()));
++            changed = true;
++        }
++        // written back to disk on the next save, so the flag is only needed once
++        return changed ? worldGenSettings.set("dimensions", worldGenSettings.createMap(remapped)) : worldGenSettings;
 +    }
 +    // Aincrad end
 +

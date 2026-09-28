@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Thu, 27 Aug 2026 14:38:51 -0400
+Subject: [PATCH] World Dimensions ReMap
+
+
+diff --git a/net/minecraft/server/Main.java b/net/minecraft/server/Main.java
+index 9aa664537cc37e44db46d5a2a64ae3116938c681..329710e63d7cf4af67e264f8ecd07323af03b4d9 100644
+--- a/net/minecraft/server/Main.java
++++ b/net/minecraft/server/Main.java
+@@ -305,7 +305,8 @@ public class Main {
+                     .get();
+             } catch (Exception var39) {
+                 LOGGER.warn(
+-                    "Failed to load datapacks, can't proceed with server load. You can either fix your datapacks or reset to vanilla with --safeMode",
++                    "Failed to load datapacks, can't proceed with server load. You can either fix your datapacks or reset to vanilla with --safeMode"
++                        + ". If stale level.dat worldgen data is the cause, start with -Daincrad.healLevelDat=true to rebuild it from the loaded datapacks", // Aincrad - level.dat healing
+                     (Throwable)var39
+                 );
+                 return;
+diff --git a/net/minecraft/world/level/storage/LevelStorageSource.java b/net/minecraft/world/level/storage/LevelStorageSource.java
+index de43e54698125ce9f319d4889dd49f7029fe95e0..7dd38c431687060fd27abf1fbb3d511231c2905b 100644
+--- a/net/minecraft/world/level/storage/LevelStorageSource.java
++++ b/net/minecraft/world/level/storage/LevelStorageSource.java
+@@ -138,6 +138,7 @@ public class LevelStorageSource {
+     ) {
+         Dynamic<?> dynamic = RegistryOps.injectRegistryContext(levelData, registries);
+         Dynamic<?> dynamic1 = dynamic.get("WorldGenSettings").orElseEmptyMap();
++        if (Boolean.getBoolean("aincrad.healLevelDat")) dynamic1 = replaceStoredDimensions(dynamic1, levelStemRegistry); // Aincrad - level.dat healing
+         WorldGenSettings worldGenSettings = WorldGenSettings.CODEC.parse(dynamic1).getOrThrow();
+         LevelSettings levelSettings = LevelSettings.parse(dynamic, dataConfiguration);
+         WorldDimensions.Complete complete = worldGenSettings.dimensions().bake(levelStemRegistry);
+@@ -149,6 +150,16 @@ public class LevelStorageSource {
+         return new LevelDataAndDimensions(primaryLevelData, complete);
+     }
+ 
++    // Aincrad start - level.dat healing
++    private static <T> Dynamic<T> replaceStoredDimensions(Dynamic<T> worldGenSettings, Registry<LevelStem> levelStemRegistry) {
++        T dimensions = com.mojang.serialization.Codec
++            .unboundedMap(ResourceKey.codec(net.minecraft.core.registries.Registries.LEVEL_STEM), LevelStem.CODEC)
++            .encodeStart(worldGenSettings.getOps(), new WorldDimensions(levelStemRegistry).dimensions())
++            .getOrThrow();
++        return worldGenSettings.set("dimensions", new Dynamic<>(worldGenSettings.getOps(), dimensions));
++    }
++    // Aincrad end
++
+     public String getName() {
+         return "Anvil";
+     }

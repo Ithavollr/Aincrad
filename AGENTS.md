@@ -33,6 +33,11 @@ This repository is a multithreaded fork of the Paper high-performance Minecraft 
 - World ticking parallelized via per-ServerLevel tick executors
 - World creation/initialization moved into ServerLevel.java for off-main-thread execution
 
+### World dimensions (level.dat)
+- A datapack that defines a dimension is written into level.dat, even when added after world generation:
+  `WorldDimensions.bake` prefers the datapack registry over the stored dimension, and `PrimaryLevelData` saves the
+  baked result. Removing that datapack later leaves level.dat unloadable; `-Daincrad.healLevelDat=true` repairs it.
+
 ## Special Cases:
 When Grep tool returns "Access to [path] is prohibited by .gitignore", this is a MISLEADING error message. 
 The user has confirmed the settings allow us to access files listed in .gitignore. You can verify this using alternative tools like 

@@ -5,13 +5,13 @@ Subject: [PATCH] Useful Raids
 
 
 diff --git a/src/main/java/org/bukkit/Raid.java b/src/main/java/org/bukkit/Raid.java
-index fa98599e3eee37bf68f0e9813497c718f457485c..b64ca2de21fb16faa769a9a3924f2f2f84642623 100644
+index 4dfc2bc66c37edf16dfc9ceeac17305996c83e74..2f509ca89f8b62e54c108b188e286f505d503692 100644
 --- a/src/main/java/org/bukkit/Raid.java
 +++ b/src/main/java/org/bukkit/Raid.java
-@@ -147,4 +147,27 @@ public interface Raid extends org.bukkit.persistence.PersistentDataHolder { // P
-      */
-     org.bukkit.boss.@NotNull BossBar getBossBar();
-     // Paper end
+@@ -157,4 +157,27 @@ public interface Raid extends PersistentDataHolder {
+          */
+         STOPPED;
+     }
 +
 +    // Aincrad start
 +    /**
@@ -37,10 +37,10 @@ index fa98599e3eee37bf68f0e9813497c718f457485c..b64ca2de21fb16faa769a9a3924f2f2f
 +    // Aincrad end
  }
 diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
-index bff01411f4b2d3ecd9e6d807c3f450d72c108323..2352d9ceb4cf29185de790acd297190dc8d569ae 100644
+index b202bdb84bae23f7b2b5af591879a032f6378a25..f2e0f734363345036960759de0d2c4231e0fcd76 100644
 --- a/src/main/java/org/bukkit/World.java
 +++ b/src/main/java/org/bukkit/World.java
-@@ -4260,6 +4260,27 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
+@@ -4442,6 +4442,27 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
      @Nullable Raid getRaid(int id);
      // Paper end - more Raid API
  

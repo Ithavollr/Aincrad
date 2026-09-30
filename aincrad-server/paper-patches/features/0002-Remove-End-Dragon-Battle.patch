@@ -5,18 +5,18 @@ Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index 2b2ab09fc9fda041766de0e36db096b60c9fa51e..8a1a77d9c25a152950cdc2678416f77e6ab51a66 100644
+index 9b3ad7841c40b33c6ede2d4a8eb47fdb51552f82..ea75f1bf46624ddf2a4e95cd031729f958fe9e77 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-@@ -96,7 +96,6 @@ import org.bukkit.craftbukkit.block.CraftBlock;
+@@ -107,7 +107,6 @@ import org.bukkit.craftbukkit.block.CraftBlock;
  import org.bukkit.craftbukkit.block.CraftBlockState;
  import org.bukkit.craftbukkit.block.CraftBlockType;
  import org.bukkit.craftbukkit.block.data.CraftBlockData;
 -import org.bukkit.craftbukkit.boss.CraftDragonBattle;
  import org.bukkit.craftbukkit.entity.CraftEntity;
  import org.bukkit.craftbukkit.entity.CraftPlayer;
- import org.bukkit.craftbukkit.generator.structure.CraftGeneratedStructure;
-@@ -2349,7 +2348,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+ import org.bukkit.craftbukkit.event.CraftEventFactory;
+@@ -1929,7 +1928,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
  
      @Override
      public DragonBattle getEnderDragonBattle() {
@@ -27,7 +27,7 @@ index 2b2ab09fc9fda041766de0e36db096b60c9fa51e..8a1a77d9c25a152950cdc2678416f77e
      @Override
 diff --git a/src/main/java/org/bukkit/craftbukkit/boss/CraftDragonBattle.java b/src/main/java/org/bukkit/craftbukkit/boss/CraftDragonBattle.java
 deleted file mode 100644
-index 6bfabb38b51115beb2a65a165f235347838b6006..0000000000000000000000000000000000000000
+index 9d96237cecbc07656977d696fa96d1dc9ec643fe..0000000000000000000000000000000000000000
 --- a/src/main/java/org/bukkit/craftbukkit/boss/CraftDragonBattle.java
 +++ /dev/null
 @@ -1,182 +0,0 @@
@@ -37,6 +37,7 @@ index 6bfabb38b51115beb2a65a165f235347838b6006..00000000000000000000000000000000
 -import java.util.ArrayList;
 -import java.util.Collection;
 -import java.util.Collections;
+-import java.util.List;
 -import java.util.stream.Collectors;
 -import net.minecraft.world.entity.Entity;
 -import net.minecraft.world.level.block.state.pattern.BlockPattern;
@@ -77,7 +78,7 @@ index 6bfabb38b51115beb2a65a165f235347838b6006..00000000000000000000000000000000
 -            return null;
 -        }
 -
--        return CraftLocation.toBukkit(this.handle.portalLocation, this.handle.level.getWorld());
+-        return CraftLocation.toBukkit(this.handle.portalLocation, this.handle.level);
 -    }
 -
 -    @Override
@@ -108,10 +109,10 @@ index 6bfabb38b51115beb2a65a165f235347838b6006..00000000000000000000000000000000
 -    @Override
 -    public boolean initiateRespawn(Collection<EnderCrystal> list) {
 -        if (this.hasBeenPreviouslyKilled() && this.getRespawnPhase() == RespawnPhase.NONE) {
--            // Copy from EnderDragonBattle#tryRespawn for generate exit portal if not exists
+-            // Copy from EndDragonFight#tryRespawn for generate exit portal if not exists
 -            if (this.handle.portalLocation == null) {
--                BlockPattern.BlockPatternMatch shapedetector_shapedetectorcollection = this.handle.findExitPortal();
--                if (shapedetector_shapedetectorcollection == null) {
+-                BlockPattern.BlockPatternMatch patternMatch = this.handle.findExitPortal();
+-                if (patternMatch == null) {
 -                    this.handle.spawnExitPortal(true);
 -                }
 -            }
@@ -170,7 +171,7 @@ index 6bfabb38b51115beb2a65a165f235347838b6006..00000000000000000000000000000000
 -    private DragonRespawnAnimation toNMSRespawnPhase(RespawnPhase phase) {
 -        return (phase != RespawnPhase.NONE) ? DragonRespawnAnimation.values()[phase.ordinal()] : null;
 -    }
--    // Paper start - More DragonBattle API
+-
 -    @Override
 -    public int getGatewayCount() {
 -        return EndDragonFight.GATEWAY_COUNT - this.handle.gateways.size();
@@ -187,45 +188,44 @@ index 6bfabb38b51115beb2a65a165f235347838b6006..00000000000000000000000000000000
 -    }
 -
 -    @Override
--    public java.util.List<org.bukkit.entity.EnderCrystal> getRespawnCrystals() {
+-    public List<org.bukkit.entity.EnderCrystal> getRespawnCrystals() {
 -        if (this.handle.respawnCrystals == null) {
--            return java.util.Collections.emptyList();
+-            return Collections.emptyList();
 -        }
 -
--        final java.util.List<org.bukkit.entity.EnderCrystal> enderCrystals = new java.util.ArrayList<>();
+-        final List<EnderCrystal> enderCrystals = new ArrayList<>();
 -        for (final net.minecraft.world.entity.boss.enderdragon.EndCrystal endCrystal : this.handle.respawnCrystals) {
 -            if (!endCrystal.isRemoved() && endCrystal.isAlive() && endCrystal.valid) {
--                enderCrystals.add(((org.bukkit.entity.EnderCrystal) endCrystal.getBukkitEntity()));
+-                enderCrystals.add(((EnderCrystal) endCrystal.getBukkitEntity()));
 -            }
 -        }
--        return java.util.Collections.unmodifiableList(enderCrystals);
+-        return Collections.unmodifiableList(enderCrystals);
 -    }
 -
 -    @Override
--    public java.util.List<org.bukkit.entity.EnderCrystal> getHealingCrystals() {
--        final java.util.List<org.bukkit.entity.EnderCrystal> enderCrystals = new java.util.ArrayList<>();
+-    public List<EnderCrystal> getHealingCrystals() {
+-        final List<EnderCrystal> enderCrystals = new ArrayList<>();
 -        for (final net.minecraft.world.entity.boss.enderdragon.EndCrystal endCrystal : this.handle.getSpikeCrystals()) {
 -            if (!endCrystal.isRemoved() && endCrystal.isAlive() && endCrystal.valid) {
--                enderCrystals.add(((org.bukkit.entity.EnderCrystal) endCrystal.getBukkitEntity()));
+-                enderCrystals.add(((EnderCrystal) endCrystal.getBukkitEntity()));
 -            }
 -        }
--        return java.util.Collections.unmodifiableList(enderCrystals);
+-        return Collections.unmodifiableList(enderCrystals);
 -    }
--    // Paper end - More DragonBattle API
 -}
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java
-index 1ef0ec7ed3b13c25d76c03c7013c8e2eaba4d66a..8a06c2a35d6e907f175fde4d7b45c94f2a5fe920 100644
+index a1854acb8a15837cde85f1d09aa5d65dbdb71ddd..1efb95af72d16231804d3abcfb142d7ae0e14c42 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragon.java
-@@ -8,7 +8,6 @@ import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
+@@ -9,7 +9,6 @@ import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
  import org.bukkit.boss.BossBar;
  import org.bukkit.boss.DragonBattle;
  import org.bukkit.craftbukkit.CraftServer;
 -import org.bukkit.craftbukkit.boss.CraftDragonBattle;
+ import org.bukkit.craftbukkit.util.CraftLocation;
  import org.bukkit.entity.ComplexEntityPart;
  import org.bukkit.entity.EnderDragon;
- import org.bukkit.entity.EnderDragon.Phase;
-@@ -60,13 +59,12 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
+@@ -56,13 +55,12 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
  
      @Override
      public BossBar getBossBar() {
@@ -241,12 +241,13 @@ index 1ef0ec7ed3b13c25d76c03c7013c8e2eaba4d66a..8a06c2a35d6e907f175fde4d7b45c94f
      }
  
      @Override
-@@ -77,7 +75,7 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
+@@ -73,7 +71,8 @@ public class CraftEnderDragon extends CraftMob implements EnderDragon, CraftEnem
      // Paper start - Allow changing the EnderDragon podium
      @Override
      public org.bukkit.Location getPodium() {
--        net.minecraft.core.BlockPos blockPosOrigin = this.getHandle().getPodium();
+-        return CraftLocation.toBukkit(this.getHandle().getPodium(), this.getWorld());
 +        net.minecraft.core.BlockPos blockPosOrigin = this.getHandle().getOnPos();
-         return new org.bukkit.Location(getWorld(), blockPosOrigin.getX(), blockPosOrigin.getY(), blockPosOrigin.getZ());
++        return new org.bukkit.Location(getWorld(), blockPosOrigin.getX(), blockPosOrigin.getY(), blockPosOrigin.getZ());
      }
  
+     @Override

@@ -5,10 +5,10 @@ Subject: [PATCH] World Dimensions ReMap
 
 
 diff --git a/net/minecraft/server/Main.java b/net/minecraft/server/Main.java
-index 9aa664537cc37e44db46d5a2a64ae3116938c681..4690e4f0f5acd0034ca22b2d134ba8d4f976562e 100644
+index 9216e85e74bb0121c72665f155b07cf9a37f430a..858e2138515357968cf52a9776dfa773239bb915 100644
 --- a/net/minecraft/server/Main.java
 +++ b/net/minecraft/server/Main.java
-@@ -228,6 +228,12 @@ public class Main {
+@@ -225,6 +225,12 @@ public class Main {
              if (hasOptionSpec) {
                  LOGGER.warn("Safe mode active, only vanilla datapack will be loaded");
              }
@@ -21,7 +21,7 @@ index 9aa664537cc37e44db46d5a2a64ae3116938c681..4690e4f0f5acd0034ca22b2d134ba8d4
  
              PackRepository packRepository = ServerPacksSource.createPackRepository(levelStorageAccess);
              // CraftBukkit start
-@@ -305,7 +311,8 @@ public class Main {
+@@ -283,7 +289,8 @@ public class Main {
                      .get();
              } catch (Exception var39) {
                  LOGGER.warn(
@@ -32,10 +32,10 @@ index 9aa664537cc37e44db46d5a2a64ae3116938c681..4690e4f0f5acd0034ca22b2d134ba8d4
                  );
                  return;
 diff --git a/net/minecraft/world/level/storage/LevelStorageSource.java b/net/minecraft/world/level/storage/LevelStorageSource.java
-index de43e54698125ce9f319d4889dd49f7029fe95e0..1b9510d7d07944abdcb61a6aaebcde853fdfd091 100644
+index 140630186c3b0324c248cc2a2f31d3b906557b9c..b187bbdb70f1d9d5b62f1fe8df256f1a2272ebd4 100644
 --- a/net/minecraft/world/level/storage/LevelStorageSource.java
 +++ b/net/minecraft/world/level/storage/LevelStorageSource.java
-@@ -138,6 +138,7 @@ public class LevelStorageSource {
+@@ -135,6 +135,7 @@ public class LevelStorageSource {
      ) {
          Dynamic<?> dynamic = RegistryOps.injectRegistryContext(levelData, registries);
          Dynamic<?> dynamic1 = dynamic.get("WorldGenSettings").orElseEmptyMap();
@@ -43,7 +43,7 @@ index de43e54698125ce9f319d4889dd49f7029fe95e0..1b9510d7d07944abdcb61a6aaebcde85
          WorldGenSettings worldGenSettings = WorldGenSettings.CODEC.parse(dynamic1).getOrThrow();
          LevelSettings levelSettings = LevelSettings.parse(dynamic, dataConfiguration);
          WorldDimensions.Complete complete = worldGenSettings.dimensions().bake(levelStemRegistry);
-@@ -149,6 +150,47 @@ public class LevelStorageSource {
+@@ -146,6 +147,47 @@ public class LevelStorageSource {
          return new LevelDataAndDimensions(primaryLevelData, complete);
      }
  

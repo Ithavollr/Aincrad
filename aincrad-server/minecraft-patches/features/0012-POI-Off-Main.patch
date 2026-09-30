@@ -5,10 +5,10 @@ Subject: [PATCH] POI Off Main
 
 
 diff --git a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
-index 6d8ccc00868d38afe5bcf9eacad0221f56e7ce92..e6db80144217032bddef21f41b456a8d16ab102b 100644
+index 751d97e2d06e6ce4a647c52323993bfd11f24a55..585787acd44e1dcb9fe77b9fe6c157e381cfd22a 100644
 --- a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
 +++ b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
-@@ -195,6 +195,13 @@ public final class ChunkHolderManager {
+@@ -202,6 +202,13 @@ public final class ChunkHolderManager {
              }
          }
  
@@ -20,35 +20,35 @@ index 6d8ccc00868d38afe5bcf9eacad0221f56e7ce92..e6db80144217032bddef21f41b456a8d
 +        // Aincrad end
 +
          if (save) {
-             this.saveAllChunks(true, true, true);
+             this.saveAllChunks(true, true, true, false);
          }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index af1d62860f904a31ece81d7f719e423703037c48..bd30751920dd0d4a32d0ec08a2cb49e0aceb909e 100644
+index 0a48330244a23e060c8fe49b6a9c62bb6ec84db0..da4ecb9f299dfec71d526f6f00ae658ab90aaf31 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -219,6 +219,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
-     private final boolean tickTime;
+@@ -227,6 +227,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      private final RandomSequences randomSequences;
+     final LevelDebugSynchronizers debugSynchronizers = new LevelDebugSynchronizers(this);
      public java.util.concurrent.ExecutorService tickExecutor; // SparklyPaper - parallel world ticking
 +    public final java.util.Queue<Runnable> poiUpdatesAfterStop = new java.util.concurrent.ConcurrentLinkedQueue<>(); // Aincrad - shutdown POI race
  
      // CraftBukkit start
      public final LevelStorageSource.LevelStorageAccess levelStorageAccess;
-@@ -2395,11 +2396,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2477,11 +2478,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          Optional<Holder<PoiType>> optional1 = PoiTypes.forState(newState);
          if (!Objects.equals(optional, optional1)) {
              BlockPos blockPos = pos.immutable();
--            optional.ifPresent(poiType -> this.getServer().execute(() -> {
-+            optional.ifPresent(poiType -> this.executePoiUpdate(() -> { // Aincrad - shutdown POI race
+-            optional.ifPresent(holder -> this.getServer().execute(() -> {
++            optional.ifPresent(holder -> this.executePoiUpdate(() -> { // Aincrad - shutdown POI race
                  this.getPoiManager().remove(blockPos);
-                 DebugPackets.sendPoiRemovedPacket(this, blockPos);
+                 this.debugSynchronizers.dropPoi(blockPos);
              }));
--            optional1.ifPresent(poiType -> this.getServer().execute(() -> {
-+            optional1.ifPresent(poiType -> this.executePoiUpdate(() -> { // Aincrad - shutdown POI race
+-            optional1.ifPresent(holder -> this.getServer().execute(() -> {
++            optional1.ifPresent(holder -> this.executePoiUpdate(() -> { // Aincrad - shutdown POI race
                  // Paper start - Remove stale POIs
                  if (optional.isEmpty() && this.getPoiManager().exists(blockPos, ignored -> true)) {
                      this.getPoiManager().remove(blockPos);
-@@ -2411,6 +2412,13 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2495,6 +2496,13 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          }
      }
  

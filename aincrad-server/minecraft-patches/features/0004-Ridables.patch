@@ -5,11 +5,11 @@ Subject: [PATCH] Ridables
 
 
 diff --git a/net/minecraft/gametest/framework/GameTestHelper.java b/net/minecraft/gametest/framework/GameTestHelper.java
-index fe4ae6bcdcbb55c47e9f9a4d63ead4c39e6d63cf..ec0998369158286fccb38c8e10c3cfa2a653a8aa 100644
+index 2a1aef6bfa15882748b98b5257baaced107ba194..49d3154afe2ca5789e63bdf972c791969405c16d 100644
 --- a/net/minecraft/gametest/framework/GameTestHelper.java
 +++ b/net/minecraft/gametest/framework/GameTestHelper.java
-@@ -279,6 +279,10 @@ public class GameTestHelper {
-                 return gameType.isCreative();
+@@ -322,6 +322,10 @@ public class GameTestHelper {
+                 return gameType;
              }
  
 +            public void setAfk(final boolean afk) {} // Purpur - AFK API
@@ -17,50 +17,38 @@ index fe4ae6bcdcbb55c47e9f9a4d63ead4c39e6d63cf..ec0998369158286fccb38c8e10c3cfa2
 +            public void resetLastActionTime() {} // Purpur - Ridables
 +
              @Override
-             public boolean isLocalPlayer() {
-                 return true;
+             public boolean isClientAuthoritative() {
+                 return false;
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index d141f8be1770b70dabea8cf23a68d3e280c8c11b..952b22cb3d3934bee8d0d4ad95ca64392664ce52 100644
+index 350fa4c7aeb34d1b832d997bb9e744f9ff25abb7..98197d0012b695ea36bd7d3efe225d328422b912 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -226,6 +226,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -235,6 +235,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      public boolean hasPhysicsEvent = true; // Paper - BlockPhysicsEvent
      public boolean hasEntityMoveEvent; // Paper - Add EntityMoveEvent
      private final alternate.current.wire.WireHandler wireHandler = new alternate.current.wire.WireHandler(this); // Paper - optimize redstone (Alternate Current)
 +    public boolean hasRidableMoveEvent = false; // Purpur - Ridables
  
-     public LevelChunk getChunkIfLoaded(int x, int z) {
-         return this.chunkSource.getChunkAtIfLoadedImmediately(x, z); // Paper - Use getChunkIfLoadedImmediately
-diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index faa2b7c59f26ef50ea6e140b961220968ed68edd..85e1e45cbe02d0cb336031464f6f54a75e6bcb6f 100644
---- a/net/minecraft/server/level/ServerPlayer.java
-+++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -839,6 +839,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
-         this.trackEnteredOrExitedLavaOnVehicle();
-         this.updatePlayerAttributes();
-         this.advancements.flushDirty(this);
-+
-     }
- 
-     private void updatePlayerAttributes() {
+     @Override
+     public @Nullable LevelChunk getChunkIfLoaded(int x, int z) {
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index a2c70d36f79b7f8560923e098e52fa7f82ca7416..b176e292d7f830b002d11a87b869de54a377e6a6 100644
+index e158d614abed8d16e80192c0c9abd8537c92b9dc..6c668bd26c991b3bae777653e1c8e2ced22def0d 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -2766,6 +2766,8 @@ public class ServerGamePacketListenerImpl
- 
+@@ -2834,6 +2834,8 @@ public class ServerGamePacketListenerImpl
                                      ServerGamePacketListenerImpl.this.cserver.getPluginManager().callEvent(event);
+                                     final boolean resendData = event.isCancelled() || !ServerGamePacketListenerImpl.this.player.getItemInHand(hand).is(itemType);
  
 +                                    player.processClick(hand); // Purpur - Ridables
 +
-                                     // Entity in bucket - SPIGOT-4048 and SPIGOT-6859a
-                                     if ((target instanceof Bucketable && target instanceof LivingEntity && origItem != null && origItem.asItem() == Items.WATER_BUCKET) && (event.isCancelled() || ServerGamePacketListenerImpl.this.player.getInventory().getSelected() == null || ServerGamePacketListenerImpl.this.player.getInventory().getSelected().getItem() != origItem)) {
+                                     // Entity in bucket - SPIGOT-4048 and SPIGOT-6859
+                                     if (itemType == Items.WATER_BUCKET && target instanceof net.minecraft.world.entity.animal.Bucketable && target instanceof LivingEntity && resendData) {
                                          target.resendPossiblyDesyncedEntityData(ServerGamePacketListenerImpl.this.player); // Paper - The entire mob gets deleted, so resend it
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 9a52328f070f4991a4998cecaa8062f8b60a0fb3..0fdc0226b536b30967ea941a129105e133a131fe 100644
+index 3efe2548820bfeff51ccdf785ea304f61e8335f6..8f50dcca1e92c363ebb9a7e08aa1412c7353ec92 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -295,7 +295,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -322,7 +322,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
      private final Set<String> tags = new io.papermc.paper.util.SizeLimitedSet<>(new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(), MAX_ENTITY_TAG_COUNT); // Paper - fully limit tag size - replace set impl
      private final double[] pistonDeltas = new double[]{0.0, 0.0, 0.0};
      private long pistonDeltasGameTime;
@@ -69,16 +57,7 @@ index 9a52328f070f4991a4998cecaa8062f8b60a0fb3..0fdc0226b536b30967ea941a129105e1
      private float eyeHeight;
      public boolean isInPowderSnow;
      public boolean wasInPowderSnow;
-@@ -819,7 +819,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
-     // CraftBukkit start
-     public void postTick() {
-         // No clean way to break out of ticking once the entity has been copied to a new world, so instead we move the portalling later in the tick cycle
--        if (false && !(this instanceof ServerPlayer) && this.isAlive()) { // Paper - don't attempt to teleport dead entities // SparklyPaper - parallel world ticking (see issue #9, this is executed in the server level tick for non-player entities)
-+        if (!(this instanceof ServerPlayer) && this.isAlive()) { // Paper - don't attempt to teleport dead entities
-             this.handlePortal();
-         }
-     }
-@@ -1896,7 +1896,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2038,7 +2038,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
          return this.isInWater() || flag;
      }
  
@@ -87,21 +66,21 @@ index 9a52328f070f4991a4998cecaa8062f8b60a0fb3..0fdc0226b536b30967ea941a129105e1
          if (this.getVehicle() instanceof AbstractBoat abstractBoat && !abstractBoat.isUnderWater()) {
              this.wasTouchingWater = false;
          } else if (this.updateFluidHeightAndDoFluidPushing(FluidTags.WATER, 0.014)) {
-@@ -3123,6 +3123,13 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3348,6 +3348,13 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+ 
                  this.passengers = ImmutableList.copyOf(list);
              }
- 
++
 +            // Purpur start - Ridables
 +            if (isRidable() && this.passengers.get(0) == passenger && passenger instanceof Player player) {
 +                onMount(player);
 +                this.rider = player;
 +            }
 +            // Purpur end - Ridables
-+
-             this.gameEvent(GameEvent.ENTITY_MOUNT, passenger);
          }
      }
-@@ -3164,6 +3171,14 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+ 
+@@ -3388,6 +3395,14 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
                  return false;
              }
              // CraftBukkit end
@@ -116,16 +95,8 @@ index 9a52328f070f4991a4998cecaa8062f8b60a0fb3..0fdc0226b536b30967ea941a129105e1
              if (this.passengers.size() == 1 && this.passengers.get(0) == passenger) {
                  this.passengers = ImmutableList.of();
              } else {
-@@ -3805,7 +3820,6 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
-     }
- 
-     private Entity teleportCrossDimension(ServerLevel level, TeleportTransition teleportTransition) {
--        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread(level, "Cannot teleport entity to another world off-main, from world " + this.level.getWorld().getName() + " to world " + level.getWorld().getName()); // SparklyPaper - parallel world ticking (additional concurrency issues logs)
-         List<Entity> passengers = this.getPassengers();
-         List<Entity> list = new ArrayList<>(passengers.size());
-         this.ejectPassengers();
-@@ -5079,4 +5093,44 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
-         return ((ServerLevel) this.level).isPositionEntityTicking(this.blockPosition());
+@@ -5430,4 +5445,44 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+         return ((ServerLevel) this.level()).isPositionEntityTicking(this.blockPosition());
      }
      // Paper end - Expose entity id counter
 +    // Purpur start - Ridables
@@ -170,11 +141,11 @@ index 9a52328f070f4991a4998cecaa8062f8b60a0fb3..0fdc0226b536b30967ea941a129105e1
 +    // Purpur end - Ridables
  }
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 4546aca8e2e144ec207653c713fc49f849908827..3ae3c9d1bb49a7b740520fedc31846ecc21ebe4d 100644
+index 07b3d08d9c2f9e978379de5a6b846a828029e2fa..7955d0a0e62b25fd2d6b0f1ad1827cccfd89aaf5 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -250,9 +250,9 @@ public abstract class LivingEntity extends Entity implements Attackable {
-     protected float rotOffs;
+@@ -244,9 +244,9 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+     protected int noActionTime;
      public float lastHurt;
      public boolean jumping;
 -    public float xxa;
@@ -183,130 +154,27 @@ index 4546aca8e2e144ec207653c713fc49f849908827..3ae3c9d1bb49a7b740520fedc31846ec
 +    public float xxa; public float getStrafeMot() { return xxa; } public void setStrafeMot(float strafe) { xxa = strafe; } // Purpur - OBFHELPER
 +    public float yya; public float getVerticalMot() { return yya; } public void setVerticalMot(float vertical) { yya = vertical; } // Purpur - OBFHELPER
 +    public float zza; public float getForwardMot() { return zza; } public void setForwardMot(float forward) { zza = forward; } // Purpur - OBFHELPER
-     protected int lerpSteps;
-     protected double lerpX;
-     protected double lerpY;
-@@ -310,7 +310,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     protected InterpolationHandler interpolation = new InterpolationHandler(this);
+     protected double lerpYHeadRot;
+     protected int lerpHeadSteps;
+@@ -294,7 +294,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
  
-     protected LivingEntity(EntityType<? extends LivingEntity> entityType, Level level) {
-         super(entityType, level);
--        this.attributes = new AttributeMap(DefaultAttributes.getSupplier(entityType));
-+        this.attributes = new AttributeMap(DefaultAttributes.getSupplier(entityType), this); // Purpur - Ridables
-         this.craftAttributes = new CraftAttributeMap(this.attributes); // CraftBukkit
+     protected LivingEntity(EntityType<? extends LivingEntity> type, Level level) {
+         super(type, level);
+-        this.attributes = new AttributeMap(DefaultAttributes.getSupplier(type));
++        this.attributes = new AttributeMap(DefaultAttributes.getSupplier(type), this); // Purpur - Ridables
+         this.craftAttributes = new org.bukkit.craftbukkit.attribute.CraftAttributeMap(this.attributes); // CraftBukkit
          // CraftBukkit - this.setHealth(this.getMaxHealth()) inlined and simplified to skip the instanceof check for Player, as getBukkitEntity() is not initialized in constructor
          this.entityData.set(LivingEntity.DATA_HEALTH_ID, this.getMaxHealth());
-@@ -377,6 +377,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
-             .add(Attributes.MOVEMENT_EFFICIENCY)
-             .add(Attributes.ATTACK_KNOCKBACK);
+@@ -371,6 +371,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+             .add(Attributes.CAMERA_DISTANCE)
+             .add(Attributes.WAYPOINT_TRANSMIT_RANGE);
      }
 +    public boolean shouldSendAttribute(Attribute attribute) { return true; } // Purpur - Ridables
  
      @Override
      protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
-@@ -871,11 +872,11 @@ public abstract class LivingEntity extends Entity implements Attackable {
-         if (compound.contains("SleepingX", 99) && compound.contains("SleepingY", 99) && compound.contains("SleepingZ", 99)) {
-             BlockPos blockPos = new BlockPos(compound.getInt("SleepingX"), compound.getInt("SleepingY"), compound.getInt("SleepingZ"));
-             if (this.position().distanceToSqr(blockPos.getX(), blockPos.getY(), blockPos.getZ()) < 16 * 16) { // Paper - The sleeping pos will always also set the actual pos, so a desync suggests something is wrong
--            this.setSleepingPos(blockPos);
--            this.entityData.set(DATA_POSE, Pose.SLEEPING);
--            if (!this.firstTick) {
--                this.setPosToBed(blockPos);
--            }
-+                this.setSleepingPos(blockPos);
-+                this.entityData.set(DATA_POSE, Pose.SLEEPING);
-+                if (!this.firstTick) {
-+                    this.setPosToBed(blockPos);
-+                }
-             } // Paper - The sleeping pos will always also set the actual pos, so a desync suggests something is wrong
-         }
- 
-@@ -1132,11 +1133,11 @@ public abstract class LivingEntity extends Entity implements Attackable {
-             }
- 
-             if (fireEvent) { // Paper - Don't fire sync event during generation
--            EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, effectInstance, cause, override);
--            override = event.isOverride(); // Paper - Don't fire sync event during generation
--            if (event.isCancelled()) {
--                return false;
--            }
-+                EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, effectInstance, cause, override);
-+                override = event.isOverride(); // Paper - Don't fire sync event during generation
-+                if (event.isCancelled()) {
-+                    return false;
-+                }
-             } // Paper - Don't fire sync event during generation
-             // CraftBukkit end
-             if (mobEffectInstance == null) {
-@@ -1163,7 +1164,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
-             return this.getType().is(EntityTypeTags.IMMUNE_TO_OOZING)
-                 ? !effectInstance.is(MobEffects.OOZING)
-                 : !this.getType().is(EntityTypeTags.IGNORES_POISON_AND_REGEN)
--                    || !effectInstance.is(MobEffects.REGENERATION) && !effectInstance.is(MobEffects.POISON);
-+                  || !effectInstance.is(MobEffects.REGENERATION) && !effectInstance.is(MobEffects.POISON);
-         }
-     }
- 
-@@ -1612,7 +1613,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
-                 }
-                 // Paper end - fix NPE when pre-cancelled EntityResurrectEvent is uncancelled
-                 if (itemStack != null && this instanceof final ServerPlayer serverPlayer) {
--            // CraftBukkit end
-+                    // CraftBukkit end
-                     serverPlayer.awardStat(Stats.ITEM_USED.get(itemStack.getItem()));
-                     CriteriaTriggers.USED_TOTEM.trigger(serverPlayer, itemStack);
-                     this.gameEvent(GameEvent.ITEM_INTERACT_FINISH);
-@@ -1742,14 +1743,14 @@ public abstract class LivingEntity extends Entity implements Attackable {
-                     this.setHealth((float) deathEvent.getReviveHealth());
-                 }
-                 // Paper end
--                    this.createWitherRose(killCredit);
--                }
-+                this.createWitherRose(killCredit);
-+            }
- 
-             // Paper start
-             if (this.dead) { // Paper
-                 this.level().broadcastEntityEvent(this, (byte)3);
- 
--            this.setPose(Pose.DYING);
-+                this.setPose(Pose.DYING);
-             }
-             // Paper end
-         }
-@@ -1822,9 +1823,9 @@ public abstract class LivingEntity extends Entity implements Attackable {
-     public int getExpReward(ServerLevel level, @Nullable Entity entity) { // CraftBukkit
-         if (!this.wasExperienceConsumed()
-             && (
--                this.isAlwaysExperienceDropper()
--                    || this.lastHurtByPlayerTime > 0 && this.shouldDropExperience() && level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)
--            )) {
-+            this.isAlwaysExperienceDropper()
-+                || this.lastHurtByPlayerTime > 0 && this.shouldDropExperience() && level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)
-+        )) {
-             return this.getExperienceReward(level, entity); // CraftBukkit
-         }
-         return 0; // CraftBukkit
-@@ -2828,7 +2829,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
-             if (this.isSprinting()) {
-                 float f = this.getYRot() * (float) (Math.PI / 180.0);
-                 if (canCrit) // Paper - Prevent excessive velocity through repeated crits
--                this.addDeltaMovement(new Vec3(-Mth.sin(f) * 0.2, 0.0, Mth.cos(f) * 0.2));
-+                    this.addDeltaMovement(new Vec3(-Mth.sin(f) * 0.2, 0.0, Mth.cos(f) * 0.2));
-             }
- 
-             this.hasImpulse = true;
-@@ -3438,8 +3439,8 @@ public abstract class LivingEntity extends Entity implements Attackable {
-                 if (!this.isInLava() || this.onGround() && !(fluidHeight > fluidJumpThreshold)) {
-                     if ((this.onGround() || flag && fluidHeight <= fluidJumpThreshold) && this.noJumpDelay == 0) {
-                         if (new com.destroystokyo.paper.event.entity.EntityJumpEvent(getBukkitLivingEntity()).callEvent()) { // Paper - Entity Jump API
--                        this.jumpFromGround();
--                        this.noJumpDelay = 10;
-+                            this.jumpFromGround();
-+                            this.noJumpDelay = 10;
-                         } else { this.setJumping(false); } // Paper - Entity Jump API; setJumping(false) stops a potential loop
-                     }
-                 } else {
-@@ -3504,8 +3505,10 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3742,8 +3743,10 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          this.pushEntities();
          profilerFiller.pop();
          // Paper start - Add EntityMoveEvent
@@ -319,8 +187,8 @@ index 4546aca8e2e144ec207653c713fc49f849908827..3ae3c9d1bb49a7b740520fedc31846ec
                  Location from = new Location(this.level().getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
                  Location to = new Location(this.level().getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
                  io.papermc.paper.event.entity.EntityMoveEvent event = new io.papermc.paper.event.entity.EntityMoveEvent(this.getBukkitLivingEntity(), from, to.clone());
-@@ -3515,6 +3518,11 @@ public abstract class LivingEntity extends Entity implements Attackable {
-                     this.absMoveTo(event.getTo().getX(), event.getTo().getY(), event.getTo().getZ(), event.getTo().getYaw(), event.getTo().getPitch());
+@@ -3753,6 +3756,11 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+                     this.absSnapTo(event.getTo().getX(), event.getTo().getY(), event.getTo().getZ(), event.getTo().getYaw(), event.getTo().getPitch());
                  }
              }
 +            // Purpur start - Ridables
@@ -330,17 +198,8 @@ index 4546aca8e2e144ec207653c713fc49f849908827..3ae3c9d1bb49a7b740520fedc31846ec
 +            // Purpur end - Ridables
          }
          // Paper end - Add EntityMoveEvent
-         if (this.level() instanceof ServerLevel serverLevel && this.isSensitiveToWater() && this.isInWaterRainOrBubble()) {
-@@ -3531,7 +3539,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
-         if (!this.level().isClientSide) {
-             if (!this.canGlide()) {
-                 if (this.getSharedFlag(7) != false && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
--                this.setSharedFlag(7, false);
-+                    this.setSharedFlag(7, false);
-                 return;
-             }
- 
-@@ -3549,7 +3557,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         if (this.level() instanceof ServerLevel serverLevel && this.isSensitiveToWater() && this.isInWaterOrRain()) {
+@@ -3799,7 +3807,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          }
      }
  
@@ -350,11 +209,11 @@ index 4546aca8e2e144ec207653c713fc49f849908827..3ae3c9d1bb49a7b740520fedc31846ec
              for (EquipmentSlot equipmentSlot : EquipmentSlot.VALUES) {
                  if (canGlideUsing(this.getItemBySlot(equipmentSlot), equipmentSlot)) {
 diff --git a/net/minecraft/world/entity/Mob.java b/net/minecraft/world/entity/Mob.java
-index e330bf990e4874baed1b21cd8c9b44d66ec5b823..a2423e94ea12b3ee30f49032e26170cfbdf88265 100644
+index 92175cc019750e829fcad7691a937024c2649882..94ae37a24f6e9a2bd2049a2259da8e88e1b27b5a 100644
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -150,8 +150,8 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
-         super(entityType, level);
+@@ -155,8 +155,8 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+         super(type, level);
          this.goalSelector = new GoalSelector();
          this.targetSelector = new GoalSelector();
 -        this.lookControl = new LookControl(this);
@@ -364,27 +223,7 @@ index e330bf990e4874baed1b21cd8c9b44d66ec5b823..a2423e94ea12b3ee30f49032e26170cf
          this.jumpControl = new JumpControl(this);
          this.bodyRotationControl = this.createBodyControl();
          this.navigation = this.createNavigation(level);
-@@ -826,7 +826,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
-                 // Despawn if hard/soft limit is exceeded
-                 if (despawnRangePair.hard().shouldDespawn(shape, dxSqr, dySqr, dzSqr, dy) && this.removeWhenFarAway(distanceSquared)) {
-                     this.discard(EntityRemoveEvent.Cause.DESPAWN); // CraftBukkit - add Bukkit remove cause
--                 }
-+                }
- 
-                 if (despawnRangePair.soft().shouldDespawn(shape, dxSqr, dySqr, dzSqr, dy)) {
-                     if (this.noActionTime > 600 && this.random.nextInt(800) == 0 && this.removeWhenFarAway(distanceSquared)) {
-@@ -1090,8 +1090,8 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
- 
-                     this.spawnAtLocation(level, itemBySlot);
-                     if (this.clearEquipmentSlots) { // Paper
--                    this.setItemSlot(equipmentSlot, ItemStack.EMPTY);
--                    // Paper start
-+                        this.setItemSlot(equipmentSlot, ItemStack.EMPTY);
-+                        // Paper start
-                     } else {
-                         this.clearedEquipmentSlots.add(equipmentSlot);
-                     }
-@@ -1379,7 +1379,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+@@ -1333,7 +1333,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
      }
  
      protected InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -392,34 +231,10 @@ index e330bf990e4874baed1b21cd8c9b44d66ec5b823..a2423e94ea12b3ee30f49032e26170cf
 +        return tryRide(player, hand); // Purpur - Ridables
      }
  
-     public boolean isWithinRestriction() {
-@@ -1422,7 +1422,7 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
-     public <T extends Mob> T convertTo(
-         EntityType<T> entityType, ConversionParams conversionParams, EntitySpawnReason spawnReason, ConversionParams.AfterConversion<T> afterConversion, EntityTransformEvent.TransformReason transformReason, CreatureSpawnEvent.SpawnReason creatureSpawnReason
-     ) {
--    // Paper start - entity zap event - allow cancellation of conversion post creation
-+        // Paper start - entity zap event - allow cancellation of conversion post creation
-         return this.convertTo(entityType, conversionParams, spawnReason, e -> { afterConversion.finalizeConversion(e); return true; }, transformReason, creatureSpawnReason);
-     }
-     @Nullable
-@@ -1471,12 +1471,12 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
- 
-     @Nullable
-     public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams coversionParams, ConversionParams.AfterConversion<T> afterConversion, EntityTransformEvent.TransformReason transformReason, CreatureSpawnEvent.SpawnReason creatureSpawnReason) {
--    // Paper start - entity zap event - allow cancellation of conversion post creation
-+        // Paper start - entity zap event - allow cancellation of conversion post creation
-         return this.convertTo(entityType, coversionParams, e -> { afterConversion.finalizeConversion(e); return true; }, transformReason, creatureSpawnReason);
-     }
-     @Nullable
-     public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams coversionParams, ConversionParams.CancellingAfterConversion<T> afterConversion, EntityTransformEvent.TransformReason transformReason, CreatureSpawnEvent.SpawnReason creatureSpawnReason) {
--    // Paper start - entity zap event - allow cancellation of conversion post creation
-+        // Paper start - entity zap event - allow cancellation of conversion post creation
-         return this.convertTo(entityType, coversionParams, EntitySpawnReason.CONVERSION, afterConversion, transformReason, creatureSpawnReason);
-         // CraftBukkit end
-     }
-@@ -1696,4 +1696,55 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
-     public float[] getArmorDropChances() {
-         return this.armorDropChances;
+     protected void usePlayerItem(Player player, InteractionHand hand, ItemStack stack) {
+@@ -1672,4 +1672,55 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+     public float chargeSpeedModifier() {
+         return 1.0F;
      }
 +
 +    // Purpur start - Ridables
@@ -474,10 +289,10 @@ index e330bf990e4874baed1b21cd8c9b44d66ec5b823..a2423e94ea12b3ee30f49032e26170cf
 +    // Purpur end - Ridables
  }
 diff --git a/net/minecraft/world/entity/ai/attributes/AttributeMap.java b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
-index 4c808c7ef336de74048f40bd1cc8b14131a9325d..a25d74592e89e3d6339479c6dc2b6f45d1932cfc 100644
+index 92b7f4cbd276dad49cba78514db3552af8cdd80c..fd26471047cc5bef28ee9ddba4a8542deef889cc 100644
 --- a/net/minecraft/world/entity/ai/attributes/AttributeMap.java
 +++ b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
-@@ -23,14 +23,21 @@ public class AttributeMap {
+@@ -18,14 +18,21 @@ public class AttributeMap {
      private final Set<AttributeInstance> attributesToSync = new ObjectOpenHashSet<>();
      private final Set<AttributeInstance> attributesToUpdate = new ObjectOpenHashSet<>();
      private final AttributeSupplier supplier;
@@ -501,7 +316,7 @@ index 4c808c7ef336de74048f40bd1cc8b14131a9325d..a25d74592e89e3d6339479c6dc2b6f45
              this.attributesToSync.add(instance);
          }
      }
-@@ -44,7 +51,7 @@ public class AttributeMap {
+@@ -39,7 +46,7 @@ public class AttributeMap {
      }
  
      public Collection<AttributeInstance> getSyncableAttributes() {
@@ -509,9 +324,9 @@ index 4c808c7ef336de74048f40bd1cc8b14131a9325d..a25d74592e89e3d6339479c6dc2b6f45
 +        return this.attributes.values().stream().filter(instance -> instance.getAttribute().value().isClientSyncable() && (entity == null || entity.shouldSendAttribute(instance.getAttribute().value()))).collect(Collectors.toList()); // Purpur - Ridables
      }
  
-     @Nullable
+     public @Nullable AttributeInstance getInstance(Holder<Attribute> attribute) {
 diff --git a/net/minecraft/world/entity/ai/control/MoveControl.java b/net/minecraft/world/entity/ai/control/MoveControl.java
-index 0f9bf0cb0655a6ed449a86e99b17f89b4e3264df..92b6f0f0881186673ee3b711630df8f65a4b738d 100644
+index b7a4b5ad718e8f4ea108f606669d4fcaf5219e6f..3ecb5722255cc4498423011d3fa1af0fc2360ec8 100644
 --- a/net/minecraft/world/entity/ai/control/MoveControl.java
 +++ b/net/minecraft/world/entity/ai/control/MoveControl.java
 @@ -29,6 +29,20 @@ public class MoveControl implements Control {
@@ -579,19 +394,19 @@ index d7f9b3b2b1077ea10e8f64b87c8f4c4354e90858..b6c93126ea3b182bdf18c60902ad5241
          if (this.lookAtCooldown > 0) {
              this.lookAtCooldown--;
              this.getYRotD().ifPresent(rotationWanted -> this.mob.yHeadRot = this.rotateTowards(this.mob.yHeadRot, rotationWanted + 20.0F, this.yMaxRotSpeed));
-diff --git a/net/minecraft/world/entity/animal/Bee.java b/net/minecraft/world/entity/animal/Bee.java
-index 94244b148533ef026bf5c56abbc2bb5cfa83c938..0d19a3d61f001c5b9c3e251199d97d7b0e97dbee 100644
---- a/net/minecraft/world/entity/animal/Bee.java
-+++ b/net/minecraft/world/entity/animal/Bee.java
-@@ -145,6 +145,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+diff --git a/net/minecraft/world/entity/animal/bee/Bee.java b/net/minecraft/world/entity/animal/bee/Bee.java
+index 0cbcf23b6edba2305dfbbc95abb06a90a6edd42b..5dcd718e12273b3f967fd56f5c0da4e7f0faa6f7 100644
+--- a/net/minecraft/world/entity/animal/bee/Bee.java
++++ b/net/minecraft/world/entity/animal/bee/Bee.java
+@@ -153,6 +153,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
  
-     public Bee(EntityType<? extends Bee> entityType, Level level) {
-         super(entityType, level);
+     public Bee(EntityType<? extends Bee> type, Level level) {
+         super(type, level);
 +        final org.evlis.controller.FlyingMoveControllerWASD flyingController = new org.evlis.controller.FlyingMoveControllerWASD(this, 0.25F, 1.0F, false); // Purpur - Ridables
          // Paper start - Fix MC-167279
          class BeeFlyingMoveControl extends FlyingMoveControl {
-             public BeeFlyingMoveControl(final Mob entity, final int maxPitchChange, final boolean noGravity) {
-@@ -153,11 +154,24 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+             public BeeFlyingMoveControl(final Mob mob, final int maxTurn, final boolean hoversInPlace) {
+@@ -161,11 +162,24 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
  
              @Override
              public void tick() {
@@ -616,7 +431,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..0d19a3d61f001c5b9c3e251199d97d7b
          }
          this.moveControl = new BeeFlyingMoveControl(this, 20, true);
          // Paper end - Fix MC-167279
-@@ -169,6 +183,51 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -177,6 +191,51 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          this.setPathfindingMalus(PathType.FENCE, -1.0F);
      }
  
@@ -668,7 +483,7 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..0d19a3d61f001c5b9c3e251199d97d7b
      @Override
      protected void defineSynchedData(SynchedEntityData.Builder builder) {
          super.defineSynchedData(builder);
-@@ -183,6 +242,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -191,6 +250,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
  
      @Override
      protected void registerGoals() {
@@ -676,15 +491,15 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..0d19a3d61f001c5b9c3e251199d97d7b
          this.goalSelector.addGoal(0, new Bee.BeeAttackGoal(this, 1.4F, true));
          this.goalSelector.addGoal(1, new Bee.BeeEnterHiveGoal());
          this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
-@@ -200,6 +260,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
-         this.goalSelector.addGoal(7, new Bee.BeeGrowCropGoal());
+@@ -209,6 +269,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          this.goalSelector.addGoal(8, new Bee.BeeWanderGoal());
          this.goalSelector.addGoal(9, new FloatGoal(this));
+         this.targetSelector.addGoal(1, new Bee.BeeHurtByOtherGoal(this).setAlertOthers());
 +        this.targetSelector.addGoal(0, new org.evlis.entity.ai.HasRider(this)); // Purpur - Ridables
-         this.targetSelector.addGoal(1, new Bee.BeeHurtByOtherGoal(this).setAlertOthers(new Class[0]));
          this.targetSelector.addGoal(2, new Bee.BeeBecomeAngryTargetGoal(this));
          this.targetSelector.addGoal(3, new ResetUniversalAngerTargetGoal<>(this, true));
-@@ -1083,15 +1144,15 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+     }
+@@ -1078,15 +1139,15 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          }
      }
  
@@ -703,12 +518,12 @@ index 94244b148533ef026bf5c56abbc2bb5cfa83c938..0d19a3d61f001c5b9c3e251199d97d7b
              }
          }
  
-diff --git a/net/minecraft/world/entity/animal/Cow.java b/net/minecraft/world/entity/animal/Cow.java
-index befb99f0a96cb23f139061f92497737e9203a8fd..82a29667a4cb0605ebee55ebef58ae34c0a2e891 100644
---- a/net/minecraft/world/entity/animal/Cow.java
-+++ b/net/minecraft/world/entity/animal/Cow.java
-@@ -38,9 +38,27 @@ public class Cow extends Animal {
-         super(entityType, level);
+diff --git a/net/minecraft/world/entity/animal/cow/AbstractCow.java b/net/minecraft/world/entity/animal/cow/AbstractCow.java
+index e10f7d1b264a85798de063b4387bab62621bf54b..ca141030ba45191479e63c93742a68865e2e0d9f 100644
+--- a/net/minecraft/world/entity/animal/cow/AbstractCow.java
++++ b/net/minecraft/world/entity/animal/cow/AbstractCow.java
+@@ -35,9 +35,27 @@ public abstract class AbstractCow extends Animal {
+         super(type, level);
      }
  
 +    // Purpur start - Ridables
@@ -735,7 +550,7 @@ index befb99f0a96cb23f139061f92497737e9203a8fd..82a29667a4cb0605ebee55ebef58ae34
          this.goalSelector.addGoal(1, new PanicGoal(this, 2.0));
          this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
          this.goalSelector.addGoal(3, new TemptGoal(this, 1.25, itemStack -> itemStack.is(ItemTags.COW_FOOD), false));
-@@ -86,13 +104,14 @@ public class Cow extends Animal {
+@@ -83,13 +101,14 @@ public abstract class AbstractCow extends Animal {
  
      @Override
      public InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -743,7 +558,7 @@ index befb99f0a96cb23f139061f92497737e9203a8fd..82a29667a4cb0605ebee55ebef58ae34
          ItemStack itemInHand = player.getItemInHand(hand);
          if (itemInHand.is(Items.BUCKET) && !this.isBaby()) {
              // CraftBukkit start - Got milk?
-             org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent((ServerLevel) player.level(), player, this.blockPosition(), this.blockPosition(), null, itemInHand, Items.MILK_BUCKET, hand);
+             org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(player.level(), player, this.blockPosition(), this.blockPosition(), null, itemInHand, Items.MILK_BUCKET, hand);
              if (event.isCancelled()) {
                  player.containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
 -                return InteractionResult.PASS;
@@ -751,12 +566,12 @@ index befb99f0a96cb23f139061f92497737e9203a8fd..82a29667a4cb0605ebee55ebef58ae34
              }
              // CraftBukkit end
              player.playSound(SoundEvents.COW_MILK, 1.0F, 1.0F);
-diff --git a/net/minecraft/world/entity/animal/MushroomCow.java b/net/minecraft/world/entity/animal/MushroomCow.java
-index 12099a5eb45ee21520d3ba68ef26909d5949206d..a6f29ff508e517ee49a3c1e2399f7e560f51020e 100644
---- a/net/minecraft/world/entity/animal/MushroomCow.java
-+++ b/net/minecraft/world/entity/animal/MushroomCow.java
-@@ -55,6 +55,23 @@ public class MushroomCow extends Cow implements Shearable, VariantHolder<Mushroo
-         super(entityType, level);
+diff --git a/net/minecraft/world/entity/animal/cow/MushroomCow.java b/net/minecraft/world/entity/animal/cow/MushroomCow.java
+index b4b59e3973f7a3fe8b94ff337e87cbe735b2285c..7e34cbdf89076c12fad1c8017c257b1f167297db 100644
+--- a/net/minecraft/world/entity/animal/cow/MushroomCow.java
++++ b/net/minecraft/world/entity/animal/cow/MushroomCow.java
+@@ -61,6 +61,23 @@ public class MushroomCow extends AbstractCow implements Shearable {
+         super(type, level);
      }
  
 +    // Purpur start - Ridables
@@ -779,7 +594,7 @@ index 12099a5eb45ee21520d3ba68ef26909d5949206d..a6f29ff508e517ee49a3c1e2399f7e56
      @Override
      public float getWalkTargetValue(BlockPos pos, LevelReader level) {
          return level.getBlockState(pos.below()).is(Blocks.MYCELIUM) ? 10.0F : level.getPathfindingCostFromLightLevels(pos);
-@@ -115,7 +132,7 @@ public class MushroomCow extends Cow implements Shearable, VariantHolder<Mushroo
+@@ -121,7 +138,7 @@ public class MushroomCow extends AbstractCow implements Shearable {
                  java.util.List<ItemStack> drops = this.generateDefaultDrops(serverLevel, itemInHand);
                  org.bukkit.event.player.PlayerShearEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.handlePlayerShearEntityEvent(player, this, itemInHand, hand, drops);
                  if (event != null) {
@@ -788,11 +603,58 @@ index 12099a5eb45ee21520d3ba68ef26909d5949206d..a6f29ff508e517ee49a3c1e2399f7e56
                      drops = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getDrops());
                      // Paper end - custom shear drops
                  }
-diff --git a/net/minecraft/world/entity/animal/Panda.java b/net/minecraft/world/entity/animal/Panda.java
-index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..81bb0efcbc6b450e2864ebdb7cbc288ba622e80f 100644
---- a/net/minecraft/world/entity/animal/Panda.java
-+++ b/net/minecraft/world/entity/animal/Panda.java
-@@ -105,6 +105,32 @@ public class Panda extends Animal {
+diff --git a/net/minecraft/world/entity/animal/goat/Goat.java b/net/minecraft/world/entity/animal/goat/Goat.java
+index 9f41c1ff3e75cf9164dee0853aeef4bfc473126b..2688dffe9b35db7d5329fc5ba4e13edaeb6af912 100644
+--- a/net/minecraft/world/entity/animal/goat/Goat.java
++++ b/net/minecraft/world/entity/animal/goat/Goat.java
+@@ -115,6 +115,23 @@ public class Goat extends Animal {
+             .orElseGet(() -> new ItemStack(Items.GOAT_HORN));
+     }
+ 
++    // Purpur start - Ridables
++    @Override
++    public boolean isRidable() {
++        return true;
++    }
++
++    @Override
++    public boolean dismountsUnderwater() {
++        return super.dismountsUnderwater();
++    }
++
++    @Override
++    public boolean isControllable() {
++        return false;
++    }
++    // Purpur end - Ridables
++
+     @Override
+     protected Brain.Provider<Goat> brainProvider() {
+         return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
+@@ -145,6 +162,10 @@ public class Goat extends Animal {
+         return super.calculateFallDamage(fallDistance, damageMultiplier) - 10;
+     }
+ 
++    public boolean causeFallDamage(double fallDistance, float multiplier, DamageSource source) {
++        return super.causeFallDamage(Math.max(0, fallDistance - GOAT_FALL_DAMAGE_REDUCTION), multiplier, source);
++    }
++
+     @Override
+     public SoundEvent getAmbientSound() {
+         return this.isScreamingGoat() ? SoundEvents.GOAT_SCREAMING_AMBIENT : SoundEvents.GOAT_AMBIENT;
+@@ -191,6 +212,7 @@ public class Goat extends Animal {
+     protected void customServerAiStep(ServerLevel level) {
+         ProfilerFiller profilerFiller = Profiler.get();
+         profilerFiller.push("goatBrain");
++        //if ((getRider() == null || !this.isControllable()) && this.behaviorTick++ % this.activatedPriority == 0) // Pufferfish // Purpur - only use brain if no rider
+         this.getBrain().tick(level, this);
+         profilerFiller.pop();
+         profilerFiller.push("goatActivityUpdate");
+diff --git a/net/minecraft/world/entity/animal/panda/Panda.java b/net/minecraft/world/entity/animal/panda/Panda.java
+index c5425b36e96e4f41f0ed7d468f53ea3de6b9ef17..52b32c3818b65ade4b544092196eae5aaf8cc76b 100644
+--- a/net/minecraft/world/entity/animal/panda/Panda.java
++++ b/net/minecraft/world/entity/animal/panda/Panda.java
+@@ -108,6 +108,32 @@ public class Panda extends Animal {
          }
      }
  
@@ -825,7 +687,7 @@ index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..81bb0efcbc6b450e2864ebdb7cbc288b
      @Override
      protected boolean canDispenserEquipIntoSlot(EquipmentSlot slot) {
          return slot == EquipmentSlot.MAINHAND && this.canPickUpLoot();
-@@ -258,6 +284,7 @@ public class Panda extends Animal {
+@@ -260,6 +286,7 @@ public class Panda extends Animal {
      @Override
      protected void registerGoals() {
          this.goalSelector.addGoal(0, new FloatGoal(this));
@@ -833,15 +695,15 @@ index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..81bb0efcbc6b450e2864ebdb7cbc288b
          this.goalSelector.addGoal(2, new Panda.PandaPanicGoal(this, 2.0));
          this.goalSelector.addGoal(2, new Panda.PandaBreedGoal(this, 1.0));
          this.goalSelector.addGoal(3, new Panda.PandaAttackGoal(this, 1.2F, true));
-@@ -273,6 +300,7 @@ public class Panda extends Animal {
-         this.goalSelector.addGoal(12, new Panda.PandaRollGoal(this));
+@@ -276,6 +303,7 @@ public class Panda extends Animal {
          this.goalSelector.addGoal(13, new FollowParentGoal(this, 1.25));
          this.goalSelector.addGoal(14, new WaterAvoidingRandomStrollGoal(this, 1.0));
+         this.targetSelector.addGoal(1, new Panda.PandaHurtByTargetGoal(this).setAlertOthers());
 +        this.targetSelector.addGoal(0, new org.evlis.entity.ai.HasRider(this)); // Purpur - Ridables
-         this.targetSelector.addGoal(1, new Panda.PandaHurtByTargetGoal(this).setAlertOthers(new Class[0]));
      }
  
-@@ -616,7 +644,7 @@ public class Panda extends Animal {
+     public static AttributeSupplier.Builder createAttributes() {
+@@ -617,7 +645,7 @@ public class Panda extends Animal {
      public InteractionResult mobInteract(Player player, InteractionHand hand) {
          ItemStack itemInHand = player.getItemInHand(hand);
          if (this.isScared()) {
@@ -850,19 +712,19 @@ index 283ddf7d13a17c0a6df5a52b7fd26ed7b7a4826b..81bb0efcbc6b450e2864ebdb7cbc288b
          } else if (this.isOnBack()) {
              this.setOnBack(false);
              return InteractionResult.SUCCESS;
-diff --git a/net/minecraft/world/entity/animal/PolarBear.java b/net/minecraft/world/entity/animal/PolarBear.java
-index f568c385e1427e183aefb5819013838aca95407b..6a595af6e572e7c21241432fbfd46a963743bae1 100644
---- a/net/minecraft/world/entity/animal/PolarBear.java
-+++ b/net/minecraft/world/entity/animal/PolarBear.java
-@@ -59,6 +59,7 @@ public class PolarBear extends Animal implements NeutralMob {
-     private int remainingPersistentAngerTime;
-     @Nullable
-     private UUID persistentAngerTarget;
+diff --git a/net/minecraft/world/entity/animal/polarbear/PolarBear.java b/net/minecraft/world/entity/animal/polarbear/PolarBear.java
+index 8fd0d632e7c6fc7fcb7e9cf141638b5171800799..d68320936fd27371938a0fe2b2de8bf14721abf3 100644
+--- a/net/minecraft/world/entity/animal/polarbear/PolarBear.java
++++ b/net/minecraft/world/entity/animal/polarbear/PolarBear.java
+@@ -61,6 +61,7 @@ public class PolarBear extends Animal implements NeutralMob {
+     private static final UniformInt PERSISTENT_ANGER_TIME = TimeUtil.rangeOfSeconds(20, 39);
+     private long persistentAngerEndTime;
+     private @Nullable EntityReference<LivingEntity> persistentAngerTarget;
 +    private int standTimer = 0; // Purpur - Ridables
  
-     public PolarBear(EntityType<? extends PolarBear> entityType, Level level) {
-         super(entityType, level);
-@@ -70,6 +71,34 @@ public class PolarBear extends Animal implements NeutralMob {
+     public PolarBear(EntityType<? extends PolarBear> type, Level level) {
+         super(type, level);
+@@ -71,6 +72,34 @@ public class PolarBear extends Animal implements NeutralMob {
          return EntityType.POLAR_BEAR.create(level, EntitySpawnReason.BREEDING);
      }
  
@@ -897,7 +759,7 @@ index f568c385e1427e183aefb5819013838aca95407b..6a595af6e572e7c21241432fbfd46a96
      @Override
      public boolean isFood(ItemStack stack) {
          return false;
-@@ -79,12 +108,14 @@ public class PolarBear extends Animal implements NeutralMob {
+@@ -80,12 +109,14 @@ public class PolarBear extends Animal implements NeutralMob {
      protected void registerGoals() {
          super.registerGoals();
          this.goalSelector.addGoal(0, new FloatGoal(this));
@@ -913,7 +775,7 @@ index f568c385e1427e183aefb5819013838aca95407b..6a595af6e572e7c21241432fbfd46a96
          this.targetSelector.addGoal(2, new PolarBear.PolarBearAttackPlayersGoal());
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::isAngryAt));
 @@ -203,6 +234,12 @@ public class PolarBear extends Animal implements NeutralMob {
-         if (!this.level().isClientSide) {
+         if (!this.level().isClientSide()) {
              this.updatePersistentAnger((ServerLevel)this.level(), true);
          }
 +
@@ -933,12 +795,12 @@ index f568c385e1427e183aefb5819013838aca95407b..6a595af6e572e7c21241432fbfd46a96
      }
  
      public float getStandingAnimationScale(float partialTick) {
-diff --git a/net/minecraft/world/entity/animal/Sheep.java b/net/minecraft/world/entity/animal/Sheep.java
-index e686c500e4b5f3e7b0e808af8b2e43ddbd163bef..2c8c3b7cc73c9189fe008dd8f633c366e7775333 100644
---- a/net/minecraft/world/entity/animal/Sheep.java
-+++ b/net/minecraft/world/entity/animal/Sheep.java
-@@ -81,10 +81,28 @@ public class Sheep extends Animal implements Shearable {
-         super(entityType, level);
+diff --git a/net/minecraft/world/entity/animal/sheep/Sheep.java b/net/minecraft/world/entity/animal/sheep/Sheep.java
+index 8f4e68b1a910cd56d4c57540c0a09a8724d13738..a6a43e8f9ca03f81e5d3d4206c0247869634adf8 100644
+--- a/net/minecraft/world/entity/animal/sheep/Sheep.java
++++ b/net/minecraft/world/entity/animal/sheep/Sheep.java
+@@ -63,10 +63,28 @@ public class Sheep extends Animal implements Shearable {
+         super(type, level);
      }
  
 +    // Purpur start - Ridables
@@ -966,59 +828,11 @@ index e686c500e4b5f3e7b0e808af8b2e43ddbd163bef..2c8c3b7cc73c9189fe008dd8f633c366
          this.goalSelector.addGoal(1, new PanicGoal(this, 1.25));
          this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
          this.goalSelector.addGoal(3, new TemptGoal(this, 1.1, stack -> stack.is(ItemTags.SHEEP_FOOD), false));
-diff --git a/net/minecraft/world/entity/animal/goat/Goat.java b/net/minecraft/world/entity/animal/goat/Goat.java
-index c91e1f8e5fd39bcc48f9f0bf002770b2dff74404..9c44fe7f9e72621f34bd68fa0eabeb54e4da3daf 100644
---- a/net/minecraft/world/entity/animal/goat/Goat.java
-+++ b/net/minecraft/world/entity/animal/goat/Goat.java
-@@ -111,6 +111,23 @@ public class Goat extends Animal {
-             .orElseGet(() -> new ItemStack(Items.GOAT_HORN));
-     }
- 
-+    // Purpur start - Ridables
-+    @Override
-+    public boolean isRidable() {
-+        return true;
-+    }
-+
-+    @Override
-+    public boolean dismountsUnderwater() {
-+        return super.dismountsUnderwater();
-+    }
-+
-+    @Override
-+    public boolean isControllable() {
-+        return false;
-+    }
-+    // Purpur end - Ridables
-+
-     @Override
-     protected Brain.Provider<Goat> brainProvider() {
-         return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
-@@ -141,6 +158,11 @@ public class Goat extends Animal {
-         return super.calculateFallDamage(fallDistance, damageMultiplier) - 10;
-     }
- 
-+    @Override
-+    public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
-+        return super.causeFallDamage(Math.max(0, fallDistance - GOAT_FALL_DAMAGE_REDUCTION), multiplier, source);
-+    }
-+
-     @Override
-     protected SoundEvent getAmbientSound() {
-         return this.isScreamingGoat() ? SoundEvents.GOAT_SCREAMING_AMBIENT : SoundEvents.GOAT_AMBIENT;
-@@ -188,6 +210,7 @@ public class Goat extends Animal {
-     protected void customServerAiStep(ServerLevel level) {
-         ProfilerFiller profilerFiller = Profiler.get();
-         profilerFiller.push("goatBrain");
-+        //if ((getRider() == null || !this.isControllable()) && this.behaviorTick++ % this.activatedPriority == 0) // Pufferfish // Purpur - only use brain if no rider
-         this.getBrain().tick(level, this);
-         profilerFiller.pop();
-         profilerFiller.push("goatActivityUpdate");
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index a0813aa9ebf5b32375b1bc9f294d8fc34cc867fe..8b61e85201891ecdac977bb958c33b1051375001 100644
+index e4240fa38fb8513c7e320a4b30e6dcbb7e015310..d360510ad15c406a8744c8d3d0195d294be9fa96 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -211,6 +211,19 @@ public abstract class Player extends LivingEntity {
+@@ -190,6 +190,19 @@ public abstract class Player extends Avatar implements ContainerUser {
      }
      // CraftBukkit end
  
@@ -1035,90 +849,10 @@ index a0813aa9ebf5b32375b1bc9f294d8fc34cc867fe..8b61e85201891ecdac977bb958c33b10
 +    }
 +    // Purpur end - Ridables
 +
-     public Player(Level level, BlockPos pos, float yRot, GameProfile gameProfile) {
+     public Player(Level level, GameProfile gameProfile) {
          super(EntityType.PLAYER, level);
-         this.setUUID(gameProfile.getId());
-@@ -626,7 +639,7 @@ public abstract class Player extends LivingEntity {
-         this.playShoulderEntityAmbientSound(this.getShoulderEntityRight());
-         if (!this.level().isClientSide && (this.fallDistance > 0.5F || this.isInWater()) || this.abilities.flying || this.isSleeping() || this.isInPowderSnow) {
-             if (!this.level().paperConfig().entities.behavior.parrotsAreUnaffectedByPlayerMovement) // Paper - Add option to make parrots stay
--            this.removeEntitiesOnShoulder();
-+                this.removeEntitiesOnShoulder();
-         }
-     }
- 
-@@ -1224,7 +1237,7 @@ public abstract class Player extends LivingEntity {
- 
-         if (playerAttackEntityEvent.callEvent() && willAttack) { // Logic moved to willAttack local variable.
-             {
--        // Paper end - PlayerAttackEntityEvent
-+                // Paper end - PlayerAttackEntityEvent
-                 float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
-                 ItemStack weaponItem = this.getWeaponItem();
-                 DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().playerAttack(this));
-@@ -1235,14 +1248,14 @@ public abstract class Player extends LivingEntity {
-                 // this.resetAttackStrengthTicker(); // CraftBukkit - Moved to EntityLiving to reset the cooldown after the damage is dealt
-                 if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
-                     && target instanceof Projectile projectile) {
--                        // CraftBukkit start
--                        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(target, damageSource, f1, false)) {
--                            return;
--                        }
--                        if (projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, this, true)) {
--                            this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, this.getSoundSource());
--                            return;
--                        }
-+                    // CraftBukkit start
-+                    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(target, damageSource, f1, false)) {
-+                        return;
-+                    }
-+                    if (projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, this, true)) {
-+                        this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, this.getSoundSource());
-+                        return;
-+                    }
-                 }
-                 {
-                     // CraftBukkit end
-@@ -1309,7 +1322,7 @@ public abstract class Player extends LivingEntity {
-                                 this.setDeltaMovement(this.getDeltaMovement().multiply(0.6, 1.0, 0.6));
-                                 // Paper start - Configurable sprint interruption on attack
-                                 if (!this.level().paperConfig().misc.disableSprintInterruptionOnAttack) {
--                                this.setSprinting(false);
-+                                    this.setSprinting(false);
-                                 }
-                                 // Paper end - Configurable sprint interruption on attack
-                             }
-@@ -1363,9 +1376,9 @@ public abstract class Player extends LivingEntity {
-                                 }
- 
-                                 if (!cancelled) {
--                                ((ServerPlayer)target).connection.send(new ClientboundSetEntityMotionPacket(target));
--                                target.hurtMarked = false;
--                                target.setDeltaMovement(deltaMovement);
-+                                    ((ServerPlayer)target).connection.send(new ClientboundSetEntityMotionPacket(target));
-+                                    target.hurtMarked = false;
-+                                    target.setDeltaMovement(deltaMovement);
-                                 }
-                                 // CraftBukkit end
-                             }
-@@ -1378,12 +1391,12 @@ public abstract class Player extends LivingEntity {
-                             if (!flag2 && !flag3) {
-                                 if (flag) {
-                                     this.sendSoundEffect(
--                                            this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
--                                        );
-+                                        this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
-+                                    );
-                                 } else {
-                                     this.sendSoundEffect(
--                                            this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_WEAK, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
--                                        );
-+                                        this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_WEAK, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
-+                                    );
-                                 }
-                             }
- 
-@@ -1632,7 +1645,7 @@ public abstract class Player extends LivingEntity {
+         this.setUUID(gameProfile.id());
+@@ -1509,7 +1522,7 @@ public abstract class Player extends Avatar implements ContainerUser {
      }
  
      @Override
@@ -1127,29 +861,3 @@ index a0813aa9ebf5b32375b1bc9f294d8fc34cc867fe..8b61e85201891ecdac977bb958c33b10
          return !this.abilities.flying && super.canGlide();
      }
  
-@@ -1710,8 +1723,8 @@ public abstract class Player extends LivingEntity {
-     public void stopFallFlying() {
-         // CraftBukkit start
-         if (!org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) {
--        this.setSharedFlag(7, true);
--        this.setSharedFlag(7, false);
-+            this.setSharedFlag(7, true);
-+            this.setSharedFlag(7, false);
-         }
-         // CraftBukkit end
-     }
-@@ -2016,12 +2029,12 @@ public abstract class Player extends LivingEntity {
-     // Paper end - release entity api
- 
-     private boolean respawnEntityOnShoulder(CompoundTag entityCompound) { // CraftBukkit void->boolean
--    // Paper start - release entity api - return entity - overload
-+        // Paper start - release entity api - return entity - overload
-         return this.respawnEntityOnShoulder0(entityCompound) != null;
-     }
-     @Nullable
-     private Entity respawnEntityOnShoulder0(CompoundTag entityCompound) { // CraftBukkit void->boolean
--    // Paper end - release entity api - return entity - overload
-+        // Paper end - release entity api - return entity - overload
-         if (!this.level().isClientSide && !entityCompound.isEmpty()) {
-             return EntityType.create(entityCompound, this.level(), EntitySpawnReason.LOAD).map((entity) -> { // CraftBukkit
-                 if (entity instanceof TamableAnimal) {

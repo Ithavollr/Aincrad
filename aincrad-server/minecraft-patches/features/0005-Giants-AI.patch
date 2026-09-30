@@ -5,11 +5,11 @@ Subject: [PATCH] Giants AI
 
 
 diff --git a/net/minecraft/world/entity/monster/Giant.java b/net/minecraft/world/entity/monster/Giant.java
-index 969eb604851d1cce50f0f99ed479189061d5de0c..9b4fa361728e5eacf1282b103f1d5bec785d8481 100644
+index 0de6a20a3fed53bd11a0152de6953bfaecc85289..b420d69eb24d945932dc3018989a8dedfdda34f0 100644
 --- a/net/minecraft/world/entity/monster/Giant.java
 +++ b/net/minecraft/world/entity/monster/Giant.java
-@@ -12,12 +12,64 @@ public class Giant extends Monster {
-         super(entityType, level);
+@@ -12,16 +12,69 @@ public class Giant extends Monster {
+         super(type, level);
      }
  
 +    @Override
@@ -23,15 +23,20 @@ index 969eb604851d1cce50f0f99ed479189061d5de0c..9b4fa361728e5eacf1282b103f1d5bec
 +        this.targetSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this).setAlertOthers(net.minecraft.world.entity.monster.piglin.Piglin.class));
 +        this.targetSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, Phantom.class, true));
 +        this.targetSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.player.Player.class, true));
-+        this.targetSelector.addGoal(4, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.npc.Villager.class, false));
-+        this.targetSelector.addGoal(5, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.animal.IronGolem.class, true));
-+        this.targetSelector.addGoal(6, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, Skeleton.class, true));
-+        this.targetSelector.addGoal(7, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, Zombie.class, true));
++        this.targetSelector.addGoal(4, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.npc.villager.Villager.class, false));
++        this.targetSelector.addGoal(5, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.animal.golem.IronGolem.class, true));
++        this.targetSelector.addGoal(6, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.monster.skeleton.Skeleton.class, true));
++        this.targetSelector.addGoal(7, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(this, net.minecraft.world.entity.monster.zombie.Zombie.class, true));
 +    }
 +
      public static AttributeSupplier.Builder createAttributes() {
--        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 100.0).add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.ATTACK_DAMAGE, 50.0);
-+        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 100.0).add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.ATTACK_DAMAGE, 50.0).add(Attributes.FOLLOW_RANGE, 48.0);
+         return Monster.createMonsterAttributes()
+             .add(Attributes.MAX_HEALTH, 100.0)
+             .add(Attributes.MOVEMENT_SPEED, 0.5)
+             .add(Attributes.ATTACK_DAMAGE, 50.0)
+-            .add(Attributes.CAMERA_DISTANCE, 16.0);
++            .add(Attributes.CAMERA_DISTANCE, 16.0)
++            .add(Attributes.FOLLOW_RANGE, 48.0);
 +    }
 +
 +    @Override

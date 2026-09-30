@@ -123,7 +123,7 @@ index 6c668bd26c991b3bae777653e1c8e2ced22def0d..2a67b722e333b88dc4e613c7041b286f
                  float f = Mth.wrapDegrees(packet.getYRot());
                  float f1 = Mth.wrapDegrees(packet.getXRot());
 diff --git a/net/minecraft/world/item/AxeItem.java b/net/minecraft/world/item/AxeItem.java
-index 8b006edd6f766f942d691f5271a7505a75700d0c..c32e4c549689c18879e5805847b095539a0c6b2b 100644
+index 8b006edd6f766f942d691f5271a7505a75700d0c..aa80cea809fd833e985eb15549c69631c362c613 100644
 --- a/net/minecraft/world/item/AxeItem.java
 +++ b/net/minecraft/world/item/AxeItem.java
 @@ -3,17 +3,38 @@ package net.minecraft.world.item;
@@ -173,7 +173,7 @@ index 8b006edd6f766f942d691f5271a7505a75700d0c..c32e4c549689c18879e5805847b09553
  
  public class AxeItem extends Item {
      protected static final Map<Block, Block> STRIPPABLES = new Builder<Block, Block>()
-@@ -57,6 +79,158 @@ public class AxeItem extends Item {
+@@ -57,6 +79,157 @@ public class AxeItem extends Item {
          super(properties.axe(material, attackDamage, attackSpeed));
      }
  
@@ -263,7 +263,6 @@ index 8b006edd6f766f942d691f5271a7505a75700d0c..c32e4c549689c18879e5805847b09553
 +        return entity.fallDistance > 1.5F && !entity.isFallFlying();
 +    }
 +
-+    @Nullable
 +    @Override
 +    public @Nullable DamageSource getItemDamageSource(LivingEntity entity) {
 +        return canSmashAttack(entity) ? entity.damageSources().mace(entity) : super.getItemDamageSource(entity);
@@ -306,7 +305,7 @@ index 8b006edd6f766f942d691f5271a7505a75700d0c..c32e4c549689c18879e5805847b09553
 +            }
 +            // Aincrad end
 +            player.awardStat(Stats.ITEM_USED.get(this));
-+            itemInHand.hurtAndBreak(4, player, LivingEntity.getSlotForHand(hand));
++            itemInHand.hurtAndBreak(4, player, hand.asEquipmentSlot());
 +            // Paper end - PlayerLaunchProjectileEvent
 +            // Aincrad start - claim this right-click so the vanilla client cannot also trigger the off-hand item this tick
 +            if (player instanceof ServerPlayer serverPlayer3) {

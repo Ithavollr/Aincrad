@@ -32,7 +32,7 @@ index 9216e85e74bb0121c72665f155b07cf9a37f430a..858e2138515357968cf52a9776dfa773
                  );
                  return;
 diff --git a/net/minecraft/world/level/storage/LevelStorageSource.java b/net/minecraft/world/level/storage/LevelStorageSource.java
-index 140630186c3b0324c248cc2a2f31d3b906557b9c..b187bbdb70f1d9d5b62f1fe8df256f1a2272ebd4 100644
+index 140630186c3b0324c248cc2a2f31d3b906557b9c..ecb672ce3e68052d1b48e1142f8b637222e20c7d 100644
 --- a/net/minecraft/world/level/storage/LevelStorageSource.java
 +++ b/net/minecraft/world/level/storage/LevelStorageSource.java
 @@ -135,6 +135,7 @@ public class LevelStorageSource {
@@ -73,11 +73,11 @@ index 140630186c3b0324c248cc2a2f31d3b906557b9c..b187bbdb70f1d9d5b62f1fe8df256f1a
 +            // rebuild source: the loaded datapack's definition first, else the vanilla preset
 +            java.util.Optional<LevelStem> replacement = levelStemRegistry.getOptional(key).or(() -> presetDimensions.get(key));
 +            if (replacement.isEmpty()) { // custom dimension with no source anywhere: drop it
-+                LOGGER.error("world dimensions remap: no replacement source for unparseable dimension {}, dropping it", key.location());
++                LOGGER.error("world dimensions remap: no replacement source for unparseable dimension {}, dropping it", key.identifier());
 +                changed = true;
 +                continue;
 +            }
-+            LOGGER.error("world dimensions remap: rebuilding unparseable dimension {} from {}", key.location(),
++            LOGGER.error("world dimensions remap: rebuilding unparseable dimension {} from {}", key.identifier(),
 +                levelStemRegistry.getOptional(key).isPresent() ? "the datapack registry" : "the normal world preset");
 +            // encode the replacement back into level.dat's format, under the same key
 +            remapped.put(entry.getKey(), new Dynamic<>(entry.getValue().getOps(), LevelStem.CODEC.encodeStart(entry.getValue().getOps(), replacement.get()).getOrThrow()));

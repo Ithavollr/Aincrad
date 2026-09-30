@@ -51,7 +51,7 @@ index bfefb5031544caa59230f0073e8880c2b39ebf4d..afa3943571d00ecff6f34aa4909385d8
                      List<org.bukkit.block.BlockState> states = new java.util.ArrayList<>(level.capturedBlockStates.values());
                      level.capturedBlockStates.clear();
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index ca2caace6aab0dfcb0ab7a0fd28e66555c62fdc5..ac9416f68f553bd12d119e4ed92e2bec036250d7 100644
+index ca2caace6aab0dfcb0ab7a0fd28e66555c62fdc5..b2ca9dd5b3af71f92a0b375a44ce763fa02fa0e7 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -299,6 +299,9 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -111,6 +111,15 @@ index ca2caace6aab0dfcb0ab7a0fd28e66555c62fdc5..ac9416f68f553bd12d119e4ed92e2bec
  
          GlobalPos globalPos = this.selectLevelLoadFocusPos();
          serverLevel.levelLoadListener.updateFocus(globalPos.dimension(), new ChunkPos(globalPos.pos())); // Paper - per world load listener
+@@ -765,7 +750,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+ 
+         // Paper start - rework world loading process
+     }
+-    private void initWorldBorder(net.minecraft.world.level.storage.PrimaryLevelData serverLevelData, ServerLevel serverLevel) {
++    public void initWorldBorder(net.minecraft.world.level.storage.PrimaryLevelData serverLevelData, ServerLevel serverLevel) {
+         final ServerLevel serverLevel1 = serverLevel; // Rename for below code
+         // Paper end - rework world loading process
+             Optional<WorldBorder.Settings> legacyWorldBorderSettings = serverLevelData.getLegacyWorldBorderSettings();
 @@ -887,33 +872,8 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          serverLevelData.setGameType(GameType.SPECTATOR);
      }

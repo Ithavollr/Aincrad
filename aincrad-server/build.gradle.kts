@@ -400,7 +400,7 @@ tasks.register<JavaExec>("runServerTest") {
     description = "Spin up a test server for CI with AutoStop for auto-shutdown"
     classpath(tasks.createMojmapBundlerJar.flatMap { it.outputZip })
     mainClass.set(null as String?)
-    val runDir = rootProject.layout.projectDirectory.dir("run").asFile
+    val runDir = rootProject.layout.projectDirectory.dir("run-test").asFile // separate from runServer's run/ so AutoStop never leaks into live play
     workingDir = runDir
     args("--nogui")
     jvmArgs("-Xms2G", "-Xmx2G")

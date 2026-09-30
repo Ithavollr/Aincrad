@@ -28,7 +28,7 @@ index c4d4e2b35ea9dbf3380bec8f899db722f915377f..599269e20ad0b8cab007e867475ffa6e
      public BossBar getBossBar() {
          return new CraftBossBar(this.handle.raidEvent);
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index ea75f1bf46624ddf2a4e95cd031729f958fe9e77..e31b8bae92137a67d9c085d3e596b3215c15fd04 100644
+index ea75f1bf46624ddf2a4e95cd031729f958fe9e77..6bcd0bb09ab678810f50fe6ecb898de5f571f499 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 @@ -1920,6 +1920,16 @@ public class CraftWorld extends CraftRegionAccessor implements World {
@@ -41,7 +41,7 @@ index ea75f1bf46624ddf2a4e95cd031729f958fe9e77..e31b8bae92137a67d9c085d3e596b321
 +        net.minecraft.server.level.ServerPlayer serverPlayer = ((org.bukkit.craftbukkit.entity.CraftPlayer) player).getHandle();
 +        net.minecraft.core.BlockPos pos = org.bukkit.craftbukkit.util.CraftLocation.toBlockPosition(location);
 +        net.minecraft.world.entity.raid.Raid raid = this.world.getRaids().createRaid(serverPlayer, pos, badOmenLevel, pluginControlled);
-+        return raid != null ? new CraftRaid(raid) : null;
++        return raid != null ? new CraftRaid(raid, this.world) : null;
 +    }
 +    // Aincrad end - more Raid API
 +

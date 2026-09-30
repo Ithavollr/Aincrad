@@ -45,7 +45,7 @@ index e158d614abed8d16e80192c0c9abd8537c92b9dc..6c668bd26c991b3bae777653e1c8e2ce
                                      if (itemType == Items.WATER_BUCKET && target instanceof net.minecraft.world.entity.animal.Bucketable && target instanceof LivingEntity && resendData) {
                                          target.resendPossiblyDesyncedEntityData(ServerGamePacketListenerImpl.this.player); // Paper - The entire mob gets deleted, so resend it
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 3efe2548820bfeff51ccdf785ea304f61e8335f6..8f50dcca1e92c363ebb9a7e08aa1412c7353ec92 100644
+index 3efe2548820bfeff51ccdf785ea304f61e8335f6..4961f31ae96a2d5b21cf7367d7e74476d1b65802 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -322,7 +322,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
@@ -118,7 +118,7 @@ index 3efe2548820bfeff51ccdf785ea304f61e8335f6..8f50dcca1e92c363ebb9a7e08aa1412c
 +
 +    public void onMount(Player rider) {
 +        if (this instanceof Mob) {
-+            ((Mob) this).setTarget(null, null, false);
++            ((Mob) this).setTarget(null, null);
 +            ((Mob) this).getNavigation().stop();
 +        }
 +        rider.setJumping(false); // fixes jump on mount

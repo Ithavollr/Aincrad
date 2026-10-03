@@ -5,17 +5,17 @@ Subject: [PATCH] Useful Raids
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftRaid.java b/src/main/java/org/bukkit/craftbukkit/CraftRaid.java
-index 51f21af9d75769abdcba713b9aa33392e994d9b0..5f84069488e49f9b0d7db98e99b71813fc8aaeaf 100644
+index c4d4e2b35ea9dbf3380bec8f899db722f915377f..599269e20ad0b8cab007e867475ffa6e659f4d43 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftRaid.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftRaid.java
-@@ -110,6 +110,18 @@ public final class CraftRaid implements Raid {
-         return this.handle.getId();
+@@ -114,6 +114,18 @@ public final class CraftRaid implements Raid {
+         return this.handle.idOrNegativeOne;
      }
  
 +    // Aincrad start - more Raid API
 +    @Override
 +    public void forceStop(boolean victory) {
-+        this.handle.forceStop(victory);
++        this.handle.forceStop((net.minecraft.server.level.ServerLevel) this.level, victory);
 +    }
 +
 +    @Override
@@ -25,13 +25,13 @@ index 51f21af9d75769abdcba713b9aa33392e994d9b0..5f84069488e49f9b0d7db98e99b71813
 +    // Aincrad end - more Raid API
 +
      @Override
-     public org.bukkit.boss.BossBar getBossBar() {
-         return new org.bukkit.craftbukkit.boss.CraftBossBar(this.handle.raidEvent);
+     public BossBar getBossBar() {
+         return new CraftBossBar(this.handle.raidEvent);
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index 8a1a77d9c25a152950cdc2678416f77e6ab51a66..86734e799787a08096586e02abe7485bd334b40b 100644
+index ea75f1bf46624ddf2a4e95cd031729f958fe9e77..6bcd0bb09ab678810f50fe6ecb898de5f571f499 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-@@ -2340,6 +2340,16 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -1920,6 +1920,16 @@ public class CraftWorld extends CraftRegionAccessor implements World {
      }
      // Paper end - more Raid API
  
@@ -41,7 +41,7 @@ index 8a1a77d9c25a152950cdc2678416f77e6ab51a66..86734e799787a08096586e02abe7485b
 +        net.minecraft.server.level.ServerPlayer serverPlayer = ((org.bukkit.craftbukkit.entity.CraftPlayer) player).getHandle();
 +        net.minecraft.core.BlockPos pos = org.bukkit.craftbukkit.util.CraftLocation.toBlockPosition(location);
 +        net.minecraft.world.entity.raid.Raid raid = this.world.getRaids().createRaid(serverPlayer, pos, badOmenLevel, pluginControlled);
-+        return raid != null ? new CraftRaid(raid) : null;
++        return raid != null ? new CraftRaid(raid, this.world) : null;
 +    }
 +    // Aincrad end - more Raid API
 +

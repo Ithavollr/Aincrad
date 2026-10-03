@@ -6,6 +6,7 @@ import java.time.Instant
 plugins {
     `java-library`
     `maven-publish`
+    idea
     id("io.papermc.paperweight.core")
     kotlin("jvm")
 }
@@ -13,14 +14,14 @@ plugins {
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
 
 dependencies {
-    mache("io.papermc:mache:1.21.4+build.7")
+    mache("io.papermc:mache:1.21.11+build.1")
     paperclip("io.papermc:paperclip:3.0.3")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation(kotlin("stdlib-jdk8"))
 }
 
 paperweight {
     minecraftVersion = providers.gradleProperty("mcVersion")
+    gitFilePatches = false
     bundlerJarName.set("aincrad")
 
     val aincrad = forks.register("aincrad") {
@@ -34,8 +35,9 @@ paperweight {
     activeFork = aincrad
 
     spigot {
-        buildDataRef = "3edaf46ec1eed4115ce1b18d2846cded42577e42"
-        packageVersion = "v1_21_R3" // also needs to be updated in MappingEnvironment
+        enabled = true
+        buildDataRef = "17f77cee7117ab9d6175f088ae8962bfd04e61a9"
+        packageVersion = "v1_21_R7" // also needs to be updated in MappingEnvironment
     }
 
     reobfPackagesToFix.addAll(
@@ -60,29 +62,26 @@ tasks.generateDevelopmentBundle {
 
 abstract class Services {
     @get:Inject
-    abstract val softwareComponentFactory: SoftwareComponentFactory
-
-    @get:Inject
     abstract val archiveOperations: ArchiveOperations
 }
 val services = objects.newInstance<Services>()
 
 if (project.providers.gradleProperty("publishDevBundle").isPresent) {
-    val devBundleComponent = services.softwareComponentFactory.adhoc("devBundle")
+    val devBundleComponent = publishing.softwareComponentFactory.adhoc("devBundle")
     components.add(devBundleComponent)
 
     val devBundle = configurations.consumable("devBundle") {
         attributes.attribute(DevBundleOutput.ATTRIBUTE, objects.named(DevBundleOutput.ZIP))
         outgoing.artifact(tasks.generateDevelopmentBundle.flatMap { it.devBundleFile })
     }
-    devBundleComponent.addVariantsFromConfiguration(devBundle.get()) {}
+    devBundleComponent.addVariantsFromConfiguration(devBundle) {}
 
     val runtime = configurations.consumable("serverRuntimeClasspath") {
         attributes.attribute(DevBundleOutput.ATTRIBUTE, objects.named(DevBundleOutput.SERVER_DEPENDENCIES))
         attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
         extendsFrom(configurations.runtimeClasspath.get())
     }
-    devBundleComponent.addVariantsFromConfiguration(runtime.get()) {
+    devBundleComponent.addVariantsFromConfiguration(runtime) {
         mapToMavenScope("runtime")
     }
 
@@ -91,7 +90,7 @@ if (project.providers.gradleProperty("publishDevBundle").isPresent) {
         attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
         extendsFrom(configurations.compileClasspath.get())
     }
-    devBundleComponent.addVariantsFromConfiguration(compile.get()) {
+    devBundleComponent.addVariantsFromConfiguration(compile) {
         mapToMavenScope("compile")
     }
 
@@ -121,6 +120,11 @@ configurations.named(log4jPlugins.compileClasspathConfigurationName) {
 }
 val alsoShade: Configuration by configurations.creating
 
+val runtimeConfiguration by configurations.consumable("runtimeConfiguration") {
+    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+    extendsFrom(configurations.getByName(sourceSets.main.get().runtimeElementsConfigurationName))
+}
+
 // Configure mockito agent that is needed in newer java versions
 val mockitoAgent = configurations.register("mockitoAgent")
 abstract class MockitoAgentProvider : CommandLineArgumentProvider {
@@ -134,46 +138,48 @@ abstract class MockitoAgentProvider : CommandLineArgumentProvider {
 
 dependencies {
     implementation(project(":aincrad-api"))
-    implementation("ca.spottedleaf:concurrentutil:0.0.3")
+    implementation("ca.spottedleaf:concurrentutil:0.0.8")
     implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
     implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
     implementation("net.minecrell:terminalconsoleappender:1.3.0")
-    implementation("net.kyori:adventure-text-serializer-ansi:4.18.0") // Keep in sync with adventureVersion from Paper-API build file
+    implementation("net.kyori:adventure-text-serializer-ansi")
+
     /*
       Required to add the missing Log4j2Plugins.dat file from log4j-core
       which has been removed by Mojang. Without it, log4j has to classload
       all its classes to check if they are plugins.
       Scanning takes about 1-2 seconds so adding this speeds up the server start.
      */
-    implementation("org.apache.logging.log4j:log4j-core:2.19.0")
-    log4jPlugins.annotationProcessorConfigurationName("org.apache.logging.log4j:log4j-core:2.19.0") // Needed to generate meta for our Log4j plugins
+    implementation("org.apache.logging.log4j:log4j-core:2.24.1")
+    log4jPlugins.annotationProcessorConfigurationName("org.apache.logging.log4j:log4j-core:2.24.1") // Needed to generate meta for our Log4j plugins
     runtimeOnly(log4jPlugins.output)
     alsoShade(log4jPlugins.output)
 
     implementation("com.velocitypowered:velocity-native:3.4.0-SNAPSHOT") {
         isTransitive = false
     }
-    implementation("io.netty:netty-codec-haproxy:4.1.115.Final") // Add support for proxy protocol
+    implementation("io.netty:netty-codec-haproxy:4.2.7.Final") // Add support for proxy protocol
     implementation("org.apache.logging.log4j:log4j-iostreams:2.24.1")
-    implementation("org.ow2.asm:asm-commons:9.7.1")
-    implementation("org.spongepowered:configurate-yaml:4.2.0-20250225.064233-199")
-    implementation("org.spongepowered:configurate-core:4.2.0-20250225.064233-204") // Pinned dependency of above pinned yaml snapshot.
-    implementation("commons-lang:commons-lang:2.6")
-    runtimeOnly("org.xerial:sqlite-jdbc:3.47.0.0")
-    runtimeOnly("com.mysql:mysql-connector-j:9.1.0")
+    implementation("org.ow2.asm:asm-commons:9.9.1")
+    implementation("org.spongepowered:configurate-yaml:4.2.0")
+
+    // Deps that were previously in the API but have now been moved here for backwards compat, eventually to be removed
+    runtimeOnly("commons-lang:commons-lang:2.6")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.49.1.0")
+    runtimeOnly("com.mysql:mysql-connector-j:9.2.0")
     runtimeOnly("com.lmax:disruptor:3.4.4")
+    implementation("com.googlecode.json-simple:json-simple:1.1.1") { // change to runtimeOnly once Timings is removed
+        isTransitive = false // includes junit
+    }
 
-    runtimeOnly("org.apache.maven:maven-resolver-provider:3.9.6")
-    runtimeOnly("org.apache.maven.resolver:maven-resolver-connector-basic:1.9.18")
-    runtimeOnly("org.apache.maven.resolver:maven-resolver-transport-http:1.9.18")
-
-    testImplementation("io.github.classgraph:classgraph:4.8.47") // For mob goal test
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
-    testImplementation("org.junit.platform:junit-platform-suite-engine:1.10.0")
+    testImplementation("io.github.classgraph:classgraph:4.8.179") // For mob goal test
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testImplementation("org.junit.platform:junit-platform-suite-engine:1.12.2")
     testImplementation("org.hamcrest:hamcrest:2.2")
     testImplementation("org.mockito:mockito-core:5.14.1")
     mockitoAgent("org.mockito:mockito-core:5.14.1") { isTransitive = false } // Configure mockito agent that is needed in newer java versions
-    testImplementation("org.ow2.asm:asm-tree:9.7.1")
+    testImplementation("org.ow2.asm:asm-tree:9.9.1")
     testImplementation("org.junit-pioneer:junit-pioneer:2.2.0") // CartesianTest
 
     implementation("net.neoforged:srgutils:1.0.9") // Mappings handling
@@ -187,7 +193,7 @@ dependencies {
 
     // Spark
     implementation("me.lucko:spark-api:0.1-20240720.200737-2")
-    implementation("me.lucko:spark-paper:1.10.119-20241121.092015-1")
+    implementation("me.lucko:spark-paper:1.10.152")
 }
 
 sourceSets {
@@ -254,13 +260,18 @@ tasks.compileTestJava {
     options.compilerArgs.add("-parameters")
 }
 
-val scanJar = tasks.register("scanJarForBadCalls", io.papermc.paperweight.tasks.ScanJarForBadCalls::class) {
+// Bump compile tasks to 1GB memory to avoid OOMs
+tasks.withType<JavaCompile>().configureEach {
+    options.forkOptions.memoryMaximumSize = "1G"
+}
+
+val scanJarForBadCalls by tasks.registering(io.papermc.paperweight.tasks.ScanJarForBadCalls::class) {
     badAnnotations.add("Lio/papermc/paper/annotation/DoNotUse;")
     jarToScan.set(tasks.jar.flatMap { it.archiveFile })
     classpath.from(configurations.compileClasspath)
 }
 tasks.check {
-    dependsOn(scanJar)
+    dependsOn(scanJarForBadCalls)
 }
 
 // Use TCA for console improvements
@@ -289,6 +300,20 @@ tasks.test {
     val provider = objects.newInstance<MockitoAgentProvider>()
     provider.fileCollection.from(mockitoAgent)
     jvmArgumentProviders.add(provider)
+}
+
+val generatedDir: java.nio.file.Path = rootProject.layout.projectDirectory.dir("paper-server/src/generated/java").asFile.toPath()
+idea {
+    module {
+        generatedSourceDirs.add(generatedDir.toFile())
+    }
+}
+sourceSets {
+    main {
+        java {
+            srcDir(generatedDir)
+        }
+    }
 }
 
 fun TaskContainer.registerRunTask(
@@ -375,7 +400,7 @@ tasks.register<JavaExec>("runServerTest") {
     description = "Spin up a test server for CI with AutoStop for auto-shutdown"
     classpath(tasks.createMojmapBundlerJar.flatMap { it.outputZip })
     mainClass.set(null as String?)
-    val runDir = rootProject.layout.projectDirectory.dir("run").asFile
+    val runDir = rootProject.layout.projectDirectory.dir("run-test").asFile // separate from runServer's run/ so AutoStop never leaks into live play
     workingDir = runDir
     args("--nogui")
     jvmArgs("-Xms2G", "-Xmx2G")

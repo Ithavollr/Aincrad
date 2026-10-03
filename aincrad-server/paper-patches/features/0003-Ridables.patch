@@ -158,7 +158,7 @@ index 0000000000000000000000000000000000000000..689cd37b636b0d1903dbf655f56da0d6
 +}
 diff --git a/src/main/java/org/evlis/controller/LookControllerWASD.java b/src/main/java/org/evlis/controller/LookControllerWASD.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..1ad144347a653f305e6191e63987f4860c57b521
+index 0000000000000000000000000000000000000000..9bb60640c383a59a989b42f2555320ce29a47c4a
 --- /dev/null
 +++ b/src/main/java/org/evlis/controller/LookControllerWASD.java
 @@ -0,0 +1,79 @@
@@ -214,7 +214,7 @@ index 0000000000000000000000000000000000000000..1ad144347a653f305e6191e63987f486
 +            (byte) Mth.floor(entity.getXRot() * 256.0F / 360.0F),
 +            entity.onGround
 +        );
-+        ((ServerLevel) entity.level()).getChunkSource().broadcast(entity, entityPacket);
++        ((ServerLevel) entity.level()).getChunkSource().sendToTrackingPlayers(entity, entityPacket);
 +    }
 +
 +    public void setOffsets(float yaw, float pitch) {
@@ -421,13 +421,13 @@ index 0000000000000000000000000000000000000000..4c854e69159a700d8488d072e124cbd3
 +}
 diff --git a/src/main/java/org/evlis/entity/ai/HorseHasRider.java b/src/main/java/org/evlis/entity/ai/HorseHasRider.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..93195a64db36cfd4fd23ce8489079162eaab38d2
+index 0000000000000000000000000000000000000000..f0434eb475aa67fd65d81bb3d10bff9c7c1352e9
 --- /dev/null
 +++ b/src/main/java/org/evlis/entity/ai/HorseHasRider.java
 @@ -0,0 +1,17 @@
 +package org.evlis.entity.ai;
 +
-+import net.minecraft.world.entity.animal.horse.AbstractHorse;
++import net.minecraft.world.entity.animal.equine.AbstractHorse;
 +
 +public class HorseHasRider extends HasRider {
 +    public final AbstractHorse horse;
@@ -444,13 +444,13 @@ index 0000000000000000000000000000000000000000..93195a64db36cfd4fd23ce8489079162
 +}
 diff --git a/src/main/java/org/evlis/entity/ai/LlamaHasRider.java b/src/main/java/org/evlis/entity/ai/LlamaHasRider.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..13d75f47ad38f4ad8c5829920485ed0b1c8c79a5
+index 0000000000000000000000000000000000000000..2cd729f25a71cf5b9f6500a0ac3eb0e11becf18a
 --- /dev/null
 +++ b/src/main/java/org/evlis/entity/ai/LlamaHasRider.java
 @@ -0,0 +1,17 @@
 +package org.evlis.entity.ai;
 +
-+import net.minecraft.world.entity.animal.horse.Llama;
++import net.minecraft.world.entity.animal.equine.Llama;
 +
 +public class LlamaHasRider extends HasRider {
 +    public final Llama llama;
@@ -467,20 +467,18 @@ index 0000000000000000000000000000000000000000..13d75f47ad38f4ad8c5829920485ed0b
 +}
 diff --git a/src/main/java/org/evlis/entity/ai/ReceiveFlower.java b/src/main/java/org/evlis/entity/ai/ReceiveFlower.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..a8adb0d6e00dfadf29a5a29190286b6504a81eab
+index 0000000000000000000000000000000000000000..b5f1b68965400d5d53b09e094287455b1006188d
 --- /dev/null
 +++ b/src/main/java/org/evlis/entity/ai/ReceiveFlower.java
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,84 @@
 +package org.evlis.entity.ai;
 +
 +import java.util.EnumSet;
-+import java.util.UUID;
 +import net.minecraft.server.level.ServerLevel;
 +import net.minecraft.server.level.ServerPlayer;
 +import net.minecraft.world.InteractionHand;
-+import net.minecraft.world.entity.Entity;
 +import net.minecraft.world.entity.ai.goal.Goal;
-+import net.minecraft.world.entity.animal.IronGolem;
++import net.minecraft.world.entity.animal.golem.IronGolem;
 +import net.minecraft.world.item.ItemStack;
 +import net.minecraft.world.level.block.Blocks;
 +
@@ -502,11 +500,7 @@ index 0000000000000000000000000000000000000000..a8adb0d6e00dfadf29a5a29190286b65
 +        if (!this.irongolem.isAngry()) {
 +            return false;
 +        }
-+        UUID uuid = this.irongolem.getPersistentAngerTarget();
-+        if (uuid == null) {
-+            return false;
-+        }
-+        Entity target = ((ServerLevel) this.irongolem.level()).getEntity(uuid);
++        net.minecraft.world.entity.LivingEntity target = net.minecraft.world.entity.EntityReference.getLivingEntity(this.irongolem.getPersistentAngerTarget(), this.irongolem.level());
 +        if (!(target instanceof ServerPlayer player)) {
 +            return false;
 +        }

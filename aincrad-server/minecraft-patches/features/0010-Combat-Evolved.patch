@@ -5,19 +5,19 @@ Subject: [PATCH] Combat Evolved
 
 
 diff --git a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
-index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..97478f781537481f81fd4cc3ef57bddaed4b761b 100644
+index 0d13f8847befe5424ccc67855d4d891f2bc2f746..8b8173c1950246d7dcdda0b89a682d72bdeb6e19 100644
 --- a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
 +++ b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
-@@ -28,8 +28,6 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
-                 Enchantments.BANE_OF_ARTHROPODS,
-                 Enchantments.IMPALING,
-                 Enchantments.POWER,
--                Enchantments.DENSITY,
--                Enchantments.BREACH,
-                 Enchantments.PIERCING,
-                 Enchantments.SWEEPING_EDGE,
-                 Enchantments.MULTISHOT,
-@@ -67,7 +65,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+@@ -27,8 +27,6 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+             Enchantments.BANE_OF_ARTHROPODS,
+             Enchantments.IMPALING,
+             Enchantments.POWER,
+-            Enchantments.DENSITY,
+-            Enchantments.BREACH,
+             Enchantments.PIERCING,
+             Enchantments.SWEEPING_EDGE,
+             Enchantments.MULTISHOT,
+@@ -65,7 +63,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
          this.tag(EnchantmentTags.BOW_EXCLUSIVE).add(Enchantments.INFINITY, Enchantments.MENDING);
          this.tag(EnchantmentTags.CROSSBOW_EXCLUSIVE).add(Enchantments.MULTISHOT, Enchantments.PIERCING);
          this.tag(EnchantmentTags.DAMAGE_EXCLUSIVE)
@@ -26,7 +26,7 @@ index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..97478f781537481f81fd4cc3ef57bdda
          this.tag(EnchantmentTags.MINING_EXCLUSIVE).add(Enchantments.FORTUNE, Enchantments.SILK_TOUCH);
          this.tag(EnchantmentTags.RIPTIDE_EXCLUSIVE).add(Enchantments.LOYALTY, Enchantments.CHANNELING);
          this.tag(EnchantmentTags.TREASURE)
-@@ -77,8 +75,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+@@ -75,8 +73,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
                  Enchantments.SWIFT_SNEAK,
                  Enchantments.SOUL_SPEED,
                  Enchantments.FROST_WALKER,
@@ -36,23 +36,23 @@ index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..97478f781537481f81fd4cc3ef57bdda
              );
          this.tag(EnchantmentTags.NON_TREASURE)
              .add(
-@@ -115,8 +112,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+@@ -113,8 +110,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
                  Enchantments.MULTISHOT,
                  Enchantments.QUICK_CHARGE,
                  Enchantments.PIERCING,
 -                Enchantments.DENSITY,
--                Enchantments.BREACH
-+                Enchantments.WIND_BURST
+-                Enchantments.BREACH,
++                Enchantments.WIND_BURST,
+                 Enchantments.LUNGE
              );
          this.tag(EnchantmentTags.DOUBLE_TRADE_PRICE).addTag(EnchantmentTags.TREASURE);
-         this.tag(EnchantmentTags.IN_ENCHANTING_TABLE).addTag(EnchantmentTags.NON_TREASURE);
 diff --git a/net/minecraft/data/tags/VanillaItemTagsProvider.java b/net/minecraft/data/tags/VanillaItemTagsProvider.java
-index 22d2b39d22580ebd47153a134979132fd1ad463e..d5381cd01b6808f5794e181654b462e4a016b03a 100644
+index 0f6746853f22be6d5a8a736ce3b18d59d297f934..fcf08ad1b21f98fc7590d2a7e6c879bba841febb 100644
 --- a/net/minecraft/data/tags/VanillaItemTagsProvider.java
 +++ b/net/minecraft/data/tags/VanillaItemTagsProvider.java
-@@ -395,7 +395,7 @@ public class VanillaItemTagsProvider extends ItemTagsProvider {
-         this.tag(ItemTags.FIRE_ASPECT_ENCHANTABLE).addTag(ItemTags.SWORD_ENCHANTABLE).add(Items.MACE);
-         this.tag(ItemTags.SHARP_WEAPON_ENCHANTABLE).addTag(ItemTags.SWORDS).addTag(ItemTags.AXES);
+@@ -388,7 +388,7 @@ public class VanillaItemTagsProvider extends IntrinsicHolderTagsProvider<Item> {
+         this.tag(ItemTags.FIRE_ASPECT_ENCHANTABLE).addTag(ItemTags.MELEE_WEAPON_ENCHANTABLE).add(Items.MACE);
+         this.tag(ItemTags.SHARP_WEAPON_ENCHANTABLE).addTag(ItemTags.MELEE_WEAPON_ENCHANTABLE).addTag(ItemTags.AXES);
          this.tag(ItemTags.WEAPON_ENCHANTABLE).addTag(ItemTags.SHARP_WEAPON_ENCHANTABLE).add(Items.MACE);
 -        this.tag(ItemTags.MACE_ENCHANTABLE).add(Items.MACE);
 +        this.tag(ItemTags.MACE_ENCHANTABLE).addTag(ItemTags.AXES);
@@ -60,10 +60,10 @@ index 22d2b39d22580ebd47153a134979132fd1ad463e..d5381cd01b6808f5794e181654b462e4
          this.tag(ItemTags.MINING_LOOT_ENCHANTABLE).addTag(ItemTags.AXES).addTag(ItemTags.PICKAXES).addTag(ItemTags.SHOVELS).addTag(ItemTags.HOES);
          this.tag(ItemTags.FISHING_ENCHANTABLE).add(Items.FISHING_ROD);
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 85e1e45cbe02d0cb336031464f6f54a75e6bcb6f..d34bc2ac14b57660a693a6c8c6fb75a35abf9433 100644
+index e793e1916860115a5ba3d8a6e2b61f35f941190f..99f2c33e2f4598157ee4b49481e1f478865c1b42 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -425,6 +425,23 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -465,6 +465,23 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
      // Paper end - rewrite chunk system
      public boolean hasTickedAtLeastOnceInNewWorld = false; // SparklyPaper - parallel world ticking (fixes bug in DreamResourceReset where the inventory is opened AFTER the player has changed worlds, if you click with the quick tp torch in a chest, because the inventory is opened AFTER the player has teleported)
  
@@ -85,14 +85,14 @@ index 85e1e45cbe02d0cb336031464f6f54a75e6bcb6f..d34bc2ac14b57660a693a6c8c6fb75a3
 +    // Aincrad end - off-hand interaction suppression
 +
      public ServerPlayer(MinecraftServer server, ServerLevel level, GameProfile gameProfile, ClientInformation clientInformation) {
-         super(level, level.getSharedSpawnPos(), level.getSharedSpawnAngle(), gameProfile);
-         this.textFilter = server.createTextFilterForPlayer(this);
+         super(level, gameProfile);
+         this.server = server;
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index b176e292d7f830b002d11a87b869de54a377e6a6..8e6e0693bb20c7fa4d653a52245edbed9ab4d5d5 100644
+index 6c668bd26c991b3bae777653e1c8e2ced22def0d..2a67b722e333b88dc4e613c7041b286f14eff393 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -1918,6 +1918,16 @@ public class ServerGamePacketListenerImpl
-             ServerLevel serverLevel = this.player.serverLevel();
+@@ -2073,6 +2073,16 @@ public class ServerGamePacketListenerImpl
+             ServerLevel serverLevel = this.player.level();
              InteractionHand hand = packet.getHand();
              ItemStack itemInHand = this.player.getItemInHand(hand);
 +            // Aincrad start - drop off-hand block interaction claimed by a custom main-hand action this tick
@@ -108,7 +108,7 @@ index b176e292d7f830b002d11a87b869de54a377e6a6..8e6e0693bb20c7fa4d653a52245edbed
              if (itemInHand.isItemEnabled(serverLevel.enabledFeatures())) {
                  BlockHitResult hitResult = packet.getHitResult();
                  Vec3 location = hitResult.getLocation();
-@@ -1985,6 +1995,13 @@ public class ServerGamePacketListenerImpl
+@@ -2143,6 +2153,13 @@ public class ServerGamePacketListenerImpl
              InteractionHand hand = packet.getHand();
              ItemStack itemInHand = this.player.getItemInHand(hand);
              this.player.resetLastActionTime();
@@ -122,18 +122,95 @@ index b176e292d7f830b002d11a87b869de54a377e6a6..8e6e0693bb20c7fa4d653a52245edbed
              if (!itemInHand.isEmpty() && itemInHand.isItemEnabled(serverLevel.enabledFeatures())) {
                  float f = Mth.wrapDegrees(packet.getYRot());
                  float f1 = Mth.wrapDegrees(packet.getXRot());
+diff --git a/net/minecraft/tags/ItemTags.java b/net/minecraft/tags/ItemTags.java
+index 3306a5c569c26599c761f06c031e09f8c9be2b88..27ac5a1b91847b3721b445be700dc3e720e8f4d8 100644
+--- a/net/minecraft/tags/ItemTags.java
++++ b/net/minecraft/tags/ItemTags.java
+@@ -203,6 +203,7 @@ public final class ItemTags {
+     public static final TagKey<Item> MACE_ENCHANTABLE = bind("enchantable/mace");
+     public static final TagKey<Item> MAP_INVISIBILITY_EQUIPMENT = bind("map_invisibility_equipment");
+     public static final TagKey<Item> GAZE_DISGUISE_EQUIPMENT = bind("gaze_disguise_equipment");
++    public static final TagKey<Item> REMOVED_EQUIPMENT = bind("removed_equipment"); // Aincrad - Combat Evolved: items the server never produces
+ 
+     private ItemTags() {
+     }
+diff --git a/net/minecraft/world/entity/animal/equine/ZombieHorse.java b/net/minecraft/world/entity/animal/equine/ZombieHorse.java
+index 4cfae7e877c6545780a8b9fdb3e326edb8cc7943..25c3ae8393a5e6d26d72b76d971f3d7608cb7402 100644
+--- a/net/minecraft/world/entity/animal/equine/ZombieHorse.java
++++ b/net/minecraft/world/entity/animal/equine/ZombieHorse.java
+@@ -136,7 +136,7 @@ public class ZombieHorse extends AbstractHorse {
+             if (zombie != null) {
+                 zombie.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), 0.0F);
+                 zombie.finalizeSpawn(level, difficulty, spawnReason, null);
+-                zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
++                zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE)); // Aincrad - Combat Evolved
+                 zombie.startRiding(this, false, false);
+             }
+         }
+diff --git a/net/minecraft/world/entity/monster/piglin/Piglin.java b/net/minecraft/world/entity/monster/piglin/Piglin.java
+index 2497779f96e3b6c7e7aa048c2047c04f06cb7ede..42b35ada111419a698677d3c67ee99488b08e4ac 100644
+--- a/net/minecraft/world/entity/monster/piglin/Piglin.java
++++ b/net/minecraft/world/entity/monster/piglin/Piglin.java
+@@ -337,7 +337,7 @@ public class Piglin extends AbstractPiglin implements CrossbowAttackMob, Invento
+     private ItemStack createSpawnWeapon() {
+         return this.random.nextFloat() < 0.5
+             ? new ItemStack(Items.CROSSBOW)
+-            : new ItemStack(this.random.nextInt(10) == 0 ? Items.GOLDEN_SPEAR : Items.GOLDEN_SWORD);
++            : new ItemStack(Items.GOLDEN_SWORD); // Aincrad - Combat Evolved
+     }
+ 
+     @Override
+diff --git a/net/minecraft/world/entity/monster/zombie/Husk.java b/net/minecraft/world/entity/monster/zombie/Husk.java
+index 93fd34d12c1b9702ff7480f434648d70638bf1a9..83f8140178d1a801a96d84cea5b9f65578adfe89 100644
+--- a/net/minecraft/world/entity/monster/zombie/Husk.java
++++ b/net/minecraft/world/entity/monster/zombie/Husk.java
+@@ -99,7 +99,7 @@ public class Husk extends Zombie {
+             if (level.noCollision(EntityType.CAMEL_HUSK.getSpawnAABB(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5))) {
+                 huskGroupData.triedToSpawnCamelHusk = true;
+                 if (random.nextFloat() < 0.1F) {
+-                    this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
++                    this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE)); // Aincrad - Combat Evolved
+                     CamelHusk camelHusk = EntityType.CAMEL_HUSK.create(this.level(), EntitySpawnReason.NATURAL);
+                     if (camelHusk != null) {
+                         camelHusk.setPos(this.getX(), this.getY(), this.getZ());
+diff --git a/net/minecraft/world/entity/monster/zombie/Zombie.java b/net/minecraft/world/entity/monster/zombie/Zombie.java
+index d1b91335b1e979a2e64e6f0ec95dbe32023a25b7..7df2a76e94afa68825f24c7e1e5fe5af710aef05 100644
+--- a/net/minecraft/world/entity/monster/zombie/Zombie.java
++++ b/net/minecraft/world/entity/monster/zombie/Zombie.java
+@@ -412,7 +412,7 @@ public class Zombie extends Monster {
+             if (randomInt == 0) {
+                 this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+             } else if (randomInt == 1) {
+-                this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
++                this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE)); // Aincrad - Combat Evolved
+             } else {
+                 this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SHOVEL));
+             }
+diff --git a/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java b/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
+index 8fcb6cd1cefa6c9e1809944b4720cfdc35325729..0aca71c3f9bd7600feba41d46be5e33eb9ef2316 100644
+--- a/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
++++ b/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
+@@ -228,7 +228,7 @@ public class ZombifiedPiglin extends Zombie implements NeutralMob {
+ 
+     @Override
+     public void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
+-        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(random.nextInt(20) == 0 ? Items.GOLDEN_SPEAR : Items.GOLDEN_SWORD));
++        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(random.nextInt(20) == 0 ? Items.GOLDEN_AXE : Items.GOLDEN_SWORD)); // Aincrad - Combat Evolved
+     }
+ 
+     @Override
 diff --git a/net/minecraft/world/item/AxeItem.java b/net/minecraft/world/item/AxeItem.java
-index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b048c9645a 100644
+index 8b006edd6f766f942d691f5271a7505a75700d0c..aa80cea809fd833e985eb15549c69631c362c613 100644
 --- a/net/minecraft/world/item/AxeItem.java
 +++ b/net/minecraft/world/item/AxeItem.java
-@@ -3,18 +3,38 @@ package net.minecraft.world.item;
+@@ -3,17 +3,38 @@ package net.minecraft.world.item;
  import com.google.common.collect.ImmutableMap.Builder;
  import java.util.Map;
  import java.util.Optional;
 +import java.util.function.Predicate;
- import javax.annotation.Nullable;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.core.BlockPos;
+ import net.minecraft.core.component.DataComponents;
 +import net.minecraft.core.Direction;
 +import net.minecraft.core.Holder;
 +import net.minecraft.core.registries.Registries;
@@ -141,23 +218,23 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
 +import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 +import net.minecraft.server.level.ServerLevel;
  import net.minecraft.server.level.ServerPlayer;
-+import net.minecraft.sounds.SoundEvent;
+ import net.minecraft.sounds.SoundEvent;
  import net.minecraft.sounds.SoundEvents;
  import net.minecraft.sounds.SoundSource;
 +import net.minecraft.stats.Stats;
- import net.minecraft.tags.BlockTags;
++import net.minecraft.tags.BlockTags;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.InteractionResult;
 +import net.minecraft.world.damagesource.DamageSource;
 +import net.minecraft.world.entity.Entity;
 +import net.minecraft.world.entity.EquipmentSlot;
- import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.LivingEntity;
 +import net.minecraft.world.entity.TamableAnimal;
 +import net.minecraft.world.entity.ai.attributes.Attributes;
 +import net.minecraft.world.entity.decoration.ArmorStand;
  import net.minecraft.world.entity.player.Player;
 +import net.minecraft.world.entity.projectile.Projectile;
-+import net.minecraft.world.entity.projectile.windcharge.WindCharge;
++import net.minecraft.world.entity.projectile.hurtingprojectile.windcharge.WindCharge;
  import net.minecraft.world.item.context.UseOnContext;
 +import net.minecraft.world.item.enchantment.Enchantment;
 +import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -165,20 +242,20 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
  import net.minecraft.world.level.Level;
  import net.minecraft.world.level.block.Block;
  import net.minecraft.world.level.block.Blocks;
-@@ -22,6 +42,7 @@ import net.minecraft.world.level.block.RotatedPillarBlock;
- import net.minecraft.world.level.block.WeatheringCopper;
- import net.minecraft.world.level.block.state.BlockState;
+@@ -25,6 +46,7 @@ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.block.state.properties.ChestType;
  import net.minecraft.world.level.gameevent.GameEvent;
+ import org.jspecify.annotations.Nullable;
 +import net.minecraft.world.phys.Vec3;
  
- public class AxeItem extends DiggerItem {
+ public class AxeItem extends Item {
      protected static final Map<Block, Block> STRIPPABLES = new Builder<Block, Block>()
-@@ -54,6 +75,161 @@ public class AxeItem extends DiggerItem {
-         super(material, BlockTags.MINEABLE_WITH_AXE, attackDamage, attackSpeed, properties);
+@@ -57,6 +79,157 @@ public class AxeItem extends Item {
+         super(properties.axe(material, attackDamage, attackSpeed));
      }
  
 +    @Override
-+    public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
++    public void hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
 +        // Paper start - Add EntityAttemptSmashAttackEvent
 +        final boolean canSmashAttack = canSmashAttack(attacker);
 +        io.papermc.paper.event.entity.EntityAttemptSmashAttackEvent event = new io.papermc.paper.event.entity.EntityAttemptSmashAttackEvent(attacker.getBukkitLivingEntity(), target.getBukkitLivingEntity(), stack.asBukkitCopy(), canSmashAttack);
@@ -209,8 +286,6 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
 +
 +            knockback(serverLevel, attacker, target);
 +        }
-+
-+        return true;
 +    }
 +
 +    private Vec3 calculateImpactPosition(ServerPlayer player) {
@@ -223,7 +298,6 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
 +
 +    @Override
 +    public void postHurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-+        stack.hurtAndBreak(2, attacker, EquipmentSlot.MAINHAND);
 +        if (canSmashAttack(attacker)) {
 +            attacker.resetFallDistance();
 +        }
@@ -250,7 +324,7 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
 +            boolean flag1 = livingEntity != attacker && livingEntity != target;
 +            boolean flag2 = !attacker.isAlliedTo(livingEntity);
 +            boolean flag3 = !(
-+                livingEntity instanceof TamableAnimal tamableAnimal && tamableAnimal.isTame() && attacker.getUUID().equals(tamableAnimal.getOwnerUUID())
++                livingEntity instanceof TamableAnimal tamableAnimal && attacker instanceof LivingEntity owner && tamableAnimal.isTame() && tamableAnimal.isOwnedBy(owner)
 +            );
 +            boolean flag4 = !(livingEntity instanceof ArmorStand armorStand && armorStand.isMarker());
 +            boolean flag5 = target.distanceToSqr(livingEntity) <= Math.pow(3.5, 2.0);
@@ -266,10 +340,9 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
 +        return entity.fallDistance > 1.5F && !entity.isFallFlying();
 +    }
 +
-+    @Nullable
 +    @Override
-+    public DamageSource getDamageSource(LivingEntity entity) {
-+        return canSmashAttack(entity) ? entity.damageSources().mace(entity) : super.getDamageSource(entity);
++    public @Nullable DamageSource getItemDamageSource(LivingEntity entity) {
++        return canSmashAttack(entity) ? entity.damageSources().mace(entity) : super.getItemDamageSource(entity);
 +    }
 +
 +    @Override
@@ -309,7 +382,7 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
 +            }
 +            // Aincrad end
 +            player.awardStat(Stats.ITEM_USED.get(this));
-+            itemInHand.hurtAndBreak(4, player, LivingEntity.getSlotForHand(hand));
++            itemInHand.hurtAndBreak(4, player, hand.asEquipmentSlot());
 +            // Paper end - PlayerLaunchProjectileEvent
 +            // Aincrad start - claim this right-click so the vanilla client cannot also trigger the off-hand item this tick
 +            if (player instanceof ServerPlayer serverPlayer3) {
@@ -335,11 +408,31 @@ index d4b79f897ee7950893d608dc343073dbcff6ab14..2b2c3ad948a834441988c53385e984b0
      @Override
      public InteractionResult useOn(UseOnContext context) {
          Level level = context.getLevel();
+diff --git a/net/minecraft/world/item/crafting/RecipeManager.java b/net/minecraft/world/item/crafting/RecipeManager.java
+index 4e0b0d630e18bde916a07889bcaf0e7accf064ca..d14490cf7f0cf5165ce414c15acb9072d8d9fff0 100644
+--- a/net/minecraft/world/item/crafting/RecipeManager.java
++++ b/net/minecraft/world/item/crafting/RecipeManager.java
+@@ -107,6 +107,15 @@ public class RecipeManager extends SimplePreparableReloadListener<RecipeMap> imp
+     public void finalizeRecipeLoading(FeatureFlagSet enabledFeatures) {
+         this.featureflagset = enabledFeatures;
+         // CraftBukkit end
++        // Aincrad start - Combat Evolved: drop recipes that produce removed equipment (item tags are bound by now)
++        net.minecraft.util.context.ContextMap displayContext = new net.minecraft.util.context.ContextMap.Builder()
++            .withParameter(net.minecraft.world.item.crafting.display.SlotDisplayContext.REGISTRIES, this.registries)
++            .create(net.minecraft.world.item.crafting.display.SlotDisplayContext.CONTEXT);
++        this.recipes = RecipeMap.create(this.recipes.values().stream()
++            .filter(holder -> holder.value().display().stream().noneMatch(display -> display.result().resolveForStacks(displayContext).stream()
++                .anyMatch(stack -> stack.is(net.minecraft.tags.ItemTags.REMOVED_EQUIPMENT))))
++            .toList());
++        // Aincrad end - Combat Evolved
+         List<SelectableRecipe.SingleInputEntry<StonecutterRecipe>> list = new ArrayList<>();
+         List<RecipeManager.IngredientCollector> list1 = RECIPE_PROPERTY_SETS.entrySet()
+             .stream()
 diff --git a/net/minecraft/world/item/enchantment/Enchantments.java b/net/minecraft/world/item/enchantment/Enchantments.java
-index 5eb11c5893f3ea64d6d97155f29b1273937251d1..45eb01deba3f855860d595b9885c922cf8f6d68a 100644
+index f27725a01623284420455364f485658e98c19aa3..397cfebe1467108aa08481f28ba8de7373c95cee 100644
 --- a/net/minecraft/world/item/enchantment/Enchantments.java
 +++ b/net/minecraft/world/item/enchantment/Enchantments.java
-@@ -1132,7 +1132,7 @@ public class Enchantments {
+@@ -1177,7 +1177,7 @@ public class Enchantments {
              DENSITY,
              Enchantment.enchantment(
                      Enchantment.definition(
@@ -348,7 +441,7 @@ index 5eb11c5893f3ea64d6d97155f29b1273937251d1..45eb01deba3f855860d595b9885c922c
                          5,
                          5,
                          Enchantment.dynamicCost(5, 8),
-@@ -1149,7 +1149,7 @@ public class Enchantments {
+@@ -1194,7 +1194,7 @@ public class Enchantments {
              BREACH,
              Enchantment.enchantment(
                      Enchantment.definition(
@@ -357,3 +450,18 @@ index 5eb11c5893f3ea64d6d97155f29b1273937251d1..45eb01deba3f855860d595b9885c922c
                          2,
                          4,
                          Enchantment.dynamicCost(15, 9),
+diff --git a/net/minecraft/world/level/storage/loot/LootTable.java b/net/minecraft/world/level/storage/loot/LootTable.java
+index 35b5154473a3021dcae1f2ad016a77bcfb058c58..fc105e9b68e6dee5577ff1a8bb52315e800ed92c 100644
+--- a/net/minecraft/world/level/storage/loot/LootTable.java
++++ b/net/minecraft/world/level/storage/loot/LootTable.java
+@@ -87,6 +87,10 @@ public class LootTable {
+     }
+ 
+     public void getRandomItemsRaw(LootContext context, Consumer<ItemStack> output) {
++        // Aincrad start - Combat Evolved: removed equipment never leaves a loot table
++        Consumer<ItemStack> unfiltered = output;
++        output = stack -> { if (!stack.is(net.minecraft.tags.ItemTags.REMOVED_EQUIPMENT)) unfiltered.accept(stack); };
++        // Aincrad end - Combat Evolved
+         LootContext.VisitedEntry<?> visitedEntry = LootContext.createVisitedEntry(this);
+         if (context.pushVisitedElement(visitedEntry)) {
+             Consumer<ItemStack> consumer = LootItemFunction.decorate(this.compositeFunction, output, context);

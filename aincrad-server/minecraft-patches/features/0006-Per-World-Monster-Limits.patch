@@ -5,10 +5,10 @@ Subject: [PATCH] Per World Monster Limits
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index f2cc1712dad3dcf8c8c286c12ed9fa99428bee80..af1d62860f904a31ece81d7f719e423703037c48 100644
+index 764d176bba7d3966d31fbc79d56634f8ccdd9632..924594a941f3b5425bb35b873544dfda414b2af3 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -1590,6 +1590,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1666,6 +1666,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.getEntities(EntityType.ENDER_DRAGON, LivingEntity::isAlive);
      }
  
@@ -27,7 +27,7 @@ index f2cc1712dad3dcf8c8c286c12ed9fa99428bee80..af1d62860f904a31ece81d7f719e4237
      public List<ServerPlayer> getPlayers(Predicate<? super ServerPlayer> predicate) {
          return this.getPlayers(predicate, Integer.MAX_VALUE);
      }
-@@ -2805,6 +2817,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2954,6 +2966,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                  for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
                      ServerLevel.this.dragonParts.put(enderDragonPart.getId(), enderDragonPart);
                  }
@@ -39,7 +39,7 @@ index f2cc1712dad3dcf8c8c286c12ed9fa99428bee80..af1d62860f904a31ece81d7f719e4237
              }
  
              entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
-@@ -2875,6 +2892,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -3025,6 +3042,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                  for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
                      ServerLevel.this.dragonParts.remove(enderDragonPart.getId());
                  }
@@ -52,28 +52,28 @@ index f2cc1712dad3dcf8c8c286c12ed9fa99428bee80..af1d62860f904a31ece81d7f719e4237
  
              entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
 diff --git a/net/minecraft/world/entity/SpawnPlacements.java b/net/minecraft/world/entity/SpawnPlacements.java
-index 78d5e8f34807093e2069fe923acda633307b50eb..158865319086352b9942cdd6a786da16ed8fcdaf 100644
+index 7e68c72d9dc4feb2e5e45f4d96baf476ac508f3c..898e6d1f4c8a4f9dc4cc1dd6267e9ef79e59a722 100644
 --- a/net/minecraft/world/entity/SpawnPlacements.java
 +++ b/net/minecraft/world/entity/SpawnPlacements.java
-@@ -28,6 +28,7 @@ import net.minecraft.world.entity.animal.horse.ZombieHorse;
- import net.minecraft.world.entity.monster.Drowned;
+@@ -28,6 +28,7 @@ import net.minecraft.world.entity.animal.turtle.Turtle;
+ import net.minecraft.world.entity.animal.wolf.Wolf;
  import net.minecraft.world.entity.monster.Endermite;
  import net.minecraft.world.entity.monster.Ghast;
 +import net.minecraft.world.entity.monster.Giant;
  import net.minecraft.world.entity.monster.Guardian;
- import net.minecraft.world.entity.monster.Husk;
  import net.minecraft.world.entity.monster.MagmaCube;
-@@ -113,7 +114,7 @@ public class SpawnPlacements {
-         register(EntityType.ENDER_DRAGON, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mob::checkMobSpawnRules);
+ import net.minecraft.world.entity.monster.Monster;
+@@ -117,7 +118,7 @@ public class SpawnPlacements {
          register(EntityType.FROG, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Frog::checkFrogSpawnRules);
          register(EntityType.GHAST, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Ghast::checkGhastSpawnRules);
+         register(EntityType.HAPPY_GHAST, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
 -        register(EntityType.GIANT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
 +        register(EntityType.GIANT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Giant::checkGiantSpawnRules);
          register(EntityType.GLOW_SQUID, SpawnPlacementTypes.IN_WATER, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, GlowSquid::checkGlowSquidSpawnRules);
          register(EntityType.GOAT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Goat::checkGoatSpawnRules);
          register(EntityType.HORSE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
 diff --git a/net/minecraft/world/entity/monster/Giant.java b/net/minecraft/world/entity/monster/Giant.java
-index 9b4fa361728e5eacf1282b103f1d5bec785d8481..2ece806740f6c29beb2780183d6ba25c7d5ddca7 100644
+index dc319fce477111a091b9abe2b1b0c17cd66734fe..25dd97d0f475cfd34720d8fe89ccc58b2321f5c8 100644
 --- a/net/minecraft/world/entity/monster/Giant.java
 +++ b/net/minecraft/world/entity/monster/Giant.java
 @@ -5,7 +5,11 @@ import net.minecraft.world.entity.EntityType;
@@ -87,9 +87,9 @@ index 9b4fa361728e5eacf1282b103f1d5bec785d8481..2ece806740f6c29beb2780183d6ba25c
 +import net.minecraft.util.RandomSource;
  
  public class Giant extends Monster {
-     public Giant(EntityType<? extends Giant> entityType, Level level) {
-@@ -33,6 +37,18 @@ public class Giant extends Monster {
-         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 100.0).add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.ATTACK_DAMAGE, 50.0).add(Attributes.FOLLOW_RANGE, 48.0);
+     public Giant(EntityType<? extends Giant> type, Level level) {
+@@ -38,6 +42,18 @@ public class Giant extends Monster {
+             .add(Attributes.FOLLOW_RANGE, 48.0);
      }
  
 +    public static boolean checkGiantSpawnRules(EntityType<? extends Giant> entityType, ServerLevelAccessor level, EntitySpawnReason spawnReason, BlockPos pos, RandomSource random) {
@@ -105,5 +105,5 @@ index 9b4fa361728e5eacf1282b103f1d5bec785d8481..2ece806740f6c29beb2780183d6ba25c
 +    }
 +
      @Override
-     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor world, net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.EntitySpawnReason spawnReason, @org.jetbrains.annotations.Nullable net.minecraft.world.entity.SpawnGroupData entityData) {
-         net.minecraft.world.entity.SpawnGroupData groupData = super.finalizeSpawn(world, difficulty, spawnReason, entityData);
+     public boolean isSensitiveToWater() {
+         return true;

@@ -5,26 +5,26 @@ Subject: [PATCH] Remove End Dragon Battle
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index aa4e5919d04143f2f670d82f568db3e3f14554b3..a77811c92823074055442384e409803bb02b9880 100644
+index 7c457cd75a34d21f030b8842ab646d3d4a020278..3206f02b04e6bcefeb54fe16977d7f76aab4f6a2 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -138,7 +138,6 @@ import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
- import net.minecraft.world.level.chunk.storage.SimpleRegionStorage;
+@@ -141,7 +141,6 @@ import net.minecraft.world.level.chunk.storage.SimpleRegionStorage;
  import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+ import net.minecraft.world.level.dimension.DimensionType;
  import net.minecraft.world.level.dimension.LevelStem;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
  import net.minecraft.world.level.entity.EntityPersistentStorage;
  import net.minecraft.world.level.entity.EntityTickList;
  import net.minecraft.world.level.entity.EntityTypeTest;
-@@ -213,7 +212,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -220,7 +219,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     private List<ChunkPos> initChunks = null; // Aincrad - spiral chunk list for init, built from INIT_CHUNK_RADIUS
+     private int initChunkIndex = 0; // Aincrad - current position in initChunks
      private final List<CustomSpawner> customSpawners;
-     private final ChunkProgressListener progressListener;
-     @Nullable
--    private EndDragonFight dragonFight;
+-    private @Nullable EndDragonFight dragonFight;
      final Int2ObjectMap<EnderDragonPart> dragonParts = new Int2ObjectOpenHashMap<>();
      private final java.util.Map<Class<? extends Entity>, Integer> entityCountsByType = new java.util.HashMap<>();
      private final StructureManager structureManager;
-@@ -675,11 +673,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -697,11 +695,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fixerUpper
          );
          this.structureManager = new StructureManager(this, this.serverLevelData.worldGenOptions(), this.structureCheck); // CraftBukkit
@@ -36,7 +36,7 @@ index aa4e5919d04143f2f670d82f568db3e3f14554b3..a77811c92823074055442384e409803b
  
          this.sleepStatus = new SleepStatus();
          this.gameEventDispatcher = new GameEventDispatcher(this);
-@@ -741,12 +734,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -753,12 +746,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
      // Paper end
  
@@ -49,9 +49,9 @@ index aa4e5919d04143f2f670d82f568db3e3f14554b3..a77811c92823074055442384e409803b
      public void setWeatherParameters(int clearTime, int weatherTime, boolean isRaining, boolean isThundering) {
          this.serverLevelData.setClearWeatherTime(clearTime);
          this.serverLevelData.setRainTime(weatherTime);
-@@ -978,11 +965,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -996,11 +983,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
-         if (flag || this.emptyTime++ < 300) {
+         if (this.emptyTime < 300) {
              profilerFiller.push("entities");
 -            if (this.dragonFight != null && runsNormally) {
 -                profilerFiller.push("dragonFight");
@@ -61,7 +61,7 @@ index aa4e5919d04143f2f670d82f568db3e3f14554b3..a77811c92823074055442384e409803b
  
              io.papermc.paper.entity.activation.ActivationRange.activateEntities(this); // Paper - EAR
              this.entityTickList
-@@ -1571,9 +1553,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1647,9 +1629,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void saveLevelData(boolean join) {
@@ -71,12 +71,11 @@ index aa4e5919d04143f2f670d82f568db3e3f14554b3..a77811c92823074055442384e409803b
  
          DimensionDataStorage dataStorage = this.getChunkSource().getDataStorage();
          if (join) {
-@@ -2585,11 +2564,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2659,10 +2638,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.serverLevelData.worldGenOptions().seed(); // CraftBukkit
      }
  
--    @Nullable
--    public EndDragonFight getDragonFight() {
+-    public @Nullable EndDragonFight getDragonFight() {
 -        return this.dragonFight;
 -    }
 -
@@ -84,19 +83,19 @@ index aa4e5919d04143f2f670d82f568db3e3f14554b3..a77811c92823074055442384e409803b
      public ServerLevel getLevel() {
          return this;
 diff --git a/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java b/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
-index ff1c84d37db48e1bd0283a900e199647c0e8eba1..b17268e0e95284f33a77fb12dcb5e4486e79a89a 100644
+index c095f42aa103b7874fb5d8dcece1b1484c2e2968..180ad780bb792242bf378133175d5dfbe2693648 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
-@@ -16,8 +16,6 @@ import net.minecraft.world.entity.EntityType;
+@@ -13,8 +13,6 @@ import net.minecraft.world.entity.EntityType;
  import net.minecraft.world.item.ItemStack;
  import net.minecraft.world.item.Items;
  import net.minecraft.world.level.Level;
 -import net.minecraft.world.level.block.BaseFireBlock;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
- 
- public class EndCrystal extends Entity {
-     private static final EntityDataAccessor<Optional<BlockPos>> DATA_BEAM_TARGET = SynchedEntityData.defineId(
-@@ -54,26 +52,6 @@ public class EndCrystal extends Entity {
+ import net.minecraft.world.level.storage.ValueInput;
+ import net.minecraft.world.level.storage.ValueOutput;
+ import org.jspecify.annotations.Nullable;
+@@ -55,26 +53,6 @@ public class EndCrystal extends Entity {
          this.time++;
          this.applyEffectsFromBlocks();
          this.handlePortal();
@@ -111,7 +110,7 @@ index ff1c84d37db48e1bd0283a900e199647c0e8eba1..b17268e0e95284f33a77fb12dcb5e448
 -
 -        // Paper start - Fix invulnerable end crystals
 -        if (this.level().paperConfig().unsupportedSettings.fixInvulnerableEndCrystalExploit && this.generatedByDragonFight && this.isInvulnerable()) {
--            if (!java.util.Objects.equals(((ServerLevel) this.level()).uuid, this.getOriginWorld())
+-            if (!java.util.Objects.equals(((ServerLevel) this.level()).uuid, this.originWorld)
 -                || ((ServerLevel) this.level()).getDragonFight() == null
 -                || ((ServerLevel) this.level()).getDragonFight().respawnStage == null
 -                || ((ServerLevel) this.level()).getDragonFight().respawnStage.ordinal() > net.minecraft.world.level.dimension.end.DragonRespawnAnimation.SUMMONING_DRAGON.ordinal()) {
@@ -123,7 +122,7 @@ index ff1c84d37db48e1bd0283a900e199647c0e8eba1..b17268e0e95284f33a77fb12dcb5e448
      }
  
      @Override
-@@ -133,7 +111,6 @@ public class EndCrystal extends Entity {
+@@ -129,7 +107,6 @@ public class EndCrystal extends Entity {
                      // CraftBukkit end
                  }
  
@@ -131,7 +130,7 @@ index ff1c84d37db48e1bd0283a900e199647c0e8eba1..b17268e0e95284f33a77fb12dcb5e448
              }
  
              return true;
-@@ -142,17 +119,9 @@ public class EndCrystal extends Entity {
+@@ -138,17 +115,9 @@ public class EndCrystal extends Entity {
  
      @Override
      public void kill(ServerLevel level) {
@@ -150,10 +149,10 @@ index ff1c84d37db48e1bd0283a900e199647c0e8eba1..b17268e0e95284f33a77fb12dcb5e448
          this.getEntityData().set(DATA_BEAM_TARGET, Optional.ofNullable(beamTarget));
      }
 diff --git a/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java b/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b7787d1b919 100644
+index 1daf8f52148043339f723aaebdf6135763dd805b..f6afbfc65e72a7d44466a65077e3848c2b7e67d3 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-@@ -11,13 +11,16 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+@@ -9,13 +9,16 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
  import net.minecraft.network.syncher.EntityDataAccessor;
  import net.minecraft.network.syncher.EntityDataSerializers;
  import net.minecraft.network.syncher.SynchedEntityData;
@@ -170,26 +169,27 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
  import net.minecraft.world.damagesource.DamageSource;
  import net.minecraft.world.effect.MobEffectInstance;
  import net.minecraft.world.entity.Entity;
-@@ -40,10 +43,8 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
- import net.minecraft.world.level.GameRules;
+@@ -37,11 +40,8 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
  import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.LevelEvent;
  import net.minecraft.world.level.block.state.BlockState;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
  import net.minecraft.world.level.gameevent.GameEvent;
- import net.minecraft.world.level.levelgen.Heightmap;
+ import net.minecraft.world.level.gamerules.GameRules;
+-import net.minecraft.world.level.levelgen.Heightmap;
 -import net.minecraft.world.level.levelgen.feature.EndPodiumFeature;
  import net.minecraft.world.level.pathfinder.BinaryHeap;
  import net.minecraft.world.level.pathfinder.Node;
  import net.minecraft.world.level.pathfinder.Path;
-@@ -78,7 +79,6 @@ public class EnderDragon extends Mob implements Enemy {
-     @Nullable
-     public EndCrystal nearestCrystal;
-     @Nullable
--    private EndDragonFight dragonFight;
-     private BlockPos fightOrigin = BlockPos.ZERO;
+@@ -78,17 +78,17 @@ public class EnderDragon extends Mob implements Enemy {
+     public int dragonDeathTime = 0;
+     public float yRotA;
+     public @Nullable EndCrystal nearestCrystal;
+-    private @Nullable EndDragonFight dragonFight;
+-    private BlockPos fightOrigin = BlockPos.ZERO;
      private final EnderDragonPhaseManager phaseManager;
      private int growlTime = 100;
-@@ -86,9 +86,11 @@ public class EnderDragon extends Mob implements Enemy {
+     private float sittingDamageReceived;
      private final Node[] nodes = new Node[24];
      private final int[] nodeAdjacency = new int[24];
      private final BinaryHeap openSet = new BinaryHeap();
@@ -200,8 +200,8 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
 +    @Nullable private BlockPos spawnPosition; // Aincrad - track spawn position for pathfinding
      // Paper end
  
-     public EnderDragon(EntityType<? extends EnderDragon> entityType, Level level) {
-@@ -108,35 +110,28 @@ public class EnderDragon extends Mob implements Enemy {
+     public EnderDragon(EntityType<? extends EnderDragon> type, Level level) {
+@@ -108,35 +108,28 @@ public class EnderDragon extends Mob implements Enemy {
          this.explosionSource = new net.minecraft.world.level.ServerExplosion(level.getMinecraftWorld(), this, null, null, new Vec3(Double.NaN, Double.NaN, Double.NaN), Float.NaN, true, net.minecraft.world.level.Explosion.BlockInteraction.DESTROY); // Paper
      }
  
@@ -218,7 +218,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
 -    }
 -
      public static AttributeSupplier.Builder createAttributes() {
-         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 200.0);
+         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 200.0).add(Attributes.CAMERA_DISTANCE, 16.0);
      }
  
 -    // Paper start - Allow changing the EnderDragon podium
@@ -250,7 +250,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
      @Override
      public boolean isFlapping() {
          float cos = Mth.cos(this.flapTime * (float) (Math.PI * 2));
-@@ -188,14 +183,13 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -188,14 +181,13 @@ public class EnderDragon extends Mob implements Enemy {
              }
          }
  
@@ -259,7 +259,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
 -            if (dragonFight != null && this.getUUID().equals(dragonFight.getDragonUUID())) {
 -                this.dragonFight = dragonFight;
 +        this.oFlapTime = this.flapTime;
-+        if (!this.level().isClientSide) {
++        if (!this.level().isClientSide()) {
 +            this.bossEvent.setProgress(this.getHealth() / this.getMaxHealth());
 +            if (this.tickCount % 20 == 0) {
 +                this.heal(1.0F);
@@ -270,7 +270,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
          if (this.isDeadOrDying()) {
              float f = (this.random.nextFloat() - 0.5F) * 8.0F;
              float f1 = (this.random.nextFloat() - 0.5F) * 4.0F;
-@@ -351,9 +345,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -347,9 +339,6 @@ public class EnderDragon extends Mob implements Enemy {
                      this.inWall = this.checkWalls(serverLevel3, this.head.getBoundingBox())
                          | this.checkWalls(serverLevel3, this.neck.getBoundingBox())
                          | this.checkWalls(serverLevel3, this.body.getBoundingBox());
@@ -280,7 +280,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
                  }
  
                  for (int i1 = 0; i1 < this.subEntities.length; i1++) {
-@@ -597,17 +588,10 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -592,17 +581,10 @@ public class EnderDragon extends Mob implements Enemy {
          this.remove(Entity.RemovalReason.KILLED, org.bukkit.event.entity.EntityRemoveEvent.Cause.DEATH); // CraftBukkit - add Bukkit remove cause
          // Paper end - Fire entity death event
          this.gameEvent(GameEvent.ENTITY_DIE);
@@ -298,8 +298,8 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
  
          this.dragonDeathTime++;
          if (this.dragonDeathTime >= 180 && this.dragonDeathTime <= 200) {
-@@ -668,10 +652,6 @@ public class EnderDragon extends Mob implements Enemy {
-                 ExperienceOrb.award(serverLevel1, this.position(), Mth.floor(i * 0.2F), org.bukkit.entity.ExperienceOrb.SpawnReason.ENTITY_DEATH, this.lastHurtByPlayer, this); // Paper
+@@ -663,10 +645,6 @@ public class EnderDragon extends Mob implements Enemy {
+                 ExperienceOrb.awardWithDirection(serverLevel1, this.position(), net.minecraft.world.phys.Vec3.ZERO, Mth.floor(i * 0.2F), org.bukkit.entity.ExperienceOrb.SpawnReason.ENTITY_DEATH, net.minecraft.world.entity.EntityReference.get(this.lastHurtByPlayer, this.level(), Player.class), this); // Paper
              }
  
 -            if (this.dragonFight != null) {
@@ -309,7 +309,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
              this.remove(Entity.RemovalReason.KILLED, org.bukkit.event.entity.EntityRemoveEvent.Cause.DEATH); // CraftBukkit - add Bukkit remove cause
              this.gameEvent(GameEvent.ENTITY_DIE);
          }
-@@ -679,6 +659,13 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -674,6 +652,13 @@ public class EnderDragon extends Mob implements Enemy {
  
      public int findClosestNode() {
          if (this.nodes[0] == null) {
@@ -319,11 +319,11 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
 +            int baseY = spawnPos.getY();
 +            int baseZ = spawnPos.getZ();
 +            // Aincrad end
-+            
++
              for (int i = 0; i < 24; i++) {
                  int i1 = 5;
                  int floor;
-@@ -697,8 +684,8 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -692,8 +677,8 @@ public class EnderDragon extends Mob implements Enemy {
                      floor1 = Mth.floor(20.0F * Mth.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * var7)));
                  }
  
@@ -334,7 +334,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
              }
  
              this.nodeAdjacency[0] = 6146;
-@@ -735,9 +722,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -730,9 +715,6 @@ public class EnderDragon extends Mob implements Enemy {
          int i = 0;
          Node node = new Node(Mth.floor(x), Mth.floor(y), Mth.floor(z));
          int i1 = 0;
@@ -344,7 +344,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
  
          for (int i2 = i1; i2 < 24; i2++) {
              if (this.nodes[i2] != null) {
-@@ -773,9 +757,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -767,9 +749,6 @@ public class EnderDragon extends Mob implements Enemy {
          this.openSet.insert(node1);
          Node node2 = node1;
          int i1 = 0;
@@ -354,17 +354,17 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
  
          while (!this.openSet.isEmpty()) {
              Node node3 = this.openSet.pop();
-@@ -873,6 +854,27 @@ public class EnderDragon extends Mob implements Enemy {
-             this.expToDrop = compound.getInt("Bukkit.expToDrop");
-         }
-         // CraftBukkit end
-+        if (this.hasCustomName()) {
+@@ -857,6 +836,27 @@ public class EnderDragon extends Mob implements Enemy {
+         input.getInt("DragonPhase").ifPresent(integer -> this.phaseManager.setPhase(EnderDragonPhase.getById(integer)));
+         this.dragonDeathTime = input.getIntOr("DragonDeathTime", 0);
+         this.expToDrop = input.getIntOr("Bukkit.expToDrop", 0); // CraftBukkit - SPIGOT-2420: The ender dragon drops xp over time which can also happen between server starts
++        if (this.hasCustomName()) { // Aincrad - make EnderDragon standalone boss
 +            this.bossEvent.setName(this.getDisplayName());
 +        }
 +    }
 +
 +    @Override
-+    public void setCustomName(@Nullable net.minecraft.network.chat.Component name) {
++    public void setCustomName(net.minecraft.network.chat.@Nullable Component name) {
 +        super.setCustomName(name);
 +        this.bossEvent.setName(this.getDisplayName());
 +    }
@@ -382,7 +382,7 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
      }
  
      @Override
-@@ -913,8 +915,8 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -897,8 +897,8 @@ public class EnderDragon extends Mob implements Enemy {
          EnderDragonPhase<? extends DragonPhaseInstance> phase = currentPhase.getPhase();
          Vec3 viewVector;
          if (phase == EnderDragonPhase.LANDING || phase == EnderDragonPhase.TAKEOFF) {
@@ -393,42 +393,41 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
              float f = 6.0F / max;
              float xRot = this.getXRot();
              float f1 = 1.5F;
-@@ -934,21 +936,6 @@ public class EnderDragon extends Mob implements Enemy {
+@@ -918,21 +918,6 @@ public class EnderDragon extends Mob implements Enemy {
          return viewVector;
      }
  
 -    public void onCrystalDestroyed(ServerLevel level, EndCrystal crystal, BlockPos pos, DamageSource damageSource) {
--        Player player;
--        if (damageSource.getEntity() instanceof Player) {
--            player = (Player)damageSource.getEntity();
+-        Player player1;
+-        if (damageSource.getEntity() instanceof Player player) {
+-            player1 = player;
 -        } else {
--            player = level.getNearestPlayer(CRYSTAL_DESTROY_TARGETING, pos.getX(), pos.getY(), pos.getZ());
+-            player1 = level.getNearestPlayer(CRYSTAL_DESTROY_TARGETING, pos.getX(), pos.getY(), pos.getZ());
 -        }
 -
 -        if (crystal == this.nearestCrystal) {
--            this.hurt(level, this.head, this.damageSources().explosion(crystal, player), 10.0F);
+-            this.hurt(level, this.head, this.damageSources().explosion(crystal, player1), 10.0F);
 -        }
 -
--        this.phaseManager.getCurrentPhase().onCrystalDestroyed(crystal, pos, damageSource, player);
+-        this.phaseManager.getCurrentPhase().onCrystalDestroyed(crystal, pos, damageSource, player1);
 -    }
 -
      @Override
      public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
-         if (DATA_PHASE.equals(key) && this.level().isClientSide) {
-@@ -962,11 +949,6 @@ public class EnderDragon extends Mob implements Enemy {
+         if (DATA_PHASE.equals(key) && this.level().isClientSide()) {
+@@ -946,10 +931,6 @@ public class EnderDragon extends Mob implements Enemy {
          return this.phaseManager;
      }
  
--    @Nullable
--    public EndDragonFight getDragonFight() {
+-    public @Nullable EndDragonFight getDragonFight() {
 -        return this.dragonFight;
 -    }
 -
      @Override
      public boolean addEffect(MobEffectInstance effectInstance, @Nullable Entity entity) {
          return false;
-@@ -1009,10 +991,6 @@ public class EnderDragon extends Mob implements Enemy {
-         boolean flag = worldserver.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT);
+@@ -992,10 +973,6 @@ public class EnderDragon extends Mob implements Enemy {
+         boolean flag = level.getGameRules().get(GameRules.MOB_DROPS);
          int i = 500;
  
 -        if (this.dragonFight != null && !this.dragonFight.hasPreviouslyKilledDragon()) {
@@ -439,10 +438,10 @@ index 403bcd056bf9c385599383983bf7a0cc117a1881..b1bb51fc78f1a121f9545a89a1924b77
      }
      // CraftBukkit end
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java
-index 85e20366beb7c44c938aa1e9bc2a806ddfa173a0..1a5ab8b913fdd75adac7671d0702aeb73a277b82 100644
+index a1ecd3495bc5ea5801c7050da376dc1c8e7f40cc..9d72b7c3a96528a82854f8b49683b98b97120168 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonDeathPhase.java
-@@ -34,8 +34,8 @@ public class DragonDeathPhase extends AbstractDragonPhaseInstance {
+@@ -33,8 +33,8 @@ public class DragonDeathPhase extends AbstractDragonPhaseInstance {
      public void doServerTick(ServerLevel level) {
          this.time++;
          if (this.targetLocation == null) {
@@ -454,10 +453,10 @@ index 85e20366beb7c44c938aa1e9bc2a806ddfa173a0..1a5ab8b913fdd75adac7671d0702aeb7
  
          double d = this.targetLocation.distanceToSqr(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ());
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java
-index 1afb9ff6a5546f912238b1b03aacf45033f7c481..146e3efe714a68f1d9950a77832ff206e27f9502 100644
+index 003e5da1a32b46239220165f8225d6b53d662a57..14246602a5b4baa105fa4da7462e7d37767371a7 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonHoldingPatternPhase.java
-@@ -53,17 +53,17 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
+@@ -50,17 +50,17 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
  
      private void findNewTarget(ServerLevel level) {
          if (this.currentPath != null && this.currentPath.isDone()) {
@@ -479,7 +478,7 @@ index 1afb9ff6a5546f912238b1b03aacf45033f7c481..146e3efe714a68f1d9950a77832ff206
              } else {
                  d = 64.0;
              }
-@@ -88,16 +88,9 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
+@@ -85,16 +85,9 @@ public class DragonHoldingPatternPhase extends AbstractDragonPhaseInstance {
                  ix--;
              }
  
@@ -500,10 +499,10 @@ index 1afb9ff6a5546f912238b1b03aacf45033f7c481..146e3efe714a68f1d9950a77832ff206
              this.currentPath = this.dragon.findPath(i1, ix, null);
              if (this.currentPath != null) {
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java
-index aafa99c3553a1ba35e3d7e1a7c7842ed0468e509..ffe751b5dc03a475e9022bfa39e18b66089c2fd9 100644
+index cfd0a77087678cc5d80fcd6a86130ee2af55828e..64feb076035f01be2c698d6845ffceea3c7d014c 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingApproachPhase.java
-@@ -52,7 +52,7 @@ public class DragonLandingApproachPhase extends AbstractDragonPhaseInstance {
+@@ -49,7 +49,7 @@ public class DragonLandingApproachPhase extends AbstractDragonPhaseInstance {
      private void findNewTarget(ServerLevel level) {
          if (this.currentPath == null || this.currentPath.isDone()) {
              int i = this.dragon.findClosestNode();
@@ -513,7 +512,7 @@ index aafa99c3553a1ba35e3d7e1a7c7842ed0468e509..ffe751b5dc03a475e9022bfa39e18b66
              int i1;
              if (nearestPlayer != null) {
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java
-index 1ab3491a0be33ba9a0c2b4a09b766d94b106fbd5..9323963d0487082af4ed0a1d19f7c78abe659824 100644
+index 4226e79ca6b612e820fd26e21e1c303df0e148b8..0085b2edf19ed715b1457e0ae462e39702a71902 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonLandingPhase.java
 @@ -49,9 +49,8 @@ public class DragonLandingPhase extends AbstractDragonPhaseInstance {
@@ -529,10 +528,10 @@ index 1ab3491a0be33ba9a0c2b4a09b766d94b106fbd5..9323963d0487082af4ed0a1d19f7c78a
  
          if (this.targetLocation.distanceToSqr(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ()) < 1.0) {
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
-index bc5e4266b3f7400c464e10fd299b9ced82bb35b2..88762a72fcbb2c5a128ce0a1741e8824e4122995 100644
+index 8fd9940316339d5321fe8bc9f11c21c7f0a70353..3bce81e05830500b91fab5f864a3bdefe82e13b6 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
-@@ -115,16 +115,9 @@ public class DragonStrafePlayerPhase extends AbstractDragonPhaseInstance {
+@@ -113,16 +113,9 @@ public class DragonStrafePlayerPhase extends AbstractDragonPhaseInstance {
                  i1--;
              }
  
@@ -553,10 +552,10 @@ index bc5e4266b3f7400c464e10fd299b9ced82bb35b2..88762a72fcbb2c5a128ce0a1741e8824
              this.currentPath = this.dragon.findPath(i, i1, null);
              if (this.currentPath != null) {
 diff --git a/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java b/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java
-index d0142ec67dad3b41ae0a693df614956e8ddabd9c..898eef290e6bc3ce37300cd8c804d59e37153736 100644
+index c2dc1849e0ae8dbfb34fa865b81d0fc579888b30..8c874cb7def83258ccb5519a6abc052f92d24353 100644
 --- a/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/phases/DragonTakeoffPhase.java
-@@ -24,7 +24,7 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
+@@ -22,7 +22,7 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
      @Override
      public void doServerTick(ServerLevel level) {
          if (!this.firstTick && this.currentPath != null) {
@@ -565,7 +564,7 @@ index d0142ec67dad3b41ae0a693df614956e8ddabd9c..898eef290e6bc3ce37300cd8c804d59e
              if (!heightmapPos.closerToCenterThan(this.dragon.position(), 10.0)) {
                  this.dragon.getPhaseManager().setPhase(EnderDragonPhase.HOLDING_PATTERN);
              }
-@@ -45,16 +45,10 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
+@@ -43,16 +43,10 @@ public class DragonTakeoffPhase extends AbstractDragonPhaseInstance {
          int i = this.dragon.findClosestNode();
          Vec3 headLookVector = this.dragon.getHeadLookVector(1.0F);
          int i1 = this.dragon.findClosestNode(-headLookVector.x * 40.0, 105.0, -headLookVector.z * 40.0);
@@ -587,7 +586,7 @@ index d0142ec67dad3b41ae0a693df614956e8ddabd9c..898eef290e6bc3ce37300cd8c804d59e
          this.currentPath = this.dragon.findPath(i, i1, null);
          this.navigateToNextPathNode();
 diff --git a/net/minecraft/world/item/EndCrystalItem.java b/net/minecraft/world/item/EndCrystalItem.java
-index 1bc4c8be71b445f64134548a85fd81442298c0f1..dc39e89d67c0eb96eda87c092f3f1b90a33e891e 100644
+index 05ec512839898f96d9769bb0d00f6ba11dda0c4b..5c4a01a12613b4ad02ab78cb8d957517be1eaa0c 100644
 --- a/net/minecraft/world/item/EndCrystalItem.java
 +++ b/net/minecraft/world/item/EndCrystalItem.java
 @@ -10,7 +10,6 @@ import net.minecraft.world.item.context.UseOnContext;
@@ -604,13 +603,13 @@ index 1bc4c8be71b445f64134548a85fd81442298c0f1..dc39e89d67c0eb96eda87c092f3f1b90
                          level.gameEvent(context.getPlayer(), GameEvent.ENTITY_PLACE, blockPos);
 -                        EndDragonFight dragonFight = ((ServerLevel)level).getDragonFight();
 -                        if (dragonFight != null) {
--                            dragonFight.tryRespawn(aboveBlockPosition); // Paper - Perf: Do crystal-portal proximity check before entity lookup
+-                            dragonFight.tryRespawn(aboveBlockPos); // Paper - Perf: Do crystal-portal proximity check before entity lookup
 -                        }
                      }
  
                      context.getItemInHand().shrink(1);
 diff --git a/net/minecraft/world/level/block/DragonEggBlock.java b/net/minecraft/world/level/block/DragonEggBlock.java
-index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5efd55c111 100644
+index 52160294e39e3f0f471087a1fcb6e46763862954..f612afbf5a6a0e4a4f05856528c044464145fd8d 100644
 --- a/net/minecraft/world/level/block/DragonEggBlock.java
 +++ b/net/minecraft/world/level/block/DragonEggBlock.java
 @@ -3,8 +3,13 @@ package net.minecraft.world.level.block;
@@ -630,7 +629,7 @@ index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5e
 @@ -19,6 +24,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  public class DragonEggBlock extends FallingBlock {
      public static final MapCodec<DragonEggBlock> CODEC = simpleCodec(DragonEggBlock::new);
-     protected static final VoxelShape SHAPE = Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
+     private static final VoxelShape SHAPE = Block.column(14.0, 0.0, 16.0);
 +    // Aincrad start - dragon egg hatching
 +    private static boolean isHatching = false;
 +    private static int hatchTimer = 0;
@@ -659,27 +658,25 @@ index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5e
 +            return;
 +        }
 +        // Aincrad end
-+        
++
          this.teleport(state, level, pos);
      }
  
-@@ -65,8 +86,14 @@ public class DragonEggBlock extends FallingBlock {
+@@ -65,7 +86,13 @@ public class DragonEggBlock extends FallingBlock {
  
                  blockPos = new BlockPos(event.getToBlock().getX(), event.getToBlock().getY(), event.getToBlock().getZ());
                  // CraftBukkit end
--                if (level.isClientSide) {
--                    for (int i1 = 0; i1 < 128; i1++) {
-+                
+-                if (level.isClientSide()) {
++
 +                // Aincrad start - fix teleport particles to use actual destination
-+                level.setBlock(blockPos, state, 2);
++                level.setBlock(blockPos, state, Block.UPDATE_CLIENTS);
 +                level.removeBlock(pos, false);
-+                
++
 +                // Send particles from old position to new position
 +                if (level instanceof ServerLevel serverLevel) {
-+                    for (int j = 0; j < 128; j++) {
+                     for (int i1 = 0; i1 < 128; i1++) {
                          double randomDouble = level.random.nextDouble();
                          float f = (level.random.nextFloat() - 0.5F) * 0.2F;
-                         float f1 = (level.random.nextFloat() - 0.5F) * 0.2F;
 @@ -74,12 +101,10 @@ public class DragonEggBlock extends FallingBlock {
                          double d = Mth.lerp(randomDouble, (double)blockPos.getX(), (double)pos.getX()) + (level.random.nextDouble() - 0.5) + 0.5;
                          double d1 = Mth.lerp(randomDouble, (double)blockPos.getY(), (double)pos.getY()) + level.random.nextDouble() - 0.5;
@@ -688,18 +685,17 @@ index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5e
 +                        serverLevel.sendParticles(ParticleTypes.PORTAL, d, d1, d2, 1, f, f1, f2, 0.0);
                      }
 -                } else {
--                    level.setBlock(blockPos, state, 2);
+-                    level.setBlock(blockPos, state, Block.UPDATE_CLIENTS);
 -                    level.removeBlock(pos, false);
                  }
 +                // Aincrad end
  
                  return;
              }
-@@ -95,4 +120,49 @@ public class DragonEggBlock extends FallingBlock {
-     protected boolean isPathfindable(BlockState state, PathComputationType pathComputationType) {
+@@ -96,6 +121,51 @@ public class DragonEggBlock extends FallingBlock {
          return false;
      }
-+
+ 
 +    // Aincrad start - dragon egg spawn chain
 +    @Override
 +    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
@@ -710,7 +706,7 @@ index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5e
 +                this.spawnDragon(level, pos, random);
 +                return;
 +            }
-+            
++
 +            // Show particles while waiting
 +            double d = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.5;
 +            double d1 = pos.getY() + random.nextDouble();
@@ -720,37 +716,40 @@ index 38f9003f8260eb2f0606cbd53aa30604cdeb48c0..27d84b5b72caa7fedb608497e60eac5e
 +            hatchTimer--;
 +            level.scheduleTick(pos, this, 1);
 +        }
-+        
++
 +        // Handle normal falling behavior
 +        super.tick(state, level, pos, random);
 +    }
-+    
++
 +    @Override
 +    public void onLand(Level level, BlockPos pos, BlockState state, BlockState replaceableState, net.minecraft.world.entity.item.FallingBlockEntity fallingBlock) {
 +        isHatching = true;
 +        hatchTimer = 60; // Ticks to wait after landing before spawning dragon
 +        ((ServerLevel) level).scheduleTick(pos, this, 1);
 +    }
-+    
++
 +    private void spawnDragon(ServerLevel level, BlockPos pos, RandomSource random) {
 +        level.removeBlock(pos, false);
 +        isHatching = false;
-+        
++
 +        EnderDragon dragon = new EnderDragon(EntityType.ENDER_DRAGON, level);
-+        dragon.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
++        dragon.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
 +        // Set spawn position elevated to prevent terrain destruction from lowering flight path
 +        dragon.setSpawn(pos.above(8));
 +        dragon.getPhaseManager().setPhase(EnderDragonPhase.HOLDING_PATTERN);
 +        level.addFreshEntity(dragon);
 +    }
 +    // Aincrad end
- }
++
+     @Override
+     public int getDustColor(BlockState state, BlockGetter level, BlockPos pos) {
+         return -16777216;
 diff --git a/net/minecraft/world/level/dimension/end/DragonRespawnAnimation.java b/net/minecraft/world/level/dimension/end/DragonRespawnAnimation.java
 deleted file mode 100644
-index ba54696b52bf6dc4fd64f8da5182b24d637af5c7..0000000000000000000000000000000000000000
+index 48187686126139a4229f454a3d4427f6593fa71b..0000000000000000000000000000000000000000
 --- a/net/minecraft/world/level/dimension/end/DragonRespawnAnimation.java
 +++ /dev/null
-@@ -1,113 +0,0 @@
+@@ -1,114 +0,0 @@
 -package net.minecraft.world.level.dimension.end;
 -
 -import com.google.common.collect.ImmutableList;
@@ -760,6 +759,7 @@ index ba54696b52bf6dc4fd64f8da5182b24d637af5c7..00000000000000000000000000000000
 -import net.minecraft.util.RandomSource;
 -import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 -import net.minecraft.world.level.Level;
+-import net.minecraft.world.level.block.LevelEvent;
 -import net.minecraft.world.level.levelgen.feature.Feature;
 -import net.minecraft.world.level.levelgen.feature.SpikeFeature;
 -import net.minecraft.world.level.levelgen.feature.configurations.SpikeConfiguration;
@@ -782,7 +782,7 @@ index ba54696b52bf6dc4fd64f8da5182b24d637af5c7..00000000000000000000000000000000
 -        public void tick(ServerLevel level, EndDragonFight manager, List<EndCrystal> crystals, int ticks, BlockPos pos) {
 -            if (ticks < 100) {
 -                if (ticks == 0 || ticks == 50 || ticks == 51 || ticks == 52 || ticks >= 95) {
--                    level.levelEvent(3001, new BlockPos(0, 128, 0), 0);
+-                    level.levelEvent(LevelEvent.ANIMATION_DRAGON_SUMMON_ROAR, new BlockPos(0, 128, 0), 0);
 -                }
 -            } else {
 -                manager.setRespawnStage(SUMMONING_PILLARS);
@@ -846,13 +846,13 @@ index ba54696b52bf6dc4fd64f8da5182b24d637af5c7..00000000000000000000000000000000
 -                    endCrystal.discard(org.bukkit.event.entity.EntityRemoveEvent.Cause.EXPLODE); // CraftBukkit - add Bukkit remove cause
 -                }
 -            } else if (ticks >= 80) {
--                level.levelEvent(3001, new BlockPos(0, 128, 0), 0);
+-                level.levelEvent(LevelEvent.ANIMATION_DRAGON_SUMMON_ROAR, new BlockPos(0, 128, 0), 0);
 -            } else if (ticks == 0) {
 -                for (EndCrystal endCrystal : crystals) {
 -                    endCrystal.setBeamTarget(new BlockPos(0, 128, 0));
 -                }
 -            } else if (ticks < 5) {
--                level.levelEvent(3001, new BlockPos(0, 128, 0), 0);
+-                level.levelEvent(LevelEvent.ANIMATION_DRAGON_SUMMON_ROAR, new BlockPos(0, 128, 0), 0);
 -            }
 -        }
 -    },
@@ -866,10 +866,10 @@ index ba54696b52bf6dc4fd64f8da5182b24d637af5c7..00000000000000000000000000000000
 -}
 diff --git a/net/minecraft/world/level/dimension/end/EndDragonFight.java b/net/minecraft/world/level/dimension/end/EndDragonFight.java
 deleted file mode 100644
-index 6e7e87c32734b3aae354bc34459e5f207da5c78f..0000000000000000000000000000000000000000
+index 04b03940a8c7d0d1e04298d7bcbe245a4174f7d8..0000000000000000000000000000000000000000
 --- a/net/minecraft/world/level/dimension/end/EndDragonFight.java
 +++ /dev/null
-@@ -1,636 +0,0 @@
+@@ -1,631 +0,0 @@
 -package net.minecraft.world.level.dimension.end;
 -
 -import com.google.common.annotations.VisibleForTesting;
@@ -887,8 +887,6 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -import java.util.Set;
 -import java.util.UUID;
 -import java.util.function.Predicate;
--import javax.annotation.Nullable;
--import net.minecraft.Util;
 -import net.minecraft.advancements.CriteriaTriggers;
 -import net.minecraft.core.BlockPos;
 -import net.minecraft.core.Direction;
@@ -903,7 +901,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -import net.minecraft.server.level.TicketType;
 -import net.minecraft.util.Mth;
 -import net.minecraft.util.RandomSource;
--import net.minecraft.util.Unit;
+-import net.minecraft.util.Util;
 -import net.minecraft.world.BossEvent;
 -import net.minecraft.world.damagesource.DamageSource;
 -import net.minecraft.world.entity.Entity;
@@ -915,6 +913,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
 -import net.minecraft.world.level.ChunkPos;
 -import net.minecraft.world.level.block.Blocks;
+-import net.minecraft.world.level.block.LevelEvent;
 -import net.minecraft.world.level.block.entity.BlockEntity;
 -import net.minecraft.world.level.block.entity.TheEndPortalBlockEntity;
 -import net.minecraft.world.level.block.state.pattern.BlockInWorld;
@@ -929,6 +928,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -import net.minecraft.world.level.levelgen.feature.SpikeFeature;
 -import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
 -import net.minecraft.world.phys.AABB;
+-import org.jspecify.annotations.Nullable;
 -import org.slf4j.Logger;
 -
 -public class EndDragonFight {
@@ -959,16 +959,12 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -    private boolean dragonKilled;
 -    public boolean previouslyKilled;
 -    private boolean skipArenaLoadedCheck = false;
--    @Nullable
--    public UUID dragonUUID;
+-    public @Nullable UUID dragonUUID;
 -    private boolean needsStateScanning = true;
--    @Nullable
--    public BlockPos portalLocation;
--    @Nullable
--    public DragonRespawnAnimation respawnStage;
+-    public @Nullable BlockPos portalLocation;
+-    public @Nullable DragonRespawnAnimation respawnStage;
 -    private int respawnTime;
--    @Nullable
--    public List<EndCrystal> respawnCrystals;
+-    public @Nullable List<EndCrystal> respawnCrystals;
 -
 -    public EndDragonFight(ServerLevel level, long seed, EndDragonFight.Data data) {
 -        this(level, seed, data, BlockPos.ZERO);
@@ -1033,7 +1029,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -        }
 -
 -        if (!this.dragonEvent.getPlayers().isEmpty()) {
--            this.level.getChunkSource().addRegionTicket(TicketType.DRAGON, new ChunkPos(0, 0), 9, Unit.INSTANCE);
+-            this.level.getChunkSource().addTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9);
 -            boolean isArenaLoaded = this.isArenaLoaded();
 -            if (this.needsStateScanning && isArenaLoaded) {
 -                this.scanState();
@@ -1061,7 +1057,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -                }
 -            }
 -        } else {
--            this.level.getChunkSource().removeRegionTicket(TicketType.DRAGON, new ChunkPos(0, 0), 9, Unit.INSTANCE);
+-            this.level.getChunkSource().removeTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9);
 -        }
 -    }
 -
@@ -1146,8 +1142,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -        return false;
 -    }
 -
--    @Nullable
--    public BlockPattern.BlockPatternMatch findExitPortal() {
+-    public BlockPattern.@Nullable BlockPatternMatch findExitPortal() {
 -        ChunkPos chunkPos = new ChunkPos(this.origin);
 -
 -        for (int i = -8 + chunkPos.x; i <= 8 + chunkPos.x; i++) {
@@ -1258,7 +1253,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -                eggEvent.setCancelled(true);
 -            }
 -            if (eggEvent.callEvent()) {
--                eggEvent.getNewState().update(true);
+-                ((org.bukkit.craftbukkit.block.CraftBlockState) eggEvent.getNewState()).place(net.minecraft.world.level.block.Block.UPDATE_ALL);
 -                // Paper end - Add DragonEggFormEvent
 -            }
 -
@@ -1301,7 +1296,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -    }
 -
 -    public void spawnNewGateway(BlockPos pos) {
--        this.level.levelEvent(3000, pos, 0);
+-        this.level.levelEvent(LevelEvent.ANIMATION_END_GATEWAY_SPAWN, pos, 0);
 -        this.level
 -            .registryAccess()
 -            .lookup(Registries.CONFIGURED_FEATURE)
@@ -1317,6 +1312,8 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -            while (this.level.getBlockState(this.portalLocation).is(Blocks.BEDROCK) && this.portalLocation.getY() > 63) {
 -                this.portalLocation = this.portalLocation.below();
 -            }
+-
+-            this.portalLocation = this.portalLocation.atY(Math.max(this.level.getMinY() + 1, this.portalLocation.getY()));
 -        }
 -
 -        // Paper start - Prevent "softlocked" exit portal generation
@@ -1332,15 +1329,14 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -        }
 -    }
 -
--    @Nullable
--    private EnderDragon createNewDragon() {
+-    private @Nullable EnderDragon createNewDragon() {
 -        this.level.getChunkAt(new BlockPos(this.origin.getX(), 128 + this.origin.getY(), this.origin.getZ()));
 -        EnderDragon enderDragon = EntityType.ENDER_DRAGON.create(this.level, EntitySpawnReason.EVENT);
 -        if (enderDragon != null) {
 -            enderDragon.setDragonFight(this);
 -            enderDragon.setFightOrigin(this.origin);
 -            enderDragon.getPhaseManager().setPhase(EnderDragonPhase.HOLDING_PATTERN);
--            enderDragon.moveTo(this.origin.getX(), 128 + this.origin.getY(), this.origin.getZ(), this.level.random.nextFloat() * 360.0F, 0.0F);
+-            enderDragon.snapTo(this.origin.getX(), 128 + this.origin.getY(), this.origin.getZ(), this.level.random.nextFloat() * 360.0F, 0.0F);
 -            this.level.addFreshEntity(enderDragon);
 -            this.dragonUUID = enderDragon.getUUID();
 -            this.resetSpikeCrystals(); // Paper - Reset ender crystals on dragon spawn
@@ -1367,7 +1363,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -        return this.crystalsAlive;
 -    }
 -
--    public void onCrystalDestroyed(EndCrystal crystal, DamageSource dmgSrc) {
+-    public void onCrystalDestroyed(EndCrystal crystal, DamageSource damageSource) {
 -        if (this.respawnStage != null && this.respawnCrystals.contains(crystal)) {
 -            LOGGER.debug("Aborting respawn sequence");
 -            this.respawnStage = null;
@@ -1377,7 +1373,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -        } else {
 -            this.updateCrystalCount();
 -            if (this.level.getEntity(this.dragonUUID) instanceof EnderDragon enderDragon) {
--                enderDragon.onCrystalDestroyed(this.level, crystal, crystal.blockPosition(), dmgSrc);
+-                enderDragon.onCrystalDestroyed(this.level, crystal, crystal.blockPosition(), damageSource);
 -            }
 -        }
 -    }
@@ -1408,7 +1404,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -                blockPos = this.portalLocation;
 -            }
 -            // Paper start - Perf: Do crystal-portal proximity check before entity lookup
--            if (placedEndCrystalPos != null) {
+-            if (placedEndCrystalPos != null && !level.paperConfig().misc.allowRemoteEnderDragonRespawning) {
 -                // The end crystal must be 0 or 1 higher than the portal origin
 -                int dy = placedEndCrystalPos.getY() - blockPos.getY();
 -                if (dy != 0 && dy != 1) {
@@ -1475,8 +1471,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -        }
 -    }
 -
--    @Nullable
--    public UUID getDragonUUID() {
+-    public @Nullable UUID getDragonUUID() {
 -        return this.dragonUUID;
 -    }
 -
@@ -1494,7 +1489,7 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -                    Codec.BOOL.fieldOf("NeedsStateScanning").orElse(true).forGetter(EndDragonFight.Data::needsStateScanning),
 -                    Codec.BOOL.fieldOf("DragonKilled").orElse(false).forGetter(EndDragonFight.Data::dragonKilled),
 -                    Codec.BOOL.fieldOf("PreviouslyKilled").orElse(false).forGetter(EndDragonFight.Data::previouslyKilled),
--                    Codec.BOOL.lenientOptionalFieldOf("IsRespawning", Boolean.valueOf(false)).forGetter(EndDragonFight.Data::isRespawning),
+-                    Codec.BOOL.lenientOptionalFieldOf("IsRespawning", false).forGetter(EndDragonFight.Data::isRespawning),
 -                    UUIDUtil.CODEC.lenientOptionalFieldOf("Dragon").forGetter(EndDragonFight.Data::dragonUUID),
 -                    BlockPos.CODEC.lenientOptionalFieldOf("ExitPortalLocation").forGetter(EndDragonFight.Data::exitPortalLocation),
 -                    Codec.list(Codec.INT).lenientOptionalFieldOf("Gateways").forGetter(EndDragonFight.Data::gateways)
@@ -1507,26 +1502,26 @@ index 6e7e87c32734b3aae354bc34459e5f207da5c78f..00000000000000000000000000000000
 -    }
 -}
 diff --git a/net/minecraft/world/level/storage/PrimaryLevelData.java b/net/minecraft/world/level/storage/PrimaryLevelData.java
-index 2f4922a2035cc7d628dd2c979137163feb90e19f..0eb8bfc88a72080828bc83caac81d9279ff83386 100644
+index 8936b4b1ae9c82eed2a7d3191a29f01792438d14..44bb1dedb18ec6943920fbb187d9ef9d046de2cd 100644
 --- a/net/minecraft/world/level/storage/PrimaryLevelData.java
 +++ b/net/minecraft/world/level/storage/PrimaryLevelData.java
-@@ -31,7 +31,6 @@ import net.minecraft.world.level.LevelHeightAccessor;
+@@ -29,7 +29,6 @@ import net.minecraft.world.level.LevelHeightAccessor;
  import net.minecraft.world.level.LevelSettings;
  import net.minecraft.world.level.WorldDataConfiguration;
  import net.minecraft.world.level.border.WorldBorder;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
+ import net.minecraft.world.level.gamerules.GameRules;
  import net.minecraft.world.level.levelgen.WorldGenSettings;
  import net.minecraft.world.level.levelgen.WorldOptions;
- import net.minecraft.world.level.timers.TimerCallbacks;
-@@ -62,7 +61,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
-     private boolean initialized;
+@@ -63,7 +62,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
      private boolean difficultyLocked;
-     private WorldBorder.Settings worldBorder;
+     @Deprecated
+     private Optional<WorldBorder.Settings> legacyWorldBorderSettings;
 -    private EndDragonFight.Data endDragonFightData;
-     @Nullable
-     private CompoundTag customBossEvents;
+     private @Nullable CompoundTag customBossEvents;
      private int wanderingTraderSpawnDelay;
-@@ -112,7 +110,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
+     private int wanderingTraderSpawnChance;
+@@ -110,7 +108,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
          Set<String> removedFeatureFlags,
          TimerQueue<MinecraftServer> scheduledEvents,
          @Nullable CompoundTag customBossEvents,
@@ -1534,7 +1529,7 @@ index 2f4922a2035cc7d628dd2c979137163feb90e19f..0eb8bfc88a72080828bc83caac81d927
          LevelSettings settings,
          WorldOptions worldOptions,
          PrimaryLevelData.SpecialWorldProperty specialWorldProperty,
-@@ -140,7 +137,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
+@@ -137,7 +134,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
          this.loadedPlayerTag = loadedPlayerTag;
          this.scheduledEvents = scheduledEvents;
          this.customBossEvents = customBossEvents;
@@ -1542,7 +1537,7 @@ index 2f4922a2035cc7d628dd2c979137163feb90e19f..0eb8bfc88a72080828bc83caac81d927
          this.settings = settings;
          this.worldOptions = worldOptions;
          this.specialWorldProperty = specialWorldProperty;
-@@ -173,7 +169,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
+@@ -169,7 +165,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
              new HashSet<>(),
              new TimerQueue<>(TimerCallbacks.SERVER_CALLBACKS),
              null,
@@ -1550,7 +1545,7 @@ index 2f4922a2035cc7d628dd2c979137163feb90e19f..0eb8bfc88a72080828bc83caac81d927
              settings.copy(),
              worldOptions,
              specialWorldProperty,
-@@ -218,7 +213,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
+@@ -213,7 +208,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
                  .collect(Collectors.toSet()),
              new TimerQueue<>(TimerCallbacks.SERVER_CALLBACKS, tag.get("ScheduledEvents").asStream()),
              (CompoundTag)tag.get("CustomBossEvents").orElseEmptyMap().getValue(),
@@ -1559,14 +1554,14 @@ index 2f4922a2035cc7d628dd2c979137163feb90e19f..0eb8bfc88a72080828bc83caac81d927
              worldOptions,
              specialWorldProperty,
 @@ -277,7 +271,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
-         nbt.putByte("Difficulty", (byte)this.settings.difficulty().getId());
-         nbt.putBoolean("DifficultyLocked", this.difficultyLocked);
-         nbt.put("GameRules", this.settings.gameRules().createTag());
--        nbt.put("DragonFight", EndDragonFight.Data.CODEC.encodeStart(NbtOps.INSTANCE, this.endDragonFightData).getOrThrow());
-         if (playerNBT != null) {
-             nbt.put("Player", playerNBT);
+         tag.putByte("Difficulty", (byte)this.settings.difficulty().getId());
+         tag.putBoolean("DifficultyLocked", this.difficultyLocked);
+         tag.store("game_rules", GameRules.codec(this.enabledFeatures()), this.settings.gameRules());
+-        tag.store("DragonFight", EndDragonFight.Data.CODEC, this.endDragonFightData);
+         if (singlePlayerTag != null) {
+             tag.put("Player", singlePlayerTag);
          }
-@@ -549,16 +542,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
+@@ -537,16 +530,6 @@ public class PrimaryLevelData implements ServerLevelData, WorldData {
          return this.worldGenSettingsLifecycle;
      }
  
@@ -1584,20 +1579,20 @@ index 2f4922a2035cc7d628dd2c979137163feb90e19f..0eb8bfc88a72080828bc83caac81d927
      public WorldDataConfiguration getDataConfiguration() {
          return this.settings.getDataConfiguration();
 diff --git a/net/minecraft/world/level/storage/WorldData.java b/net/minecraft/world/level/storage/WorldData.java
-index ecbce7756f5e12283928d04e5d26384a60f231fb..92f69128750e3336820cdddf9bddd2d42f225b3a 100644
+index 3a22bb3b7f5e6236fba1c857b0bc0353ea96b7fe..2e674b6397ba8129b5ecff08231812325d317d0b 100644
 --- a/net/minecraft/world/level/storage/WorldData.java
 +++ b/net/minecraft/world/level/storage/WorldData.java
-@@ -13,7 +13,6 @@ import net.minecraft.world.level.GameRules;
+@@ -11,7 +11,6 @@ import net.minecraft.world.flag.FeatureFlagSet;
  import net.minecraft.world.level.GameType;
  import net.minecraft.world.level.LevelSettings;
  import net.minecraft.world.level.WorldDataConfiguration;
 -import net.minecraft.world.level.dimension.end.EndDragonFight;
+ import net.minecraft.world.level.gamerules.GameRules;
  import net.minecraft.world.level.levelgen.WorldOptions;
+ import org.jspecify.annotations.Nullable;
+@@ -87,10 +86,6 @@ public interface WorldData {
  
- public interface WorldData {
-@@ -89,10 +88,6 @@ public interface WorldData {
-     @Nullable
-     CompoundTag getLoadedPlayerTag();
+     @Nullable CompoundTag getLoadedPlayerTag();
  
 -    EndDragonFight.Data endDragonFightData();
 -

@@ -23,7 +23,7 @@ index 751d97e2d06e6ce4a647c52323993bfd11f24a55..585787acd44e1dcb9fe77b9fe6c157e3
              this.saveAllChunks(true, true, true, false);
          }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 0a48330244a23e060c8fe49b6a9c62bb6ec84db0..da4ecb9f299dfec71d526f6f00ae658ab90aaf31 100644
+index 924594a941f3b5425bb35b873544dfda414b2af3..a41be8220263418a06e63f713bd645920651f8ca 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -227,6 +227,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -34,7 +34,7 @@ index 0a48330244a23e060c8fe49b6a9c62bb6ec84db0..da4ecb9f299dfec71d526f6f00ae658a
  
      // CraftBukkit start
      public final LevelStorageSource.LevelStorageAccess levelStorageAccess;
-@@ -2477,11 +2478,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2480,11 +2481,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          Optional<Holder<PoiType>> optional1 = PoiTypes.forState(newState);
          if (!Objects.equals(optional, optional1)) {
              BlockPos blockPos = pos.immutable();
@@ -48,7 +48,7 @@ index 0a48330244a23e060c8fe49b6a9c62bb6ec84db0..da4ecb9f299dfec71d526f6f00ae658a
                  // Paper start - Remove stale POIs
                  if (optional.isEmpty() && this.getPoiManager().exists(blockPos, ignored -> true)) {
                      this.getPoiManager().remove(blockPos);
-@@ -2495,6 +2496,13 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -2498,6 +2499,13 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          }
      }
  

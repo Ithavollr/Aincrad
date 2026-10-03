@@ -329,7 +329,7 @@ index bbd8f68d166ebd0370f4b39362468fdc7d70f7f0..af3835433b1aea16463b7eb5d3f3bdf1
      public final int rateLimitPacketsPerSecond = this.get("rate-limit", 0);
      public final Settings<DedicatedServerProperties>.MutableValue<Integer> viewDistance = this.getMutable("view-distance", 10);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7612bf38c 100644
+index dc65503a2d785d64d37b76b0303f51cf66d9769a..7c457cd75a34d21f030b8842ab646d3d4a020278 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -171,6 +171,7 @@ import net.minecraft.world.level.storage.DimensionDataStorage;
@@ -412,7 +412,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
      }
  
      // Paper start
-@@ -746,7 +781,140 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -746,7 +781,143 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          return this.environmentAttributes;
      }
  
@@ -489,7 +489,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
 +            switch(initializationStage) {
 +                case 0: // create spawn chunks list
 +                    if (this.initChunks == null) {
-+                        int spawnRadius = INIT_CHUNK_RADIUS;
++                        int spawnRadius = serverLevelData.isInitialized() ? 0 : INIT_CHUNK_RADIUS; // Aincrad - initialized worlds don't pre-gen or hold spawn chunks
 +                        BlockPos spawnPos = this.serverLevelData.getRespawnData().pos();
 +                        this.initChunks = spawnRadius > 0
 +                            ? new java.util.ArrayList<>(io.papermc.paper.util.MCUtil.getSpiralOutChunks(spawnPos, spawnRadius))
@@ -539,6 +539,9 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
 +                    if (!serverLevelData.isInitialized()) {
 +                        serverLevelData.setInitialized(true);
 +                    }
++                    for (ChunkPos chunkPos : this.initChunks) {
++                        chunkSource.removeTicketAtLevel(TicketType.CHUNK_LOAD, chunkPos, ChunkLevel.FULL_CHUNK_LEVEL); // Aincrad - pre-gen done; post-1.21.9 holds no spawn chunks
++                    }
 +                    this.isInitializingLevel = false;
 +                    LOGGER.info("Done preparing level \"{}\"!", this.dimension().identifier());
 +                    break;
@@ -553,7 +556,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
          ProfilerFiller profilerFiller = Profiler.get();
          this.handlingTick = true;
          TickRateManager tickRateManager = this.tickRateManager();
-@@ -1303,8 +1471,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1303,8 +1474,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              fluidState.tick(this, pos, blockState);
          }
          // Paper start - rewrite chunk system
@@ -564,7 +567,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
          }
          // Paper end - rewrite chunk system
  
-@@ -1316,8 +1484,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1316,8 +1487,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              blockState.tick(this, pos, this.random);
          }
          // Paper start - rewrite chunk system
@@ -575,7 +578,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
          }
          // Paper end - rewrite chunk system
  
-@@ -1423,7 +1591,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1423,7 +1594,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          }
  
          if (doFull) {
@@ -584,7 +587,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
          }
          // chunk autosave is already called by the ChunkSystem during unload processing (ChunkMap#processUnloads)
          // Copied from save()
-@@ -1587,6 +1755,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1587,6 +1758,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      }
  
      private void addPlayer(ServerPlayer player) {
@@ -592,7 +595,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..ec2ddf35c8860e9c0238c020b09b1ea7
          Entity entity = this.getEntity(player.getUUID());
          if (entity != null) {
              LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
-@@ -1599,7 +1768,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1599,7 +1771,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
  
      // CraftBukkit start
      private boolean addEntity(Entity entity, org.bukkit.event.entity.CreatureSpawnEvent.@Nullable SpawnReason spawnReason) {

@@ -122,6 +122,83 @@ index 6c668bd26c991b3bae777653e1c8e2ced22def0d..2a67b722e333b88dc4e613c7041b286f
              if (!itemInHand.isEmpty() && itemInHand.isItemEnabled(serverLevel.enabledFeatures())) {
                  float f = Mth.wrapDegrees(packet.getYRot());
                  float f1 = Mth.wrapDegrees(packet.getXRot());
+diff --git a/net/minecraft/tags/ItemTags.java b/net/minecraft/tags/ItemTags.java
+index 3306a5c569c26599c761f06c031e09f8c9be2b88..27ac5a1b91847b3721b445be700dc3e720e8f4d8 100644
+--- a/net/minecraft/tags/ItemTags.java
++++ b/net/minecraft/tags/ItemTags.java
+@@ -203,6 +203,7 @@ public final class ItemTags {
+     public static final TagKey<Item> MACE_ENCHANTABLE = bind("enchantable/mace");
+     public static final TagKey<Item> MAP_INVISIBILITY_EQUIPMENT = bind("map_invisibility_equipment");
+     public static final TagKey<Item> GAZE_DISGUISE_EQUIPMENT = bind("gaze_disguise_equipment");
++    public static final TagKey<Item> REMOVED_EQUIPMENT = bind("removed_equipment"); // Aincrad - Combat Evolved: items the server never produces
+ 
+     private ItemTags() {
+     }
+diff --git a/net/minecraft/world/entity/animal/equine/ZombieHorse.java b/net/minecraft/world/entity/animal/equine/ZombieHorse.java
+index 4cfae7e877c6545780a8b9fdb3e326edb8cc7943..25c3ae8393a5e6d26d72b76d971f3d7608cb7402 100644
+--- a/net/minecraft/world/entity/animal/equine/ZombieHorse.java
++++ b/net/minecraft/world/entity/animal/equine/ZombieHorse.java
+@@ -136,7 +136,7 @@ public class ZombieHorse extends AbstractHorse {
+             if (zombie != null) {
+                 zombie.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), 0.0F);
+                 zombie.finalizeSpawn(level, difficulty, spawnReason, null);
+-                zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
++                zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE)); // Aincrad - Combat Evolved
+                 zombie.startRiding(this, false, false);
+             }
+         }
+diff --git a/net/minecraft/world/entity/monster/piglin/Piglin.java b/net/minecraft/world/entity/monster/piglin/Piglin.java
+index 2497779f96e3b6c7e7aa048c2047c04f06cb7ede..42b35ada111419a698677d3c67ee99488b08e4ac 100644
+--- a/net/minecraft/world/entity/monster/piglin/Piglin.java
++++ b/net/minecraft/world/entity/monster/piglin/Piglin.java
+@@ -337,7 +337,7 @@ public class Piglin extends AbstractPiglin implements CrossbowAttackMob, Invento
+     private ItemStack createSpawnWeapon() {
+         return this.random.nextFloat() < 0.5
+             ? new ItemStack(Items.CROSSBOW)
+-            : new ItemStack(this.random.nextInt(10) == 0 ? Items.GOLDEN_SPEAR : Items.GOLDEN_SWORD);
++            : new ItemStack(Items.GOLDEN_SWORD); // Aincrad - Combat Evolved
+     }
+ 
+     @Override
+diff --git a/net/minecraft/world/entity/monster/zombie/Husk.java b/net/minecraft/world/entity/monster/zombie/Husk.java
+index 93fd34d12c1b9702ff7480f434648d70638bf1a9..83f8140178d1a801a96d84cea5b9f65578adfe89 100644
+--- a/net/minecraft/world/entity/monster/zombie/Husk.java
++++ b/net/minecraft/world/entity/monster/zombie/Husk.java
+@@ -99,7 +99,7 @@ public class Husk extends Zombie {
+             if (level.noCollision(EntityType.CAMEL_HUSK.getSpawnAABB(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5))) {
+                 huskGroupData.triedToSpawnCamelHusk = true;
+                 if (random.nextFloat() < 0.1F) {
+-                    this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
++                    this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE)); // Aincrad - Combat Evolved
+                     CamelHusk camelHusk = EntityType.CAMEL_HUSK.create(this.level(), EntitySpawnReason.NATURAL);
+                     if (camelHusk != null) {
+                         camelHusk.setPos(this.getX(), this.getY(), this.getZ());
+diff --git a/net/minecraft/world/entity/monster/zombie/Zombie.java b/net/minecraft/world/entity/monster/zombie/Zombie.java
+index d1b91335b1e979a2e64e6f0ec95dbe32023a25b7..7df2a76e94afa68825f24c7e1e5fe5af710aef05 100644
+--- a/net/minecraft/world/entity/monster/zombie/Zombie.java
++++ b/net/minecraft/world/entity/monster/zombie/Zombie.java
+@@ -412,7 +412,7 @@ public class Zombie extends Monster {
+             if (randomInt == 0) {
+                 this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+             } else if (randomInt == 1) {
+-                this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
++                this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE)); // Aincrad - Combat Evolved
+             } else {
+                 this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SHOVEL));
+             }
+diff --git a/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java b/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
+index 8fcb6cd1cefa6c9e1809944b4720cfdc35325729..0aca71c3f9bd7600feba41d46be5e33eb9ef2316 100644
+--- a/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
++++ b/net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
+@@ -228,7 +228,7 @@ public class ZombifiedPiglin extends Zombie implements NeutralMob {
+ 
+     @Override
+     public void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
+-        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(random.nextInt(20) == 0 ? Items.GOLDEN_SPEAR : Items.GOLDEN_SWORD));
++        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(random.nextInt(20) == 0 ? Items.GOLDEN_AXE : Items.GOLDEN_SWORD)); // Aincrad - Combat Evolved
+     }
+ 
+     @Override
 diff --git a/net/minecraft/world/item/AxeItem.java b/net/minecraft/world/item/AxeItem.java
 index 8b006edd6f766f942d691f5271a7505a75700d0c..aa80cea809fd833e985eb15549c69631c362c613 100644
 --- a/net/minecraft/world/item/AxeItem.java
@@ -331,6 +408,26 @@ index 8b006edd6f766f942d691f5271a7505a75700d0c..aa80cea809fd833e985eb15549c69631
      @Override
      public InteractionResult useOn(UseOnContext context) {
          Level level = context.getLevel();
+diff --git a/net/minecraft/world/item/crafting/RecipeManager.java b/net/minecraft/world/item/crafting/RecipeManager.java
+index 4e0b0d630e18bde916a07889bcaf0e7accf064ca..d14490cf7f0cf5165ce414c15acb9072d8d9fff0 100644
+--- a/net/minecraft/world/item/crafting/RecipeManager.java
++++ b/net/minecraft/world/item/crafting/RecipeManager.java
+@@ -107,6 +107,15 @@ public class RecipeManager extends SimplePreparableReloadListener<RecipeMap> imp
+     public void finalizeRecipeLoading(FeatureFlagSet enabledFeatures) {
+         this.featureflagset = enabledFeatures;
+         // CraftBukkit end
++        // Aincrad start - Combat Evolved: drop recipes that produce removed equipment (item tags are bound by now)
++        net.minecraft.util.context.ContextMap displayContext = new net.minecraft.util.context.ContextMap.Builder()
++            .withParameter(net.minecraft.world.item.crafting.display.SlotDisplayContext.REGISTRIES, this.registries)
++            .create(net.minecraft.world.item.crafting.display.SlotDisplayContext.CONTEXT);
++        this.recipes = RecipeMap.create(this.recipes.values().stream()
++            .filter(holder -> holder.value().display().stream().noneMatch(display -> display.result().resolveForStacks(displayContext).stream()
++                .anyMatch(stack -> stack.is(net.minecraft.tags.ItemTags.REMOVED_EQUIPMENT))))
++            .toList());
++        // Aincrad end - Combat Evolved
+         List<SelectableRecipe.SingleInputEntry<StonecutterRecipe>> list = new ArrayList<>();
+         List<RecipeManager.IngredientCollector> list1 = RECIPE_PROPERTY_SETS.entrySet()
+             .stream()
 diff --git a/net/minecraft/world/item/enchantment/Enchantments.java b/net/minecraft/world/item/enchantment/Enchantments.java
 index f27725a01623284420455364f485658e98c19aa3..397cfebe1467108aa08481f28ba8de7373c95cee 100644
 --- a/net/minecraft/world/item/enchantment/Enchantments.java
@@ -353,3 +450,18 @@ index f27725a01623284420455364f485658e98c19aa3..397cfebe1467108aa08481f28ba8de73
                          2,
                          4,
                          Enchantment.dynamicCost(15, 9),
+diff --git a/net/minecraft/world/level/storage/loot/LootTable.java b/net/minecraft/world/level/storage/loot/LootTable.java
+index 35b5154473a3021dcae1f2ad016a77bcfb058c58..fc105e9b68e6dee5577ff1a8bb52315e800ed92c 100644
+--- a/net/minecraft/world/level/storage/loot/LootTable.java
++++ b/net/minecraft/world/level/storage/loot/LootTable.java
+@@ -87,6 +87,10 @@ public class LootTable {
+     }
+ 
+     public void getRandomItemsRaw(LootContext context, Consumer<ItemStack> output) {
++        // Aincrad start - Combat Evolved: removed equipment never leaves a loot table
++        Consumer<ItemStack> unfiltered = output;
++        output = stack -> { if (!stack.is(net.minecraft.tags.ItemTags.REMOVED_EQUIPMENT)) unfiltered.accept(stack); };
++        // Aincrad end - Combat Evolved
+         LootContext.VisitedEntry<?> visitedEntry = LootContext.createVisitedEntry(this);
+         if (context.pushVisitedElement(visitedEntry)) {
+             Consumer<ItemStack> consumer = LootItemFunction.decorate(this.compositeFunction, output, context);

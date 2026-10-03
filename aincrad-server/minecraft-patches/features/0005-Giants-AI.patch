@@ -5,10 +5,10 @@ Subject: [PATCH] Giants AI
 
 
 diff --git a/net/minecraft/world/entity/monster/Giant.java b/net/minecraft/world/entity/monster/Giant.java
-index 0de6a20a3fed53bd11a0152de6953bfaecc85289..b420d69eb24d945932dc3018989a8dedfdda34f0 100644
+index 0de6a20a3fed53bd11a0152de6953bfaecc85289..dc319fce477111a091b9abe2b1b0c17cd66734fe 100644
 --- a/net/minecraft/world/entity/monster/Giant.java
 +++ b/net/minecraft/world/entity/monster/Giant.java
-@@ -12,16 +12,69 @@ public class Giant extends Monster {
+@@ -12,16 +12,51 @@ public class Giant extends Monster {
          super(type, level);
      }
  
@@ -37,24 +37,6 @@ index 0de6a20a3fed53bd11a0152de6953bfaecc85289..b420d69eb24d945932dc3018989a8ded
 -            .add(Attributes.CAMERA_DISTANCE, 16.0);
 +            .add(Attributes.CAMERA_DISTANCE, 16.0)
 +            .add(Attributes.FOLLOW_RANGE, 48.0);
-+    }
-+
-+    @Override
-+    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor world, net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.EntitySpawnReason spawnReason, @org.jetbrains.annotations.Nullable net.minecraft.world.entity.SpawnGroupData entityData) {
-+        net.minecraft.world.entity.SpawnGroupData groupData = super.finalizeSpawn(world, difficulty, spawnReason, entityData);
-+        if (groupData == null) {
-+            populateDefaultEquipmentSlots(this.random, difficulty);
-+            populateDefaultEquipmentEnchantments(world, this.random, difficulty);
-+        }
-+        return groupData;
-+    }
-+
-+    @Override
-+    protected void populateDefaultEquipmentSlots(net.minecraft.util.RandomSource random, net.minecraft.world.DifficultyInstance difficulty) {
-+        super.populateDefaultEquipmentSlots(this.random, difficulty);
-+        if (random.nextFloat() < (level().getDifficulty() == net.minecraft.world.Difficulty.HARD ? 0.1F : 0.05F)) {
-+            this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_SWORD));
-+        }
 +    }
 +
 +    @Override

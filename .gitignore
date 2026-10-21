@@ -41,6 +41,7 @@ out/
 
 # other stuff
 run/
+run-test/
 logs/
 
 !gradle/wrapper/gradle-wrapper.jar

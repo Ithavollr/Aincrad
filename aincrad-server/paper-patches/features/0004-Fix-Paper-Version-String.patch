@@ -5,10 +5,10 @@ Subject: [PATCH] Fix Paper Version String
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 66eaf9b5fc51fa2d597c839b94353190739ad7d8..e1677120c15dbbe19df7997b4abcdf9e173f3c6a 100644
+index daccd8fba0953d6b62034d0d3c4c70a774cb04b8..4d87acfeb587d9ef3039017ddb6cedb6efaaf048 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -668,7 +668,7 @@ public final class CraftServer implements Server {
+@@ -650,7 +650,7 @@ public final class CraftServer implements Server {
  
      @Override
      public String getVersion() {

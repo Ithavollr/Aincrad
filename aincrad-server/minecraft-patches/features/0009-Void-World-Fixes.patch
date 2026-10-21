@@ -4,11 +4,11 @@ Date: Mon, 15 Jun 2026 18:31:42 -0400
 Subject: [PATCH] Void World Fixes
 
 
-diff --git a/net/minecraft/world/entity/animal/Bee.java b/net/minecraft/world/entity/animal/Bee.java
-index 0d19a3d61f001c5b9c3e251199d97d7b0e97dbee..819669d9514046382e03230683121f1ac7d398b0 100644
---- a/net/minecraft/world/entity/animal/Bee.java
-+++ b/net/minecraft/world/entity/animal/Bee.java
-@@ -142,6 +142,10 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+diff --git a/net/minecraft/world/entity/animal/bee/Bee.java b/net/minecraft/world/entity/animal/bee/Bee.java
+index 5dcd718e12273b3f967fd56f5c0da4e7f0faa6f7..e7f3174233433e28e66ce32127f9746eb1aa43ad 100644
+--- a/net/minecraft/world/entity/animal/bee/Bee.java
++++ b/net/minecraft/world/entity/animal/bee/Bee.java
+@@ -150,6 +150,10 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
      private Bee.BeeGoToKnownFlowerGoal goToKnownFlowerGoal;
      private int underWaterTicks;
      public net.kyori.adventure.util.TriState rollingOverride = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Rolling override
@@ -17,9 +17,9 @@ index 0d19a3d61f001c5b9c3e251199d97d7b0e97dbee..819669d9514046382e03230683121f1a
 +    private static final int STABLE_DESTINATION_FAILURES_BEFORE_RELAXING = 3;
 +    // Aincrad end - void-world bee pathfinding
  
-     public Bee(EntityType<? extends Bee> entityType, Level level) {
-         super(entityType, level);
-@@ -245,6 +249,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+     public Bee(EntityType<? extends Bee> type, Level level) {
+         super(type, level);
+@@ -253,6 +257,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          this.goalSelector.addGoal(0, new org.evlis.entity.ai.HasRider(this)); // Purpur - Ridables
          this.goalSelector.addGoal(0, new Bee.BeeAttackGoal(this, 1.4F, true));
          this.goalSelector.addGoal(1, new Bee.BeeEnterHiveGoal());
@@ -27,7 +27,7 @@ index 0d19a3d61f001c5b9c3e251199d97d7b0e97dbee..819669d9514046382e03230683121f1a
          this.goalSelector.addGoal(2, new BreedGoal(this, 1.0));
          this.goalSelector.addGoal(3, new TemptGoal(this, 1.25, stack -> stack.is(ItemTags.BEE_FOOD), false));
          this.goalSelector.addGoal(3, new Bee.ValidateHiveGoal());
-@@ -646,7 +651,14 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -636,7 +641,14 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          FlyingPathNavigation flyingPathNavigation = new FlyingPathNavigation(this, level) {
              @Override
              public boolean isStableDestination(BlockPos pos) {
@@ -43,7 +43,7 @@ index 0d19a3d61f001c5b9c3e251199d97d7b0e97dbee..819669d9514046382e03230683121f1a
              }
  
              @Override
-@@ -1403,6 +1415,43 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+@@ -1396,6 +1408,43 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
          }
      }
  

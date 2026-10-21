@@ -4,11 +4,11 @@ Date: Tue, 9 Jun 2026 22:05:43 -0400
 Subject: [PATCH] Useful Raids
 
 
-diff --git a/net/minecraft/world/entity/monster/Illusioner.java b/net/minecraft/world/entity/monster/Illusioner.java
-index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c676dcce6d 100644
---- a/net/minecraft/world/entity/monster/Illusioner.java
-+++ b/net/minecraft/world/entity/monster/Illusioner.java
-@@ -8,6 +8,7 @@ import net.minecraft.sounds.SoundEvents;
+diff --git a/net/minecraft/world/entity/monster/illager/Illusioner.java b/net/minecraft/world/entity/monster/illager/Illusioner.java
+index 1f80b1732ae809ce9ea26b0e8ddd507d0a96dbef..a2ac90f84b4fac50f920f403cd1286a142ab6715 100644
+--- a/net/minecraft/world/entity/monster/illager/Illusioner.java
++++ b/net/minecraft/world/entity/monster/illager/Illusioner.java
+@@ -7,6 +7,7 @@ import net.minecraft.sounds.SoundEvents;
  import net.minecraft.world.Difficulty;
  import net.minecraft.world.DifficultyInstance;
  import net.minecraft.world.damagesource.DamageSource;
@@ -16,7 +16,7 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
  import net.minecraft.world.effect.MobEffectInstance;
  import net.minecraft.world.effect.MobEffects;
  import net.minecraft.world.entity.EntitySpawnReason;
-@@ -20,24 +21,23 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+@@ -19,9 +20,9 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
  import net.minecraft.world.entity.ai.attributes.Attributes;
  import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
  import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -26,14 +26,15 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 -import net.minecraft.world.entity.ai.goal.RangedBowAttackGoal;
  import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
  import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
- import net.minecraft.world.entity.animal.IronGolem;
+ import net.minecraft.world.entity.animal.golem.IronGolem;
+@@ -30,15 +31,14 @@ import net.minecraft.world.entity.monster.RangedAttackMob;
  import net.minecraft.world.entity.monster.creaking.Creaking;
- import net.minecraft.world.entity.npc.AbstractVillager;
+ import net.minecraft.world.entity.npc.villager.AbstractVillager;
  import net.minecraft.world.entity.player.Player;
--import net.minecraft.world.entity.projectile.AbstractArrow;
 -import net.minecraft.world.entity.projectile.Projectile;
 -import net.minecraft.world.entity.projectile.ProjectileUtil;
-+import net.minecraft.world.entity.projectile.LargeFireball;
+-import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
++import net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
  import net.minecraft.world.entity.raid.Raider;
  import net.minecraft.world.item.ItemStack;
  import net.minecraft.world.item.Items;
@@ -41,10 +42,10 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
  import net.minecraft.world.level.ServerLevelAccessor;
  import net.minecraft.world.phys.Vec3;
 +import org.bukkit.event.entity.EntityPotionEffectEvent;
+ import org.jspecify.annotations.Nullable;
  
  public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
-     private static final int NUM_ILLUSIONS = 4;
-@@ -65,7 +65,8 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
+@@ -67,7 +67,8 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
          this.goalSelector.addGoal(3, new AvoidEntityGoal<>(this, Creaking.class, 8.0F, 1.0, 1.2));
          this.goalSelector.addGoal(4, new Illusioner.IllusionerMirrorSpellGoal());
          this.goalSelector.addGoal(5, new Illusioner.IllusionerBlindnessSpellGoal());
@@ -54,7 +55,7 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
          this.goalSelector.addGoal(8, new RandomStrollGoal(this, 0.6));
          this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, Player.class, 3.0F, 1.0F));
          this.goalSelector.addGoal(10, new LookAtPlayerGoal(this, Mob.class, 8.0F));
-@@ -83,7 +84,9 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
+@@ -85,7 +86,9 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
      public SpawnGroupData finalizeSpawn(
          ServerLevelAccessor level, DifficultyInstance difficulty, EntitySpawnReason spawnReason, @Nullable SpawnGroupData spawnGroupData
      ) {
@@ -65,14 +66,15 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
          return super.finalizeSpawn(level, difficulty, spawnReason, spawnGroupData);
      }
  
-@@ -170,33 +173,179 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
-     public void applyRaidBuffs(ServerLevel level, int wave, boolean unused) {
+@@ -172,36 +175,179 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
+     public void applyRaidBuffs(ServerLevel level, int wave, boolean flag) {
      }
  
 +    // Aincrad start - Illusioner fires Ghast fireballs
      @Override
 -    public void performRangedAttack(LivingEntity target, float distanceFactor) {
--        ItemStack itemInHand = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW));
+-        net.minecraft.world.InteractionHand hand = ProjectileUtil.getWeaponHoldingHand(this, Items.BOW); // Paper - call EntityShootBowEvent
+-        ItemStack itemInHand = this.getItemInHand(hand); // Paper - call EntityShootBowEvent
 -        ItemStack projectile = this.getProjectile(itemInHand);
 -        AbstractArrow mobArrow = ProjectileUtil.getMobArrow(this, projectile, distanceFactor, itemInHand);
 -        double d = target.getX() - this.getX();
@@ -80,8 +82,12 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 -        double d2 = target.getZ() - this.getZ();
 -        double squareRoot = Math.sqrt(d * d + d2 * d2);
 -        if (this.level() instanceof ServerLevel serverLevel) {
--            // Paper start - EntityShootBowEvent
--            org.bukkit.event.entity.EntityShootBowEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityShootBowEvent(this, this.getMainHandItem(), mobArrow.getPickupItem(), mobArrow, target.getUsedItemHand(), 0.8F, true);
+-            Projectile.Delayed<AbstractArrow> delayedEntity = Projectile.spawnProjectileUsingShootDelayed( // Paper - delayed
+-                mobArrow, serverLevel, projectile, d, d1 + squareRoot * 0.2F, d2, 1.6F, 14 - serverLevel.getDifficulty().getId() * 4
+-            );
+-
+-            // Paper start - call EntityShootBowEvent
+-            org.bukkit.event.entity.EntityShootBowEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityShootBowEvent(this, itemInHand, mobArrow.getPickupItem(), mobArrow, hand, distanceFactor, true);
 -            if (event.isCancelled()) {
 -                event.getProjectile().remove();
 -                return;
@@ -102,7 +108,7 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 +        this.level().addFreshEntity(largeFireball);
 +        this.playSound(SoundEvents.BLAZE_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 +    }
-+    
++
 +    class IllusionerFireballSpellGoal extends SpellcasterIllager.SpellcasterUseSpellGoal {
 +        private static final float ATTACK_RADIUS_SQR = 8.0F * 8.0F;
 +
@@ -110,11 +116,11 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 +        public boolean canUse() {
 +            if (!super.canUse()) {
 +                return false;
-             }
++            }
 +            LivingEntity target = Illusioner.this.getTarget();
 +            if (target == null) {
 +                return false;
-+            }
+             }
 +            double d = Illusioner.this.distanceToSqr(target.getX(), target.getY(), target.getZ());
 +            return d > ATTACK_RADIUS_SQR;
 +        }
@@ -124,7 +130,9 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 +            super.start();
 +            Illusioner.this.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, this.getCastingTime() * 2), EntityPotionEffectEvent.Cause.POTION_DRINK);
 +        }
-+
+ 
+-            if (event.getProjectile() == mobArrow.getBukkitEntity()) {
+-                delayedEntity.spawn();
 +        @Override
 +        protected int getCastWarmupTime() {
 +            return 60;
@@ -139,11 +147,7 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 +        protected int getCastingInterval() {
 +            return 180;
 +        }
- 
--            if (event.getProjectile() == mobArrow.getBukkitEntity()) {
--            Projectile.spawnProjectileUsingShoot(
--                mobArrow, serverLevel, projectile, d, d1 + squareRoot * 0.2F, d2, 1.6F, 14 - serverLevel.getDifficulty().getId() * 4
--            );
++
 +        @Override
 +        protected void performSpellCasting() {
 +            LivingEntity target = Illusioner.this.getTarget();
@@ -153,7 +157,7 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
 +                    Illusioner.this.performRangedAttack(target, 1.0F);
 +                }
              }
--            // Paper end - EntityShootBowEvent
+-            // Paper end - call EntityShootBowEvent
          }
  
 -        this.playSound(SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
@@ -266,30 +270,30 @@ index 40ca12e391b2adac6b132f1832b1427acb3748bc..0aae669ed3992c0acf112485d95e50c6
      @Override
      public AbstractIllager.IllagerArmPose getArmPose() {
 diff --git a/net/minecraft/world/entity/raid/Raid.java b/net/minecraft/world/entity/raid/Raid.java
-index 41b0db439b425b052bd1469daa6620a435ca852b..e7505049d1c77e26ff14f9e7ec5736d4faec4b68 100644
+index 8c6b8439bbfb8d9763767fda7985f26f14c05f3f..9df973a7acd7eeb0be01f01e71346c2aa17eb48b 100644
 --- a/net/minecraft/world/entity/raid/Raid.java
 +++ b/net/minecraft/world/entity/raid/Raid.java
-@@ -109,6 +109,9 @@ public class Raid {
-     private static final org.bukkit.craftbukkit.persistence.CraftPersistentDataTypeRegistry PDC_TYPE_REGISTRY = new org.bukkit.craftbukkit.persistence.CraftPersistentDataTypeRegistry();
-     public final org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer persistentDataContainer = new org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer(PDC_TYPE_REGISTRY);
-     // Paper end
+@@ -127,6 +127,9 @@ public class Raid {
+     private Raid.RaidStatus status;
+     private int celebrationTicks;
+     private Optional<BlockPos> waveSpawnPos = Optional.empty();
 +    // Aincrad start
 +    public boolean pluginControlled = false;
 +    // Aincrad end
  
-     public Raid(int id, ServerLevel level, BlockPos center) {
-         this.id = id;
-@@ -262,6 +265,32 @@ public class Raid {
+     public Raid(BlockPos center, Difficulty difficulty) {
+         this.active = true;
+@@ -278,6 +281,32 @@ public class Raid {
          this.status = Raid.RaidStatus.STOPPED;
      }
  
 +    // Aincrad start
-+    public void forceStop(boolean victory) {
++    public void forceStop(ServerLevel level, boolean victory) {
 +        if (victory) {
 +            this.status = Raid.RaidStatus.VICTORY;
 +            java.util.List<org.bukkit.entity.Player> winners = new java.util.ArrayList<>();
 +            for (UUID uuid : this.heroesOfTheVillage) {
-+                Entity entity = this.level.getEntity(uuid);
++                Entity entity = level.getEntity(uuid);
 +                if (entity instanceof LivingEntity livingEntity && !entity.isSpectator()) {
 +                    livingEntity.addEffect(
 +                        new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 48000, this.raidOmenLevel - 1, false, false, true)
@@ -301,33 +305,33 @@ index 41b0db439b425b052bd1469daa6620a435ca852b..e7505049d1c77e26ff14f9e7ec5736d4
 +                    }
 +                }
 +            }
-+            org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(this, winners);
++            org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(level, this, winners);
 +        } else {
 +            this.status = Raid.RaidStatus.LOSS;
-+            org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(this, new java.util.ArrayList<>());
++            org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(level, this, new java.util.ArrayList<>());
 +        }
 +    }
 +    // Aincrad end
 +
-     public void tick() {
+     public void tick(ServerLevel level) {
          if (!this.isStopped()) {
              if (this.status == Raid.RaidStatus.ONGOING) {
-@@ -281,11 +310,12 @@ public class Raid {
+@@ -297,11 +326,12 @@ public class Raid {
                      return;
                  }
  
--                if (!this.level.isVillage(this.center)) {
+-                if (!level.isVillage(this.center)) {
 +                // Aincrad start - skip village check for plugin-controlled raids
-+                if (!this.pluginControlled && !this.level.isVillage(this.center)) {
-                     this.moveRaidCenterToNearbyVillageSection();
++                if (!this.pluginControlled && !level.isVillage(this.center)) {
+                     this.moveRaidCenterToNearbyVillageSection(level);
                  }
  
--                if (!this.level.isVillage(this.center)) {
-+                if (!this.pluginControlled && !this.level.isVillage(this.center)) {
+-                if (!level.isVillage(this.center)) {
++                if (!this.pluginControlled && !level.isVillage(this.center)) {
                      if (this.groupsSpawned > 0) {
                          this.status = Raid.RaidStatus.LOSS;
-                         org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(this, new java.util.ArrayList<>()); // CraftBukkit
-@@ -294,6 +324,7 @@ public class Raid {
+                         org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(level, this, new java.util.ArrayList<>()); // CraftBukkit
+@@ -310,6 +340,7 @@ public class Raid {
                          this.stop();
                      }
                  }
@@ -335,7 +339,7 @@ index 41b0db439b425b052bd1469daa6620a435ca852b..e7505049d1c77e26ff14f9e7ec5736d4
  
                  this.ticksActive++;
                  if (this.ticksActive >= 48000L) {
-@@ -738,16 +769,17 @@ public class Raid {
+@@ -759,16 +790,17 @@ public class Raid {
      }
  
      private int getPotentialBonusSpawns(Raid.RaiderType raiderType, RandomSource random, int wave, DifficultyInstance difficulty, boolean shouldSpawnBonusGroup) {
@@ -358,7 +362,7 @@ index 41b0db439b425b052bd1469daa6620a435ca852b..e7505049d1c77e26ff14f9e7ec5736d4
                      i = 1;
                  } else {
                      i = 2;
-@@ -757,16 +789,25 @@ public class Raid {
+@@ -778,16 +810,25 @@ public class Raid {
              default:
                  return 0;
              case WITCH:
@@ -387,7 +391,7 @@ index 41b0db439b425b052bd1469daa6620a435ca852b..e7505049d1c77e26ff14f9e7ec5736d4
          return i > 0 ? random.nextInt(i + 1) : 0;
      }
  
-@@ -868,6 +909,7 @@ public class Raid {
+@@ -851,6 +892,7 @@ public class Raid {
          EVOKER(EntityType.EVOKER, new int[]{0, 0, 0, 0, 0, 1, 1, 2}),
          PILLAGER(EntityType.PILLAGER, new int[]{0, 4, 3, 3, 4, 4, 4, 2}),
          WITCH(EntityType.WITCH, new int[]{0, 0, 0, 0, 3, 0, 0, 1}),
@@ -396,32 +400,33 @@ index 41b0db439b425b052bd1469daa6620a435ca852b..e7505049d1c77e26ff14f9e7ec5736d4
  
          static final Raid.RaiderType[] VALUES = values();
 diff --git a/net/minecraft/world/entity/raid/Raids.java b/net/minecraft/world/entity/raid/Raids.java
-index 34eb038725d1577f1a2d7c35c897b1270eac5749..4cbba41a9018d0a132aa92f0e18d202f36ec41f2 100644
+index 9ded4e75da1efd2fb351fa1544dca33da8455d98..3f312ef69e6a72ed3a1a14c36c4fcd037dea79f7 100644
 --- a/net/minecraft/world/entity/raid/Raids.java
 +++ b/net/minecraft/world/entity/raid/Raids.java
-@@ -138,6 +138,34 @@ public class Raids extends SavedData {
+@@ -164,6 +164,35 @@ public class Raids extends SavedData {
          }
      }
  
 +    // Aincrad start - more Raid API
-+    @Nullable
-+    public Raid createRaid(ServerPlayer player, BlockPos pos, int badOmenLevel, boolean pluginControlled) {
++    public @Nullable Raid createRaid(ServerPlayer player, BlockPos pos, int badOmenLevel, boolean pluginControlled) {
 +        if (player.isSpectator()) {
 +            return null;
-+        } else if (this.level.getGameRules().getBoolean(GameRules.RULE_DISABLE_RAIDS)) {
++        }
++        ServerLevel serverLevel = player.level();
++        if (!serverLevel.getGameRules().get(GameRules.RAIDS)) {
 +            return null;
-+        } else if (!player.level().dimensionType().hasRaids()) {
++        } else if (!serverLevel.environmentAttributes().getValue(EnvironmentAttributes.CAN_START_RAID, pos)) {
 +            return null;
 +        }
 +
-+        Raid raid = this.getOrCreateRaid(player.serverLevel(), pos);
++        Raid raid = this.getOrCreateRaid(serverLevel, pos);
 +
-+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callRaidTriggerEvent(raid, player)) {
++        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callRaidTriggerEvent(serverLevel, raid, player)) {
 +            return null;
 +        }
 +
-+        if (!this.raidMap.containsKey(raid.getId())) {
-+            this.raidMap.put(raid.getId(), raid);
++        if (!this.raidMap.containsValue(raid)) {
++            this.raidMap.put(this.getUniqueId(), raid);
 +        }
 +
 +        raid.setRaidOmenLevel(badOmenLevel);
@@ -431,6 +436,6 @@ index 34eb038725d1577f1a2d7c35c897b1270eac5749..4cbba41a9018d0a132aa92f0e18d202f
 +    }
 +    // Aincrad end - more Raid API
 +
-     private Raid getOrCreateRaid(ServerLevel serverLevel, BlockPos pos) {
-         Raid raidAt = serverLevel.getRaidAt(pos);
-         return raidAt != null ? raidAt : new Raid(this.getUniqueId(), serverLevel, pos);
+     private Raid getOrCreateRaid(ServerLevel level, BlockPos pos) {
+         Raid raidAt = level.getRaidAt(pos);
+         return raidAt != null ? raidAt : new Raid(pos, level.getDifficulty());

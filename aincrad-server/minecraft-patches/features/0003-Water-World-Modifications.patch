@@ -5,10 +5,10 @@ Subject: [PATCH] Water World Modifications
 
 
 diff --git a/net/minecraft/data/tags/EntityTypeTagsProvider.java b/net/minecraft/data/tags/EntityTypeTagsProvider.java
-index 38e1d2e113ead0524eb93ba89fa9a3b9900440c0..9d891e6bb63627708f7b7698e29c024ec9d405cd 100644
+index e179c7b8901c5cba3c8f69f6bf17723041d91d7a..e735615bc5cf13da3cdd47d6597797da61342c97 100644
 --- a/net/minecraft/data/tags/EntityTypeTagsProvider.java
 +++ b/net/minecraft/data/tags/EntityTypeTagsProvider.java
-@@ -64,6 +64,7 @@ public class EntityTypeTagsProvider extends IntrinsicHolderTagsProvider<EntityTy
+@@ -71,6 +71,7 @@ public class EntityTypeTagsProvider extends IntrinsicHolderTagsProvider<EntityTy
                  EntityType.COD,
                  EntityType.PUFFERFISH,
                  EntityType.SALMON,
@@ -17,37 +17,37 @@ index 38e1d2e113ead0524eb93ba89fa9a3b9900440c0..9d891e6bb63627708f7b7698e29c024e
                  EntityType.TROPICAL_FISH,
                  EntityType.TADPOLE,
 diff --git a/net/minecraft/world/entity/SpawnPlacements.java b/net/minecraft/world/entity/SpawnPlacements.java
-index 2ce8e851f68f465d9475d95dda4f6bd46e0b8635..78d5e8f34807093e2069fe923acda633307b50eb 100644
+index 2a9faf7c85a07df8975ca68dbbf2c99b6ff6f8ee..7e68c72d9dc4feb2e5e45f4d96baf476ac508f3c 100644
 --- a/net/minecraft/world/entity/SpawnPlacements.java
 +++ b/net/minecraft/world/entity/SpawnPlacements.java
-@@ -34,6 +34,7 @@ import net.minecraft.world.entity.monster.MagmaCube;
+@@ -33,6 +33,7 @@ import net.minecraft.world.entity.monster.MagmaCube;
  import net.minecraft.world.entity.monster.Monster;
  import net.minecraft.world.entity.monster.PatrollingMonster;
  import net.minecraft.world.entity.monster.Silverfish;
 +import net.minecraft.world.entity.monster.breeze.Breeze;
  import net.minecraft.world.entity.monster.Slime;
- import net.minecraft.world.entity.monster.Stray;
  import net.minecraft.world.entity.monster.Strider;
-@@ -101,7 +102,7 @@ public class SpawnPlacements {
+ import net.minecraft.world.entity.monster.hoglin.Hoglin;
+@@ -102,7 +103,7 @@ public class SpawnPlacements {
          register(EntityType.BAT, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Bat::checkBatSpawnRules);
          register(EntityType.BLAZE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkAnyLightMonsterSpawnRules);
          register(EntityType.BOGGED, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
 -        register(EntityType.BREEZE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkAnyLightMonsterSpawnRules);
 +        register(EntityType.BREEZE, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Breeze::checkBreezeSpawnRules); // Aincrad - custom spawn rules for Breeze
+         register(EntityType.CAMEL, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Camel::checkCamelSpawnRules);
+         register(EntityType.CAMEL_HUSK, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkSurfaceMonstersSpawnRules);
          register(EntityType.CAVE_SPIDER, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
-         register(EntityType.CHICKEN, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
-         register(EntityType.COW, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
 diff --git a/net/minecraft/world/entity/monster/Shulker.java b/net/minecraft/world/entity/monster/Shulker.java
-index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253b32d4c88 100644
+index 06e8d9c6233e8aea0822d83a764c11d6d6482643..93b9a4a4cf76f6fc9b8527d7716ac7b82eb30145 100644
 --- a/net/minecraft/world/entity/monster/Shulker.java
 +++ b/net/minecraft/world/entity/monster/Shulker.java
-@@ -165,10 +165,29 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
-         compound.putByte("Peek", this.entityData.get(DATA_PEEK_ID));
-         compound.putByte("Color", this.entityData.get(DATA_COLOR_ID));
+@@ -168,10 +168,29 @@ public class Shulker extends AbstractGolem implements Enemy {
+         output.putByte("Peek", this.entityData.get(DATA_PEEK_ID));
+         output.putByte("Color", this.entityData.get(DATA_COLOR_ID));
      }
 +    // Aincrad start - shulkers are now aquatic
 +    protected void handleAirSupply(int airSupply) {
-+        if (this.isAlive() && !this.isInWaterRainOrBubble()) {
++        if (this.isAlive() && !this.isInWaterOrRain()) {
 +            this.setAirSupply(airSupply - 1);
 +            if (this.getAirSupply() == -20) {
 +                this.setAirSupply(0);
@@ -68,10 +68,10 @@ index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253
 +        int air = this.getAirSupply(); // Aincrad - aquatic shulkers
          super.tick();
 +        this.handleAirSupply(air); // Aincrad - aquatic shulkers
-         if (!this.level().isClientSide && !this.isPassenger() && !this.canStayAt(this.blockPosition(), this.getAttachFace())) {
+         if (!this.level().isClientSide() && !this.isPassenger() && !this.canStayAt(this.blockPosition(), this.getAttachFace())) {
              this.findNewAttachment();
          }
-@@ -370,7 +389,7 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+@@ -367,7 +386,7 @@ public class Shulker extends AbstractGolem implements Enemy {
  
      private boolean isPositionBlocked(BlockPos pos) {
          BlockState blockState = this.level().getBlockState(pos);
@@ -80,7 +80,7 @@ index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253
              return false;
          } else {
              boolean flag = blockState.is(Blocks.MOVING_PISTON) && pos.equals(this.blockPosition());
-@@ -389,7 +408,7 @@ public class Shulker extends AbstractGolem implements VariantHolder<Optional<Dye
+@@ -386,7 +405,7 @@ public class Shulker extends AbstractGolem implements Enemy {
                      Mth.randomBetweenInclusive(this.random, -8, 8)
                  );
                  if (blockPos1.getY() > this.level().getMinY()
@@ -90,10 +90,10 @@ index 07e340e1240457f1ffcb3f49591c407e56143e5d..d520ae83b56c052e56f6504eddbfb253
                      && this.level().noCollision(this, new AABB(blockPos1).deflate(1.0E-6))) {
                      Direction direction = this.findAttachableSurface(blockPos1);
 diff --git a/net/minecraft/world/entity/monster/breeze/Breeze.java b/net/minecraft/world/entity/monster/breeze/Breeze.java
-index 23dff1d01387ce89b020aa93de99e6ef557c04e3..5a7c50a66b208ef911104e2fd86d1f4c99d1965a 100644
+index d0019ebf0469f4070d323d03dbe54375b8d2ce73..c77cff9a1a996f53224087b84af1b4bca1ec47ef 100644
 --- a/net/minecraft/world/entity/monster/breeze/Breeze.java
 +++ b/net/minecraft/world/entity/monster/breeze/Breeze.java
-@@ -17,6 +17,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
+@@ -18,6 +18,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
  import net.minecraft.world.damagesource.DamageSource;
  import net.minecraft.world.entity.AnimationState;
  import net.minecraft.world.entity.Entity;
@@ -101,7 +101,7 @@ index 23dff1d01387ce89b020aa93de99e6ef557c04e3..5a7c50a66b208ef911104e2fd86d1f4c
  import net.minecraft.world.entity.EntityType;
  import net.minecraft.world.entity.LivingEntity;
  import net.minecraft.world.entity.Mob;
-@@ -28,7 +29,9 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+@@ -29,7 +30,9 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
  import net.minecraft.world.entity.monster.Monster;
  import net.minecraft.world.entity.projectile.Projectile;
  import net.minecraft.world.entity.projectile.ProjectileDeflection;
@@ -111,14 +111,14 @@ index 23dff1d01387ce89b020aa93de99e6ef557c04e3..5a7c50a66b208ef911104e2fd86d1f4c
  import net.minecraft.world.level.block.RenderShape;
  import net.minecraft.world.level.block.state.BlockState;
  import net.minecraft.world.level.pathfinder.PathType;
-@@ -65,6 +68,19 @@ public class Breeze extends Monster {
+@@ -67,6 +70,19 @@ public class Breeze extends Monster {
              .add(Attributes.ATTACK_DAMAGE, 3.0);
      }
  
 +    // Aincrad start - Breezes only spawn in bad weather
 +    public static boolean checkBreezeSpawnRules(
-+        EntityType<? extends Breeze> entityType, ServerLevelAccessor level, 
-+        net.minecraft.world.entity.EntitySpawnReason spawnReason, net.minecraft.core.BlockPos pos, 
++        EntityType<? extends Breeze> entityType, ServerLevelAccessor level,
++        net.minecraft.world.entity.EntitySpawnReason spawnReason, net.minecraft.core.BlockPos pos,
 +        net.minecraft.util.RandomSource random
 +    ) {
 +        return level.getDifficulty() != Difficulty.PEACEFUL
@@ -128,14 +128,14 @@ index 23dff1d01387ce89b020aa93de99e6ef557c04e3..5a7c50a66b208ef911104e2fd86d1f4c
 +    }
 +    // Aincrad end
 +
-     public Breeze(EntityType<? extends Monster> entityType, Level level) {
-         super(entityType, level);
+     public Breeze(EntityType<? extends Monster> type, Level level) {
+         super(type, level);
          this.setPathfindingMalus(PathType.DANGER_TRAPDOOR, -1.0F);
 diff --git a/net/minecraft/world/entity/projectile/ShulkerBullet.java b/net/minecraft/world/entity/projectile/ShulkerBullet.java
-index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69395b50f5 100644
+index 7ab335a90c2b873b7d4eff148303bcc3f031dd64..096f51c14a935f8641415899b9eab0a2757180f0 100644
 --- a/net/minecraft/world/entity/projectile/ShulkerBullet.java
 +++ b/net/minecraft/world/entity/projectile/ShulkerBullet.java
-@@ -142,32 +142,32 @@ public class ShulkerBullet extends Projectile {
+@@ -131,32 +131,32 @@ public class ShulkerBullet extends Projectile {
              BlockPos blockPos1 = this.blockPosition();
              List<Direction> list = Lists.newArrayList();
              if (axis != Direction.Axis.X) {
@@ -175,7 +175,7 @@ index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69
                      direction = Direction.getRandom(this.random);
                  }
              } else {
-@@ -315,7 +315,7 @@ public class ShulkerBullet extends Projectile {
+@@ -307,7 +307,7 @@ public class ShulkerBullet extends Projectile {
              }
  
              if (entity instanceof LivingEntity livingEntity1) {
@@ -185,10 +185,10 @@ index 45ccfa92fe06a3f5041dac1ddd5550e5a89d8d80..3f7ae91b1e48a1446cc84481dd038b69
          }
      }
 diff --git a/net/minecraft/world/level/LevelReader.java b/net/minecraft/world/level/LevelReader.java
-index 26c8c1e5598daf3550aef05b12218c47bda6618b..0eb0f8bcf3c1dbb3703cdd74d9cef6fbf4a0f006 100644
+index fd5a38a9f24c26f8eca738f78180446d354ff3ac..e40051286ae63933faf8f226d508e1de86d3db4b 100644
 --- a/net/minecraft/world/level/LevelReader.java
 +++ b/net/minecraft/world/level/LevelReader.java
-@@ -100,6 +100,10 @@ public interface LevelReader extends ca.spottedleaf.moonrise.patches.chunk_syste
+@@ -102,6 +102,10 @@ public interface LevelReader extends ca.spottedleaf.moonrise.patches.chunk_syste
          return this.getBlockState(pos).isAir();
      }
  
@@ -200,16 +200,17 @@ index 26c8c1e5598daf3550aef05b12218c47bda6618b..0eb0f8bcf3c1dbb3703cdd74d9cef6fb
          if (pos.getY() >= this.getSeaLevel()) {
              return this.canSeeSky(pos);
 diff --git a/net/minecraft/world/level/block/ChorusFlowerBlock.java b/net/minecraft/world/level/block/ChorusFlowerBlock.java
-index 3af8f150474a8a461c5829850172196b7b9e7bfd..786703cc4f51fa05fc2d87781ab336ec766f844c 100644
+index 184c971852a9eb387484e4ce89a26a69567cbeda..b4f65bd824cd406c0e16971380abce2001de26cf 100644
 --- a/net/minecraft/world/level/block/ChorusFlowerBlock.java
 +++ b/net/minecraft/world/level/block/ChorusFlowerBlock.java
-@@ -21,8 +21,11 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+@@ -20,9 +20,12 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  import net.minecraft.world.level.block.state.properties.IntegerProperty;
  import net.minecraft.world.phys.BlockHitResult;
  import net.minecraft.world.phys.shapes.VoxelShape;
 +import net.minecraft.world.level.material.FluidState;
-+import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.entity.LivingEntity;
 +import net.minecraft.world.level.material.Fluid;
+ import org.jspecify.annotations.Nullable;
  
 -public class ChorusFlowerBlock extends Block {
 +public class ChorusFlowerBlock extends Block implements LiquidBlockContainer {
@@ -221,7 +222,7 @@ index 3af8f150474a8a461c5829850172196b7b9e7bfd..786703cc4f51fa05fc2d87781ab336ec
      }
  
 +    @Override
-+    public boolean canPlaceLiquid(@Nullable Player player, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
++    public boolean canPlaceLiquid(@Nullable LivingEntity owner, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
 +        return false;
 +    }
 +
@@ -242,7 +243,7 @@ index 3af8f150474a8a461c5829850172196b7b9e7bfd..786703cc4f51fa05fc2d87781ab336ec
              int ageValue = state.getValue(AGE);
              if (ageValue < 5) {
                  boolean flag = false;
-@@ -91,14 +104,14 @@ public class ChorusFlowerBlock extends Block {
+@@ -91,11 +104,11 @@ public class ChorusFlowerBlock extends Block {
                      if (i < 2 || i <= random.nextInt(flag1 ? 5 : 4)) {
                          flag = true;
                      }
@@ -252,52 +253,25 @@ index 3af8f150474a8a461c5829850172196b7b9e7bfd..786703cc4f51fa05fc2d87781ab336ec
                  }
  
 -                if (flag && allNeighborsEmpty(level, blockPos, null) && level.isEmptyBlock(pos.above(2))) {
-+                if (flag && allNeighborsEmptyOrWater(level, blockPos, null) && level.isEmptyOrWaterBlock(pos.above(2))) {
-                     if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos, this.defaultBlockState().setValue(ChorusFlowerBlock.AGE, ageValue), 2)) { // CraftBukkit - add event
--                    level.setBlock(pos, ChorusPlantBlock.getStateWithConnections(level, pos, this.plant.defaultBlockState()), 2);
--                    this.placeGrownFlower(level, blockPos, ageValue);
-+                        level.setBlock(pos, ChorusPlantBlock.getStateWithConnections(level, pos, this.plant.defaultBlockState()), 2);
-+                        this.placeGrownFlower(level, blockPos, ageValue);
-                     } // CraftBukkit
-                 } else if (ageValue < 4) {
-                     int i = random.nextInt(4);
-@@ -111,12 +124,12 @@ public class ChorusFlowerBlock extends Block {
++                if (flag && allNeighborsEmptyOrWater(level, blockPos, null) && level.isEmptyOrWaterBlock(pos.above(2))) { // Aincrad - aquatic chorus
+                     if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos, this.defaultBlockState().setValue(AGE, ageValue), Block.UPDATE_CLIENTS)) { // CraftBukkit - add event
+                     level.setBlock(pos, ChorusPlantBlock.getStateWithConnections(level, pos, this.plant.defaultBlockState()), Block.UPDATE_CLIENTS);
+                     this.placeGrownFlower(level, blockPos, ageValue);
+@@ -111,9 +124,9 @@ public class ChorusFlowerBlock extends Block {
                      for (int i2 = 0; i2 < i; i2++) {
                          Direction randomDirection = Direction.Plane.HORIZONTAL.getRandomDirection(random);
                          BlockPos blockPos1 = pos.relative(randomDirection);
 -                        if (level.isEmptyBlock(blockPos1)
 -                            && level.isEmptyBlock(blockPos1.below())
 -                            && allNeighborsEmpty(level, blockPos1, randomDirection.getOpposite())) {
-+                        if (level.isEmptyOrWaterBlock(blockPos1)
++                        if (level.isEmptyOrWaterBlock(blockPos1) // Aincrad - aquatic chorus
 +                            && level.isEmptyOrWaterBlock(blockPos1.below())
 +                            && allNeighborsEmptyOrWater(level, blockPos1, randomDirection.getOpposite())) {
-                             if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos1, this.defaultBlockState().setValue(ChorusFlowerBlock.AGE, ageValue + 1), 2)) { // CraftBukkit - add event
--                            this.placeGrownFlower(level, blockPos1, ageValue + 1);
--                            flag2 = true;
-+                                this.placeGrownFlower(level, blockPos1, ageValue + 1);
-+                                flag2 = true;
-                             } // CraftBukkit
-                         }
-                     }
-@@ -126,14 +139,14 @@ public class ChorusFlowerBlock extends Block {
-                     } else {
-                         // CraftBukkit start - add event
-                         if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, pos, this.defaultBlockState().setValue(ChorusFlowerBlock.AGE, Integer.valueOf(5)), 2)) {
--                        this.placeDeadFlower(level, pos);
-+                            this.placeDeadFlower(level, pos);
-                         }
-                         // CraftBukkit end
-                     }
-                 } else {
-                     // CraftBukkit start - add event
-                     if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, pos, this.defaultBlockState().setValue(ChorusFlowerBlock.AGE, Integer.valueOf(5)), 2)) {
--                    this.placeDeadFlower(level, pos);
-+                        this.placeDeadFlower(level, pos);
-                     }
-                     // CraftBukkit end
-                 }
+                             if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos1, this.defaultBlockState().setValue(AGE, ageValue + 1), Block.UPDATE_CLIENTS)) { // CraftBukkit - add event
+                             this.placeGrownFlower(level, blockPos1, ageValue + 1);
+                             flag2 = true;
 @@ -151,9 +164,9 @@ public class ChorusFlowerBlock extends Block {
-         level.levelEvent(1034, pos, 0);
+         level.levelEvent(LevelEvent.SOUND_CHORUS_DEATH, pos, 0);
      }
  
 -    private static boolean allNeighborsEmpty(LevelReader level, BlockPos pos, @Nullable Direction excludingSide) {
@@ -349,10 +323,10 @@ index 3af8f150474a8a461c5829850172196b7b9e7bfd..786703cc4f51fa05fc2d87781ab336ec
 +                    && level.isEmptyOrWaterBlock(blockPos1.below())
 +                    && allNeighborsEmptyOrWater(level, blockPos1, randomDirection.getOpposite())) {
                      flag = true;
-                     level.setBlock(blockPos1, ChorusPlantBlock.getStateWithConnections(level, blockPos1, block.defaultBlockState()), 2);
+                     level.setBlock(blockPos1, ChorusPlantBlock.getStateWithConnections(level, blockPos1, block.defaultBlockState()), Block.UPDATE_CLIENTS);
                      level.setBlock(
 diff --git a/net/minecraft/world/level/block/ChorusPlantBlock.java b/net/minecraft/world/level/block/ChorusPlantBlock.java
-index c8926fa5a94305b19399fe630a89dd50c455beb9..2c209cc391d53a579831b2d21847a53ec6c54d3c 100644
+index 47f3b008b252678105368dc577ed66353ff50eb3..7d4350f1219ae717ab3765e9e63e7bc4514b78c7 100644
 --- a/net/minecraft/world/level/block/ChorusPlantBlock.java
 +++ b/net/minecraft/world/level/block/ChorusPlantBlock.java
 @@ -13,8 +13,12 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -360,8 +334,8 @@ index c8926fa5a94305b19399fe630a89dd50c455beb9..2c209cc391d53a579831b2d21847a53e
  import net.minecraft.world.level.block.state.StateDefinition;
  import net.minecraft.world.level.pathfinder.PathComputationType;
 +import net.minecraft.world.level.material.FluidState;
-+import javax.annotation.Nullable;
-+import net.minecraft.world.entity.player.Player;
++import org.jspecify.annotations.Nullable;
++import net.minecraft.world.entity.LivingEntity;
 +import net.minecraft.world.level.material.Fluid;
  
 -public class ChorusPlantBlock extends PipeBlock {
@@ -374,7 +348,7 @@ index c8926fa5a94305b19399fe630a89dd50c455beb9..2c209cc391d53a579831b2d21847a53e
      }
  
 +    @Override
-+    public boolean canPlaceLiquid(@Nullable Player player, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
++    public boolean canPlaceLiquid(@Nullable LivingEntity owner, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
 +        return false;
 +    }
 +
@@ -384,7 +358,7 @@ index c8926fa5a94305b19399fe630a89dd50c455beb9..2c209cc391d53a579831b2d21847a53e
 +    }
 +
      protected ChorusPlantBlock(BlockBehaviour.Properties properties) {
-         super(0.3125F, properties);
+         super(10.0F, properties);
          this.registerDefaultState(
 @@ -91,9 +105,10 @@ public class ChorusPlantBlock extends PipeBlock {
  

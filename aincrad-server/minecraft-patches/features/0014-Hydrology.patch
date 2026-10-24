@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Sat, 24 Oct 2026 16:22:19 -0400
+Subject: [PATCH] Hydrology
+
+
+diff --git a/net/minecraft/world/level/levelgen/Aquifer.java b/net/minecraft/world/level/levelgen/Aquifer.java
+index 2c9b447d8b0f8f817bfe5350678f97a36103ec02..b77f4b609d60df28373596155a5a6eee776a6a16 100644
+--- a/net/minecraft/world/level/levelgen/Aquifer.java
++++ b/net/minecraft/world/level/levelgen/Aquifer.java
+@@ -248,7 +248,7 @@ public interface Aquifer {
+                         MutableDouble mutableDouble = new MutableDouble(Double.NaN);
+                         Aquifer.FluidStatus aquiferStatus2 = this.getAquiferStatus(i11);
+                         double d1 = d * this.calculatePressure(context, mutableDouble, aquiferStatus, aquiferStatus2);
+-                        if (substance + d1 > 0.0) {
++                        if (substance + d1 > 0.0 && !(aquiferStatus.fluidType().is(Blocks.WATER) && aquiferStatus2.fluidType().is(Blocks.WATER))) { // Aincrad - hydrology: water joins, no barrier
+                             this.shouldScheduleFluidUpdate = false;
+                             return null;
+                         } else {

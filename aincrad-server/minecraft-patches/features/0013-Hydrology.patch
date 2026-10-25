@@ -1,0 +1,289 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Pan <peter@never.lan>
+Date: Sat, 24 Oct 2026 16:22:19 -0400
+Subject: [PATCH] Hydrology
+
+
+diff --git a/net/minecraft/world/level/levelgen/Aquifer.java b/net/minecraft/world/level/levelgen/Aquifer.java
+index 2c9b447d8b0f8f817bfe5350678f97a36103ec02..b77f4b609d60df28373596155a5a6eee776a6a16 100644
+--- a/net/minecraft/world/level/levelgen/Aquifer.java
++++ b/net/minecraft/world/level/levelgen/Aquifer.java
+@@ -248,7 +248,7 @@ public interface Aquifer {
+                         MutableDouble mutableDouble = new MutableDouble(Double.NaN);
+                         Aquifer.FluidStatus aquiferStatus2 = this.getAquiferStatus(i11);
+                         double d1 = d * this.calculatePressure(context, mutableDouble, aquiferStatus, aquiferStatus2);
+-                        if (substance + d1 > 0.0) {
++                        if (substance + d1 > 0.0 && !(aquiferStatus.fluidType().is(Blocks.WATER) && aquiferStatus2.fluidType().is(Blocks.WATER))) { // Aincrad - hydrology: water joins, no barrier
+                             this.shouldScheduleFluidUpdate = false;
+                             return null;
+                         } else {
+diff --git a/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java b/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
+index d1068a122e5dbd5af274d0f8178ca9f5fa49f930..ecbdc62f52c4c5f7e09381fa87217e69cf8df9d6 100644
+--- a/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
++++ b/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
+@@ -320,6 +320,7 @@ public final class NoiseBasedChunkGenerator extends ChunkGenerator {
+             ChunkAccess var20;
+             try {
+                 var20 = this.doFill(blender, structureManager, randomState, chunk, i, i1);
++                org.evlis.hydrology.NaturalRivers.fillLakes(var20, randomState, this.getSeaLevel()); // Aincrad - hydrology: lakes on real ground
+             } finally {
+                 for (LevelChunkSection levelChunkSection1 : set) {
+                     levelChunkSection1.release();
+diff --git a/org/evlis/hydrology/NaturalRivers.java b/org/evlis/hydrology/NaturalRivers.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..d5631df8f3e0c6be0671b9fa5f9166a3f92f3c05
+--- /dev/null
++++ b/org/evlis/hydrology/NaturalRivers.java
+@@ -0,0 +1,252 @@
++package org.evlis.hydrology;
++
++import net.minecraft.core.BlockPos;
++import net.minecraft.resources.Identifier;
++import net.minecraft.world.level.ChunkPos;
++import net.minecraft.world.level.block.Blocks;
++import net.minecraft.world.level.block.state.BlockState;
++import net.minecraft.world.level.chunk.ChunkAccess;
++import net.minecraft.world.level.levelgen.DensityFunction;
++import net.minecraft.world.level.levelgen.Heightmap;
++import net.minecraft.world.level.levelgen.RandomState;
++
++import java.util.ArrayDeque;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.Map;
++import java.util.PriorityQueue;
++import java.util.WeakHashMap;
++import java.util.concurrent.ConcurrentHashMap;
++
++/**
++ * Aincrad hydrology (patch-planning/hydrology.md), build step 2: planning heightmap, sections and lakes.
++ *
++ * <p>Plans from {@code preliminarySurfaceLevel}, the same per-column estimate vanilla uses for aquifers and the seed
++ * previews read, through whatever router the world's {@link RandomState} carries (Ferma-patched on Ferma worlds). It
++ * needs no finished chunks, so no chunk step waits on it.
++ *
++ * <p><b>Sections.</b> A lake is a basin the depression fill raises above the raw ground: its extent and water level are
++ * set by its lowest pass, so lakes are bounded by real drainage divides. The 1024-block section cap is a fixed,
++ * world-seeded grid of tiles; each tile is planned alone, and any basin that reaches a tile edge drains out of it and is
++ * not a lake. That keeps every chunk's answer independent of generation order.
++ *
++ * <p><b>Water.</b> Placed after the chunk's terrain is filled, on its real ground, the way Streams Reflowing places lake
++ * water ({@code RiverCarverFeature.java:276}: from {@code OCEAN_FLOOR_WG} up): in a lake column, air from the top solid
++ * block up to the lake level becomes water. Caves below that block are never reached. No fluid update is queued, so
++ * lakes generate still.
++ */
++public final class NaturalRivers {
++    /** Section cap: tile edge length in blocks. Streams Reflowing's tested plate size. */
++    public static final int SECTION = 1024;
++    /** Planning grid spacing in blocks. Streams Reflowing default ({@code StreamsConfig.defaults()}: gridSpacing 12). */
++    public static final int SPACING = 12;
++    // Grid points per tile edge: enough to reach past the far edge, since 1024 is not a multiple of 12.
++    static final int N = (SECTION + SPACING - 1) / SPACING + 1;
++    /** Smallest kept lake area in blocks. Streams default ({@code lakeMinArea} 512, {@code NetworkTracer.LAKE_MIN_AREA}). */
++    public static final double MIN_LAKE_AREA = 512.0;
++    /** {@link #MIN_LAKE_AREA} in grid cells, rounded, at least 1: Streams' own conversion ({@code NetworkTracer.java:698-699}). */
++    private static final int MIN_LAKE_CELLS = (int) Math.max(1L, Math.round(MIN_LAKE_AREA / ((double) SPACING * SPACING)));
++    /** Shallowest kept lake (spill minus floor). Streams default without a river inflowing ({@code NetworkTracer.java:793}: 3.0). */
++    public static final int MIN_LAKE_DEPTH = 3;
++    /**
++     * Subtracted from {@link #MIN_LAKE_DEPTH} because planning heights are estimates. Streams applies exactly this
++     * whenever its sampler works from an estimate ({@code NetworkTracer.java:706, 715}: estSlack, depthSlack 1.0).
++     */
++    public static final int DEPTH_SLACK = 1;
++    static final int NONE = Integer.MIN_VALUE;
++
++    // No Minecraft calls in static init (Blocks needs the game bootstrap), so NaturalRiversTest runs as a @Normal test.
++    // One planner per RandomState: per world and seed, and per Ferma patch. Weak, so a world unloads cleanly.
++    private static final Map<RandomState, Planner> PLANNERS = Collections.synchronizedMap(new WeakHashMap<>());
++
++    /**
++     * Fills the chunk's lakes with water. Called from {@code NoiseBasedChunkGenerator.fillFromNoise} right after the
++     * terrain fill, so {@code OCEAN_FLOOR_WG} already holds this chunk's real ground.
++     */
++    public static void fillLakes(ChunkAccess chunk, RandomState random, int seaLevel) {
++        Planner planner = PLANNERS.computeIfAbsent(random, r -> new Planner(r, seaLevel));
++        ChunkPos pos = chunk.getPos();
++        int maxY = chunk.getMaxY();
++        Heightmap surface = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE_WG);
++        BlockState water = Blocks.WATER.defaultBlockState();
++        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
++        for (int dx = 0; dx < 16; dx++) {
++            for (int dz = 0; dz < 16; dz++) {
++                int x = pos.getMinBlockX() + dx;
++                int z = pos.getMinBlockZ() + dz;
++                int level = planner.tileAt(x, z).lakeLevelNear(x, z);
++                if (level == NONE) {
++                    continue;
++                }
++                // getHeight already returns the top solid block (ChunkAccess: getFirstAvailable - 1).
++                int ground = chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
++                // Same convention as Aquifer.FluidStatus.at: fluid strictly below the level.
++                for (int y = ground + 1; y < level && y <= maxY; y++) {
++                    cursor.set(x, y, z);
++                    if (chunk.getBlockState(cursor).isAir()) {
++                        chunk.setBlockState(cursor, water);
++                        surface.update(dx, y, dz, water);
++                    }
++                }
++            }
++        }
++    }
++
++    /** Tiles for one RandomState, each planned once on first use. */
++    private static final class Planner {
++        private final RandomState random;
++        private final int seaLevel;
++        private final int offsetX;
++        private final int offsetZ;
++        // wozniak: computeIfAbsent holds a bin lock while a tile plans (87 x 87 height samples), so another tile hashing
++        // to the same bin waits. Ceiling: brief stalls when many workers start new tiles at once. Upgrade: per-key futures.
++        private final Map<Long, Tile> tiles = new ConcurrentHashMap<>();
++
++        Planner(RandomState random, int seaLevel) {
++            this.random = random;
++            this.seaLevel = seaLevel;
++            // World-seeded tile offset, so section borders differ per world.
++            // DIVERGENCE, pending a decision: Streams' cap is a jittered lattice (plateJitter 0.45, PlateLattice),
++            // so its borders are irregular; these tiles are an aligned grid with a random origin.
++            var seeded = random.getOrCreateRandomFactory(Identifier.fromNamespaceAndPath("aincrad", "hydrology")).at(0, 0, 0);
++            this.offsetX = seeded.nextInt(SECTION);
++            this.offsetZ = seeded.nextInt(SECTION);
++        }
++
++        Tile tileAt(int x, int z) {
++            int tx = Math.floorDiv(x - offsetX, SECTION);
++            int tz = Math.floorDiv(z - offsetZ, SECTION);
++            long key = ((long) tx << 32) ^ (tz & 0xffffffffL);
++            return tiles.computeIfAbsent(key, k -> new Tile(random, seaLevel, tx * SECTION + offsetX, tz * SECTION + offsetZ));
++        }
++    }
++
++    /** One section-cap tile: raw planning heights and the lake level of every lake grid point. */
++    private static final class Tile {
++        private final int originX;
++        private final int originZ;
++        private final int[] raw = new int[N * N];
++        private final int[] lake = new int[N * N];
++
++        Tile(RandomState random, int seaLevel, int originX, int originZ) {
++            this.originX = originX;
++            this.originZ = originZ;
++            DensityFunction surface = random.router().preliminarySurfaceLevel();
++            for (int gx = 0; gx < N; gx++) {
++                for (int gz = 0; gz < N; gz++) {
++                    // Vanilla's own evaluation (NoiseChunk.computePreliminarySurfaceLevel): y = 0, floored.
++                    raw[gx * N + gz] = (int) Math.floor(surface.compute(
++                        new DensityFunction.SinglePointContext(originX + gx * SPACING, 0, originZ + gz * SPACING)));
++                }
++            }
++            findLakes(raw, lake, seaLevel);
++        }
++
++        /**
++         * Lake level at a block column: the nearest grid point's lake, else any lake on a grid point one step away
++         * (so the shore reaches the real terrain, which then bounds the water), else NONE.
++         * UNSOURCED: the one-step reach. Value pending a decision.
++         */
++        int lakeLevelNear(int x, int z) {
++            int gx = Math.round((x - originX) / (float) SPACING);
++            int gz = Math.round((z - originZ) / (float) SPACING);
++            int best = NONE;
++            for (int ox = -1; ox <= 1; ox++) {
++                for (int oz = -1; oz <= 1; oz++) {
++                    int px = gx + ox;
++                    int pz = gz + oz;
++                    if (px >= 0 && pz >= 0 && px < N && pz < N) {
++                        int level = lake[px * N + pz];
++                        if (ox == 0 && oz == 0 && level != NONE) {
++                            return level;
++                        }
++                        best = Math.max(best, level);
++                    }
++                }
++            }
++            return best;
++        }
++    }
++
++    /**
++     * Priority-flood depression fill over one tile's grid, seeded from the tile edge and from points at or below sea
++     * level (both drain away). Points filled above their raw height are lake points; connected lake points share one
++     * level, the height of their lowest pass. Lakes smaller than {@link #MIN_LAKE_CELLS} or shallower than
++     * {@link #MIN_LAKE_DEPTH} are dropped. Writes {@code lake[i]} = water level, or NONE.
++     */
++    static void findLakes(int[] raw, int[] lake, int seaLevel) {
++        int[] filled = raw.clone();
++        boolean[] closed = new boolean[N * N];
++        PriorityQueue<long[]> open = new PriorityQueue<>((a, b) -> Long.compare(a[0], b[0])); // {height, index}
++        for (int gx = 0; gx < N; gx++) {
++            for (int gz = 0; gz < N; gz++) {
++                int i = gx * N + gz;
++                if (gx == 0 || gz == 0 || gx == N - 1 || gz == N - 1 || raw[i] <= seaLevel) {
++                    closed[i] = true;
++                    open.add(new long[] {filled[i], i});
++                }
++            }
++        }
++        while (!open.isEmpty()) {
++            int i = (int) open.poll()[1];
++            int gx = i / N;
++            int gz = i % N;
++            for (int ox = -1; ox <= 1; ox++) {
++                for (int oz = -1; oz <= 1; oz++) {
++                    int px = gx + ox;
++                    int pz = gz + oz;
++                    if ((ox | oz) == 0 || px < 0 || pz < 0 || px >= N || pz >= N) {
++                        continue;
++                    }
++                    int j = px * N + pz;
++                    if (!closed[j]) {
++                        closed[j] = true;
++                        filled[j] = Math.max(raw[j], filled[i]);
++                        open.add(new long[] {filled[j], j});
++                    }
++                }
++            }
++        }
++
++        // Group lake points (4-connected, same level), keep the ones big and deep enough.
++        Arrays.fill(lake, NONE);
++        boolean[] seen = new boolean[N * N];
++        ArrayDeque<Integer> queue = new ArrayDeque<>();
++        int[] members = new int[N * N];
++        int[][] steps = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
++        for (int start = 0; start < N * N; start++) {
++            if (seen[start] || filled[start] <= raw[start]) {
++                continue;
++            }
++            int level = filled[start];
++            int count = 0;
++            int depth = 0;
++            seen[start] = true;
++            queue.add(start);
++            while (!queue.isEmpty()) {
++                int i = queue.poll();
++                members[count++] = i;
++                depth = Math.max(depth, level - raw[i]);
++                int gx = i / N;
++                int gz = i % N;
++                for (int[] step : steps) {
++                    int px = gx + step[0];
++                    int pz = gz + step[1];
++                    if (px < 0 || pz < 0 || px >= N || pz >= N) {
++                        continue;
++                    }
++                    int j = px * N + pz;
++                    if (!seen[j] && filled[j] > raw[j] && filled[j] == level) {
++                        seen[j] = true;
++                        queue.add(j);
++                    }
++                }
++            }
++            if (count >= MIN_LAKE_CELLS && depth >= MIN_LAKE_DEPTH - DEPTH_SLACK) {
++                for (int m = 0; m < count; m++) {
++                    lake[members[m]] = level;
++                }
++            }
++        }
++    }
++}

@@ -349,8 +349,20 @@ fun TaskContainer.registerRunTask(
     minHeapSize = "${memoryGb}G"
     maxHeapSize = "${memoryGb}G"
 
+    // Aincrad - testing plugins on every run task (pinned versions, fetched once into plugins/)
+    val testPlugins = mapOf(
+        "squaremap-paper-mc1.21.11-1.3.12.jar" to "https://hangar.papermc.io/api/v1/projects/squaremap/versions/1.3.12/PAPER/download",
+        "SimpleFly-0.0.1.jar" to "https://cdn.modrinth.com/data/b43dBuPK/versions/nIB1yFFr/SimpleFly-0.0.1.jar",
+    )
     doFirst {
         workingDir.mkdirs()
+        val pluginsDir = workingDir.resolve("plugins").apply { mkdirs() }
+        testPlugins.forEach { (file, url) ->
+            val jar = pluginsDir.resolve(file)
+            if (!jar.exists()) {
+                URI(url).toURL().openStream().use { input -> jar.outputStream().use { output -> input.copyTo(output) } }
+            }
+        }
     }
 
     block(this)
